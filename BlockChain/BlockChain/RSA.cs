@@ -71,6 +71,20 @@ namespace BlockChain
 
         }
 
+        public static string ExportPubKey(RSACryptoServiceProvider csp) //esporta la chiave pubblica del csp dato in una stringa codificata in base64
+        {
+            byte[] blob = csp.ExportCspBlob(false);
+            string pubKey = Convert.ToBase64String(blob);
+            return pubKey;
+        }
+
+        public static void ImportPubKey(string base64PubKey, RSACryptoServiceProvider csp)//importa la chiave pubblica nell'oggetto specificato data una stringa base64
+        {
+            byte[] blob = Convert.FromBase64String(base64PubKey);
+            csp.ImportCspBlob(blob);
+
+        }
+
         internal static RSACryptoServiceProvider GenRSAKey()
         {
             return new RSACryptoServiceProvider();
