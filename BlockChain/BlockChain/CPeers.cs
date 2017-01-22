@@ -111,6 +111,7 @@ namespace BlockChain
         {
             string ris = "";
             string msg;
+            ECommand cmd;
             string[] lists;
             string[] peers;
             List<CPeer> receivedPeers = new List<CPeer>(), newPeers = new List<CPeer>();
@@ -121,12 +122,12 @@ namespace BlockChain
                     //blocca il peer e manda una richiesta di lock per bloccarlo anche dal nel suo client, così che non avvengano interferenze nella comunicazione
                     lock (mPeers[i].Socket)
                     {
-                        mPeers[i].SendData("LOCK"); //(!)in realtà non serve a niente?
-                        msg = mPeers[i].ReceiveData();
-                        if (msg == "OK")
+                        mPeers[i].SendCommand(ECommand.LOOK); //(!)in realtà non serve a niente?
+                        cmd = mPeers[i].ReceiveCommand();
+                        if (cmd == ECommand.OK)
                         {
-                            mPeers[i].SendData("UPDATEPEERS");
-                            msg = mPeers[i].ReceiveData();
+                            mPeers[i].SendCommand(ECommand.UPDPEERS);
+                            msg = mPeers[i].ReceiveString();
                             ris += msg + "/";
                         }
                         // mPeers[i].SendData("ENDLOCK");
@@ -185,7 +186,7 @@ namespace BlockChain
                     PeersList += mPeers[i].IP + "," + mPeers[i].Port + ";";
             }
             PeersList = PeersList.TrimEnd(';');
-            Peer.SendData(PeersList);
+            Peer.SendString(PeersList);
         }
 
         private CTemporaryBlock RequestLastValidBlock()
@@ -197,30 +198,33 @@ namespace BlockChain
 
             foreach (CPeer p in mPeers)
             {
-                p.SendCommand(ECommand.LOOK);
-                cmd = p.ReceiveCommand();
-                if (cmd == ECommand.OK)
+                if (p != null)
                 {
-                    p.SendCommand(ECommand.GET);
+                    p.SendCommand(ECommand.LOOK);
                     cmd = p.ReceiveCommand();
                     if (cmd == ECommand.OK)
                     {
-                        p.SendCommand(ECommand.LASTVALID);
-                        msg = p.ReceiveString();
-                        blocks.Add(new CTemporaryBlock(CBlock.Deserialize(msg), p));
+                        p.SendCommand(ECommand.GET);
+                        cmd = p.ReceiveCommand();
+                        if (cmd == ECommand.OK)
+                        {
+                            p.SendCommand(ECommand.LASTVALID);
+                            msg = p.ReceiveString();
+                            blocks.Add(new CTemporaryBlock(CBlock.Deserialize(msg), p));
+                        }
                     }
                 }
             }
-
-            if (blocks[0] != null)
-            {
-                ris = blocks[0];
-                foreach (CTemporaryBlock b in blocks)
+            if (blocks.Count > 0)
+                if (blocks[0] != null)
                 {
-                    if (ris.BlockNumber < b.BlockNumber)
-                        ris = b;
+                    ris = blocks[0];
+                    foreach (CTemporaryBlock b in blocks)
+                    {
+                        if (ris.BlockNumber < b.BlockNumber)
+                            ris = b;
+                    }
                 }
-            }
             return ris;
 
         }

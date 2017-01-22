@@ -152,7 +152,7 @@ namespace BlockChain
         /// </summary>
         public void Listen()
         {
-            string msg;
+            ECommand cmd;
             while (true)    //bisogna bloccarlo in qualche modo all'uscita del programma credo
             {
                 lock (mSocket)
@@ -161,16 +161,16 @@ namespace BlockChain
                     mSocket.ReceiveTimeout = 1000;  
                     try
                     {
-                        msg = ReceiveData();
-                        if (msg == "LOCK")  //(!)non serve a niente?
+                        cmd = ReceiveCommand();
+                        if (cmd== ECommand.LOOK)  //(!)non serve a niente?
                         {
                             if (Program.DEBUG)
                                 Console.WriteLine("LOCK received by" + mIp);
-                            SendData("OK");
-                            msg = ReceiveData();
-                            switch (msg)
+                            SendCommand(ECommand.OK);
+                            cmd = ReceiveCommand();
+                            switch (cmd)
                             {
-                                case "UPDATEPEERS":
+                                case ECommand.UPDPEERS:
                                     CPeers.Instance.DoRequest(ERequest.SendPeersList,this);
                                     break;
                                 default:

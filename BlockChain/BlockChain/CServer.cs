@@ -48,7 +48,7 @@ namespace BlockChain
             }
 
             
-            mLastBlockNumber = CBlockChain.Instance.LastBlock.BlockNumber;
+
             if (Program.DEBUG)
                 CIO.DebugOut("Last block number: " + mLastBlockNumber+".");
 

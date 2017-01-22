@@ -25,12 +25,18 @@ namespace BlockChain
             this.Difficutly = Difficutly;
         }
 
+        public string Serialize()
+        {
+            return "{" + Hash + ";" + BlockNumber + ";" + Transiction + ";" + Nonce + ";" + Timestamp + ";" + Difficutly + "}";
+        }
+
         /// <summary>
         /// Crea un nuovo oggetto CBlock usando una stringa che lo rappresenta.
         /// </summary>
         /// <param name="BlockString">Stringa che rappresenta l'oggetto CBlock.</param>
         public static CBlock Deserialize(string SerializedBlock)
         {
+            //forse è meglio usarlo come costruttore
             string[] blockField;
             SerializedBlock = SerializedBlock.Trim('{', '}');
             blockField = SerializedBlock.Split(';');

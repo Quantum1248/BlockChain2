@@ -11,6 +11,7 @@ namespace BlockChain
         LOOK,
         OK,
         GET,
-        LASTVALID
+        LASTVALID,
+        UPDPEERS
     }
 }

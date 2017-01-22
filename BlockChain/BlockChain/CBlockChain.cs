@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 
 namespace BlockChain
 {
@@ -42,9 +43,17 @@ namespace BlockChain
         /// </summary>
         private void Load()
         {
-            StreamReader file = new StreamReader("blockchain.txt");
-            mLastValidBlock = CBlock.Deserialize(file.ReadLine());  
-
+            if (File.Exists("blockchain.txt")) 
+            {
+                StreamReader file = new StreamReader("blockchain.txt");
+                mLastValidBlock = CBlock.Deserialize(file.ReadLine());
+            }
+            else
+            {
+                File.WriteAllText("blockchain.txt", new CGenesisBlock().Serialize());
+                StreamReader file = new StreamReader("blockchain.txt");
+                mLastValidBlock = CBlock.Deserialize(file.ReadLine());
+            }
         }
 
 
