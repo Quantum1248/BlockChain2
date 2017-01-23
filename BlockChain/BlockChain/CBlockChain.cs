@@ -5,6 +5,7 @@ namespace BlockChain
 {
     class CBlockChain
     {
+        public const string mPATH = "C:\\Users\\Manuel\\AppData\\Roaming\\Blockchain\\ChainData\\";
         private CBlock mLastBlock=null; //ultimo blocco ricevuto
         private CBlock mLastValidBlock = null;  //ultimo blocco sicuramente valido
         #region Singleton
@@ -38,20 +39,33 @@ namespace BlockChain
             get { return mLastBlock; }
         }
 
+        public string PATH
+        {
+            get
+            {
+                if (Directory.Exists(mPATH))
+                {
+                    return mPATH;
+                }
+                Directory.CreateDirectory(Path.GetDirectoryName(mPATH));
+                return mPATH;
+            }
+        }
+
         /// <summary>
         /// Carica l'ultimo blocco della blockchain.
         /// </summary>
         private void Load()
         {
-            if (File.Exists("blockchain.txt")) 
+            if (File.Exists(PATH+"blockchain.txt")) 
             {
-                StreamReader file = new StreamReader("blockchain.txt");
+                StreamReader file = new StreamReader(PATH + "blockchain.txt");
                 mLastValidBlock = CBlock.Deserialize(file.ReadLine());
             }
             else
             {
-                File.WriteAllText("blockchain.txt", new CGenesisBlock().Serialize());
-                StreamReader file = new StreamReader("blockchain.txt");
+                File.WriteAllText(PATH + "blockchain.txt", new CGenesisBlock().Serialize());
+                StreamReader file = new StreamReader(PATH + "blockchain.txt");
                 mLastValidBlock = CBlock.Deserialize(file.ReadLine());
             }
         }

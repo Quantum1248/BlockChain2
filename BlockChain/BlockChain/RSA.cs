@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -10,6 +11,20 @@ namespace BlockChain
     //TODO
     static class RSA
     {
+        public const string mPATH = "C:\\Users\\Manuel\\AppData\\Roaming\\Blockchain\\RSAData\\";
+        public static string PATH
+        {
+            get
+            {
+                if (Directory.Exists(mPATH))
+                {
+                    return mPATH;
+                }
+                Directory.CreateDirectory(Path.GetDirectoryName(mPATH));
+                return mPATH;
+            }
+        }
+
         internal static byte[] Encrypt(byte[] v, RSAParameters RSAKeyInfo, bool DoOAEPPadding)
         {
             try
