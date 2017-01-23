@@ -4,6 +4,15 @@ c:\users\manuel\documents\visual studio 2015\Projects\BlockChain\BlockChain\bin\
 c:\users\manuel\documents\visual studio 2015\Projects\BlockChain\BlockChain\bin\Debug\BlockChain.pdb
 c:\users\manuel\documents\visual studio 2015\Projects\BlockChain\BlockChain\obj\Debug\BlockChain.exe
 c:\users\manuel\documents\visual studio 2015\Projects\BlockChain\BlockChain\obj\Debug\BlockChain.pdb
+<<<<<<< HEAD
 C:\Users\Manuel\Documents\Programmi\Git\BlockChain2\BlockChain\BlockChain\bin\Debug\BlockChain.exe.config
 C:\Users\Manuel\Documents\Programmi\Git\BlockChain2\BlockChain\BlockChain\obj\Debug\BlockChain.exe
 C:\Users\Manuel\Documents\Programmi\Git\BlockChain2\BlockChain\BlockChain\obj\Debug\BlockChain.pdb
+=======
+C:\Users\Marco\GithubProjects\BlockChain2\BlockChain\BlockChain\bin\Debug\BlockChain.exe.config
+C:\Users\Marco\GithubProjects\BlockChain2\BlockChain\BlockChain\obj\Debug\BlockChain.exe
+C:\Users\Marco\GithubProjects\BlockChain2\BlockChain\BlockChain\obj\Debug\BlockChain.pdb
+C:\Users\Marco\GithubProjects\BlockChain2\BlockChain\BlockChain\bin\Debug\BlockChain.exe
+C:\Users\Marco\GithubProjects\BlockChain2\BlockChain\BlockChain\bin\Debug\BlockChain.pdb
+C:\Users\Marco\GithubProjects\BlockChain2\BlockChain\BlockChain\obj\Debug\BlockChain.csprojResolveAssemblyReference.cache
+>>>>>>> origin/master
