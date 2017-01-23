@@ -7,7 +7,7 @@ using System.Threading;
 
 namespace BlockChain
 {
-    static class SHA
+    static class SHA1WIP
     {
 
         static public string SHA1(string str) //inserire commenti (sarà divertente)
@@ -101,6 +101,18 @@ namespace BlockChain
             h4 = h4.Substring(h4.Length - 32);
 
             return BinaryToHex(h0 + h1 + h2 + h3 + h4);
+        }
+
+        static private string BinaryToBase64(string str)
+        {
+            string res = "";
+            int byteLength = str.Length / 8;
+            byte[] byteArray = new byte[byteLength];
+            for(int i = 0; i < byteLength; i++)
+            {
+                byteArray[i] = Convert.ToByte(str.Substring(8 * i, 8), 2);
+            }
+            return Convert.ToBase64String(byteArray);
         }
 
         static private string BinaryToHex(string str)
