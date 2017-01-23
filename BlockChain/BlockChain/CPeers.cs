@@ -89,7 +89,7 @@ namespace BlockChain
         /// <param name="Rqs">Richiesta da effettuare.</param>
         /// <param name="Arg">Parametro usato per passare un valore e/o ritornare un risultato quando necessario.</param>
         /// <returns></returns>
-        public void DoRequest(ERequest Rqs, object Arg = null)  //(!) rivedere i metodi di input/output del metodo
+        public object DoRequest(ERequest Rqs, object Arg = null)  //(!) rivedere i metodi di input/output del metodo
         {
             switch (Rqs)
             {
@@ -100,11 +100,16 @@ namespace BlockChain
                     SendPeersList(Arg as CPeer);
                     break;
                 case ERequest.LastValidBlock:
-                    RequestLastValidBlock();
+                    return RequestLastValidBlock();
+                    break;
+                case ERequest.DownloadMissingBlock:
+                    ulong startingIndex = Convert.ToUInt64(Arg);
+                    return DownloadBlocks(startingIndex);
                     break;
                 default:
                     throw new ArgumentException("Invalid request.");
             }
+            return null;
         }
 
         private void UpdatePeers()
@@ -204,14 +209,9 @@ namespace BlockChain
                     cmd = p.ReceiveCommand();
                     if (cmd == ECommand.OK)
                     {
-                        p.SendCommand(ECommand.GET);
-                        cmd = p.ReceiveCommand();
-                        if (cmd == ECommand.OK)
-                        {
-                            p.SendCommand(ECommand.LASTVALID);
-                            msg = p.ReceiveString();
-                            blocks.Add(new CTemporaryBlock(CBlock.Deserialize(msg), p));
-                        }
+                        p.SendCommand(ECommand.GETLASTVALID);
+                        msg = p.ReceiveString();
+                        blocks.Add(new CTemporaryBlock(CBlock.Deserialize(msg), p));
                     }
                 }
             }
@@ -229,6 +229,41 @@ namespace BlockChain
 
         }
 
+        private CTemporaryBlock[] DownloadBlocks(ulong Index)
+        {
+            //TODO multithreading
+            ECommand cmd;
+            string msg=null;
+            CPeer peer;
+            bool end = false;
+            Queue<CPeer> peersQueue=new Queue<CPeer>();
+            List<CTemporaryBlock> blocksList = new List<CTemporaryBlock>();
+            CTemporaryBlock block;
+            Index++;
+            foreach (CPeer p in mPeers)
+                if(p!=null)
+                    peersQueue.Enqueue(p);
+            while(peersQueue.Count>0)
+            {
+                peer = peersQueue.Dequeue();
+                peer.SendCommand(ECommand.LOOK);
+                cmd = peer.ReceiveCommand();
+                if(cmd==ECommand.OK)
+                {
+                    peer.SendCommand(ECommand.DOWNLOADBLOCK);
+                    peer.SendULong(Index);
+                    msg = peer.ReceiveString();
+                    if(msg!=null && msg!="NOTFOUND")
+                    {
+                        block = new CTemporaryBlock(CBlock.Deserialize(msg), peer);
+                        blocksList.Add(block);
+                        peersQueue.Enqueue(peer);
+                        Index++;
+                    }
+                }
+            }
+            return blocksList.ToArray();
+        }
     }
 }
 

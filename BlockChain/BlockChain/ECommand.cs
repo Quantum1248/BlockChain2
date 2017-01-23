@@ -10,8 +10,8 @@ namespace BlockChain
     {
         LOOK,
         OK,
-        GET,
-        LASTVALID,
-        UPDPEERS
+        UPDPEERS,
+        GETLASTVALID,
+        DOWNLOADBLOCK
     }
 }

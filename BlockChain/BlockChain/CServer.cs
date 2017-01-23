@@ -27,8 +27,6 @@ namespace BlockChain
         private Socket mListener;
         private static int DEFOULT_PORT = 100;
 
-        private ulong mLastBlockNumber;
-
         private bool IsStopped = false; //set true per spegnere il server
 
         private CServer(List<CPeer> Peers)
@@ -50,7 +48,7 @@ namespace BlockChain
             
 
             if (Program.DEBUG)
-                CIO.DebugOut("Last block number: " + mLastBlockNumber+".");
+                CIO.DebugOut("Last block number: " + CBlockChain.Instance.LastValidBlock.BlockNumber +".");
 
             if (Program.DEBUG)
                 CIO.DebugOut("Inizialize mPeers...");
@@ -163,22 +161,32 @@ namespace BlockChain
         }
 
         private void UpdateBlockchain()
-        {
-            ArgumentWrapper<CBlock> otherLastValidBlc = new ArgumentWrapper<CBlock>();
-            ArgumentWrapper<CBlock[]> newBlocks = new ArgumentWrapper<CBlock[]>();
-            ArgumentWrapper<bool> blockchainValidity = new ArgumentWrapper<bool>();
-
-            mPeers.DoRequest(ERequest.LastValidBlock, otherLastValidBlc);
-            if (CBlockChain.Instance.LastValidBlock.BlockNumber <= otherLastValidBlc.Value.BlockNumber)
+        {/*
+            CTemporaryBlock[] newBlocks;
+            CTemporaryBlock otherLastValidBlc = mPeers.DoRequest(ERequest.LastValidBlock) as CTemporaryBlock;
+            if (Program.DEBUG)
+                if (otherLastValidBlc != null)
+                    CIO.DebugOut("Il numero di blocco di otherLastValidBlock è " + otherLastValidBlc.BlockNumber + ".");
+                else
+                    CIO.DebugOut("Nessun otherLastValidBlock ricevuto.");
+            
+            if (CBlockChain.Instance.LastValidBlock.BlockNumber <= otherLastValidBlc?.BlockNumber)
             {
-                mPeers.DoRequest(ERequest.DownloadMissingValidBlock, newBlocks);
-                CBlockChain.Add(newBlocks.Value);
-                mPeers.DoRequest(ERequest.DownloadSixtyBlock, newBlocks);
-                CBlockChain.Add(newBlocks.Value);
+                //TODO potrebbero dover essere scaricati un numero maggiore di MAXINT blocchi
+                newBlocks=mPeers.DoRequest(ERequest.DownloadMissingBlock, new object[] {CBlockChain.Instance.LastValidBlock.BlockNumber, otherLastValidBlc.BlockNumber }) as CTemporaryBlock[];
+                CBlockChain.Add(newBlocks);
             }
 
             //TODO Abilitare la ricezione di nuovi blocchi.
+            */
 
+            CTemporaryBlock[] newBlocks;
+            newBlocks = mPeers.DoRequest(ERequest.DownloadMissingBlock, CBlockChain.Instance.LastValidBlock.BlockNumber) as CTemporaryBlock[];
+            if (Program.DEBUG)
+                CIO.DebugOut("Scaricati " + newBlocks.Length + " nuovi blocchi.");
+            int added=CBlockChain.Instance.Add(newBlocks);
+            if (Program.DEBUG)
+                CIO.DebugOut("Aggiunti alla blockchain " + added + " blocchi validi.");
         }
 
         private void InsertNewPeer(Socket NewConnection)
