@@ -46,7 +46,7 @@ namespace BlockChain
                 string xmlString = rsaKeyPair.ToXmlString(true);
                 File.WriteAllText("keystore.xml", xmlString);
             }
-
+            string test = SHA.SHA1("culo");
             
 
             if (Program.DEBUG)
