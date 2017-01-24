@@ -46,16 +46,8 @@ namespace BlockChain
                 string xmlString = rsaKeyPair.ToXmlString(true);
                 File.WriteAllText("keystore.xml", xmlString);
             }
-            #region WIP Da inserire in una funzione nella classe CPeer
-            byte[] tx = Encoding.Unicode.GetBytes("from:" + RSA.ExportPubKey(rsaKeyPair) + ";" + "to:" + RSA.ExportPubKey(rsaKeyPair) + ";" + "amount:10.0;type:coin;");
-            SHA256Managed sha = new SHA256Managed();
-            byte[] digest = sha.ComputeHash(tx);
 
-            string signature = RSA.Sign(tx, rsaKeyPair.ExportParameters(true), false);
-            bool ver = RSA.VerifySignature(digest, Convert.FromBase64String(signature), rsaKeyPair.ExportParameters(false), false);
-            #endregion
-
-
+            
             if (Program.DEBUG)
                 CIO.DebugOut("Last block number: " + mLastBlockNumber+".");
 

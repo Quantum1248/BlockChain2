@@ -121,6 +121,22 @@ namespace BlockChain
 
 
         }
+
+        public static void HashSignTransaction(Transaction unsignedTx, RSACryptoServiceProvider rsaKeyPair)
+        {
+            byte[] tx = Encoding.Unicode.GetBytes(Transaction.Serialize(unsignedTx));
+            unsignedTx.Signature = RSA.Sign(tx, rsaKeyPair.ExportParameters(true), false);
+        }
+
+        public static bool VerifySignedTransaction(Transaction signedTx, RSACryptoServiceProvider rsaKeyPair)
+        {
+            byte[] bUnsignedTx = Encoding.Unicode.GetBytes(Transaction.Serialize(signedTx));
+            SHA256Managed sha = new SHA256Managed();
+            byte[] digest = sha.ComputeHash(bUnsignedTx);
+
+            return RSA.VerifySignature(digest, Convert.FromBase64String(signedTx.Signature), rsaKeyPair.ExportParameters(false), false);
+        }
+
         public static string ExportPubKey(RSACryptoServiceProvider csp) //esporta la chiave pubblica del csp dato in una stringa codificata in base64
         {
             byte[] blob = csp.ExportCspBlob(false);
