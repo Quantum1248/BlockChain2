@@ -11,7 +11,7 @@ namespace BlockChain
         private string mPubKeyFrom, mPubKeyTo;
         private double mAmount;
         private string mSignature;
-
+        //TODO: aggiungere riferimento a output precedente per verificare transazione
         public string PubKeyFrom
         {
             get
@@ -75,7 +75,7 @@ namespace BlockChain
 
         public static string SerializeVerifiable(Transaction tx)
         {
-            //Implementare metodo per ritornare una stringa da una transazione firmata, ricostruibile e verificabile dopo l'invio tramite socket 
+            //TODO:Implementare metodo per ritornare una stringa da una transazione firmata, ricostruibile e verificabile dopo l'invio tramite socket 
             return "";
         }
     }

@@ -16,7 +16,7 @@ namespace BlockChain
             get
             {
                 string appDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                string specificFolder = Path.Combine(appDataFolder, "Keystore");
+                string specificFolder = Path.Combine(appDataFolder, "Blockchain\\Keystore");
                 if (Directory.Exists(specificFolder))
                 {
                     return specificFolder;
@@ -140,13 +140,13 @@ namespace BlockChain
 
         public static void HashSignTransaction(Transaction unsignedTx, RSACryptoServiceProvider rsaKeyPair)
         {
-            byte[] tx = Encoding.Unicode.GetBytes(Transaction.Serialize(unsignedTx));
+            byte[] tx = Encoding.UTF8.GetBytes(Transaction.Serialize(unsignedTx));
             unsignedTx.Signature = RSA.Sign(tx, rsaKeyPair.ExportParameters(true), false);
         }
 
         public static bool VerifySignedTransaction(Transaction signedTx, RSACryptoServiceProvider rsaKeyPair)
         {
-            byte[] bUnsignedTx = Encoding.Unicode.GetBytes(Transaction.Serialize(signedTx));
+            byte[] bUnsignedTx = Encoding.UTF8.GetBytes(Transaction.Serialize(signedTx));
             SHA256Managed sha = new SHA256Managed();
             byte[] digest = sha.ComputeHash(bUnsignedTx);
 
