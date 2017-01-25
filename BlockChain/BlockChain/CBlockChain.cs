@@ -5,7 +5,6 @@ namespace BlockChain
 {
     class CBlockChain
     {
-        public const string mPATH = "C:\\Users\\Manuel\\AppData\\Roaming\\Blockchain\\ChainData\\";
         private CBlock mLastBlock=null; //ultimo blocco ricevuto
         private CBlock mLastValidBlock = null;  //ultimo blocco sicuramente valido
         #region Singleton
@@ -43,12 +42,14 @@ namespace BlockChain
         {
             get
             {
-                if (Directory.Exists(mPATH))
+                string appDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string specificFolder = Path.Combine(appDataFolder, "Blockchain\\ChainData");
+                if (Directory.Exists(specificFolder))
                 {
-                    return mPATH;
+                    return specificFolder;
                 }
-                Directory.CreateDirectory(Path.GetDirectoryName(mPATH));
-                return mPATH;
+                Directory.CreateDirectory(specificFolder);
+                return specificFolder;
             }
         }
 
@@ -57,9 +58,9 @@ namespace BlockChain
         /// </summary>
         private void Load()
         {
-            if (File.Exists(PATH+"blockchain.txt"))
+            if (File.Exists(PATH + "\\blockchain.txt"))
             {
-                string filepath = PATH + "blockchain.txt";
+                string filepath = PATH + "\\blockchain.txt";
                 using (StreamReader sr = new StreamReader(filepath))
                 {
                     string line;
@@ -78,8 +79,8 @@ namespace BlockChain
             }
             else
             {
-                File.WriteAllText(PATH + "blockchain.txt", new CGenesisBlock().Serialize());
-                StreamReader file = new StreamReader(PATH + "blockchain.txt");
+                File.WriteAllText(PATH + "\\blockchain.txt", new CGenesisBlock().Serialize());
+                StreamReader file = new StreamReader(PATH + "\\blockchain.txt");
                 mLastValidBlock = CBlock.Deserialize(file.ReadLine());
             }
         }

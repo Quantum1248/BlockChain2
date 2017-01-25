@@ -11,17 +11,18 @@ namespace BlockChain
     //TODO
     static class RSA
     {
-        public const string mPATH = "C:\\Users\\Manuel\\AppData\\Roaming\\Blockchain\\RSAData\\";
         public static string PATH
         {
             get
             {
-                if (Directory.Exists(mPATH))
+                string appDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string specificFolder = Path.Combine(appDataFolder, "Keystore");
+                if (Directory.Exists(specificFolder))
                 {
-                    return mPATH;
+                    return specificFolder;
                 }
-                Directory.CreateDirectory(Path.GetDirectoryName(mPATH));
-                return mPATH;
+                Directory.CreateDirectory(specificFolder);
+                return specificFolder;
             }
         }
 
