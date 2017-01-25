@@ -131,7 +131,16 @@ namespace BlockChain
         public string ReceiveString()
         {
             return ASCIIEncoding.ASCII.GetString(ReceiveData());
+        }
 
+        public void SendULong(ulong Nmb)
+        {
+            SendData(BitConverter.GetBytes(Nmb));//non è asincrono!!
+        }
+
+        public ulong ReceiveULong()
+        {
+            return BitConverter.ToUInt64(ReceiveData(),0);
         }
 
         //TODO Criptare le comunicazioni
@@ -171,8 +180,16 @@ namespace BlockChain
                             switch (cmd)
                             {
                                 case ECommand.UPDPEERS:
+                                    if (Program.DEBUG)
+                                        Console.WriteLine("UPDPEERS received by" + mIp);
                                     CPeers.Instance.DoRequest(ERequest.SendPeersList,this);
                                     break;
+                                case ECommand.GETLASTVALID:
+                                    if (Program.DEBUG)
+                                        Console.WriteLine("GETLASTVALID received by" + mIp);
+                                    SendString(CBlockChain.Instance.LastValidBlock.Serialize());
+                                    break;
+                                //case ECommand.
                                 default:
                                     break;
                             }

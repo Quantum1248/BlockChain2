@@ -5,6 +5,7 @@ namespace BlockChain
 {
     class CBlockChain
     {
+        public const string mPATH = "C:\\Users\\Manuel\\AppData\\Roaming\\Blockchain\\ChainData\\";
         private CBlock mLastBlock=null; //ultimo blocco ricevuto
         private CBlock mLastValidBlock = null;  //ultimo blocco sicuramente valido
         #region Singleton
@@ -35,7 +36,20 @@ namespace BlockChain
 
         public CBlock LastValidBlock
         {
-            get { return mLastBlock; }
+            get { return mLastValidBlock; }
+        }
+
+        public string PATH
+        {
+            get
+            {
+                if (Directory.Exists(mPATH))
+                {
+                    return mPATH;
+                }
+                Directory.CreateDirectory(Path.GetDirectoryName(mPATH));
+                return mPATH;
+            }
         }
 
         /// <summary>
@@ -43,15 +57,29 @@ namespace BlockChain
         /// </summary>
         private void Load()
         {
-            if (File.Exists("blockchain.txt")) 
+            if (File.Exists(PATH+"blockchain.txt"))
             {
-                StreamReader file = new StreamReader("blockchain.txt");
-                mLastValidBlock = CBlock.Deserialize(file.ReadLine());
+                string filepath = PATH + "blockchain.txt";
+                using (StreamReader sr = new StreamReader(filepath))
+                {
+                    string line;
+                    while (!sr.EndOfStream)
+                    {
+                        line = sr.ReadLine();
+                        if (sr.Peek() == -1)
+                        {
+                            mLastValidBlock = CBlock.Deserialize(line);
+
+                        }
+                    }
+                }
+
+                   // mLastValidBlock = CBlock.Deserialize(File.ReadLines(PATH + "blockchain.txt").Last());
             }
             else
             {
-                File.WriteAllText("blockchain.txt", new CGenesisBlock().Serialize());
-                StreamReader file = new StreamReader("blockchain.txt");
+                File.WriteAllText(PATH + "blockchain.txt", new CGenesisBlock().Serialize());
+                StreamReader file = new StreamReader(PATH + "blockchain.txt");
                 mLastValidBlock = CBlock.Deserialize(file.ReadLine());
             }
         }
@@ -62,14 +90,10 @@ namespace BlockChain
             throw new System.NotImplementedException();
         }
 
-        internal static void Add(CBlock b)
+        public int Add(CBlock[] b)
         {
-            throw new System.NotImplementedException();
-        }
-
-        internal static void Add(CBlock[] b)
-        {
-            throw new System.NotImplementedException();
+            //throw new System.NotImplementedException();
+            return b.Length;
         }
     }
 }
