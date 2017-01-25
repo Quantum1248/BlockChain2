@@ -41,7 +41,6 @@ namespace BlockChain
             this.Timestamp = Timestamp;
             this.Difficutly = Difficutly;
             GenerateMerkleRoot(Transactions);
-            Scrypt("hjdsf32348732hc"); 
         }
 
         public string Serialize()
