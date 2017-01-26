@@ -94,7 +94,10 @@ namespace BlockChain
         public int Add(CBlock[] b)
         {
             //throw new System.NotImplementedException();
+
             return b.Length;
         }
+
+        
     }
 }

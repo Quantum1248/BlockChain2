@@ -10,6 +10,7 @@ namespace BlockChain
     public class CBlock
     {
         //TODO: aggiungere riferimento a blocco precedente
+        public CBlock previousBlock;
         public string Hash;
         public ulong BlockNumber;
         public string Transiction;
@@ -33,14 +34,14 @@ namespace BlockChain
             this.Difficutly = Difficutly;
         }
 
-        public CBlock(string Hash, ulong NumBlock, List<string> Transactions, ulong Nonce, ulong Timestamp, ushort Difficutly)
+        public CBlock(ulong NumBlock, List<string> Transactions, ulong Timestamp, ushort Difficutly)
         {
-            this.Hash = Hash;
             this.BlockNumber = NumBlock;
-            this.Nonce = 0;//TODO inserire nonce come parametro opzionale o toglierlo, il valore deve partire da 0
+            this.Nonce = 0;
             this.Timestamp = Timestamp;
             this.Difficutly = Difficutly;
             GenerateMerkleRoot(Transactions);
+            this.previousBlock = CBlockChain.GetLastBlock();
         }
 
         public string Serialize()
@@ -70,7 +71,7 @@ namespace BlockChain
         }
         */
 
-        private void Scrypt(string previousBlockHash) //TODO: verificare singole transazioni
+        private void Scrypt() //TODO: verificare singole transazioni
         {
             string toHash;
             string hash;
@@ -79,7 +80,7 @@ namespace BlockChain
 
             while (!found)
             {
-                toHash = previousBlockHash + this.Nonce + this.Timestamp + this.Transiction + this.MerkleRoot; //si concatenano vari parametri del blocco TODO: usare i parmetri giusti, quelli usati qua sono solo per dimostrazione e placeholder
+                toHash = this.previousBlock.Hash + this.Nonce + this.Timestamp + this.Transiction + this.MerkleRoot; //si concatenano vari parametri del blocco TODO: usare i parmetri giusti, quelli usati qua sono solo per dimostrazione e placeholder
                 hash = Convert.ToBase64String(SCrypt.ComputeDerivedKey(Encoding.UTF8.GetBytes(toHash), Encoding.UTF8.GetBytes(toHash), 1024, 1, 1, 1, 32)); //calcola l'hash secondo il template di scrypt usato da litecoin
                 for (int i = 0; i <= Difficutly; i++)
                 {
@@ -125,7 +126,11 @@ namespace BlockChain
                 {
                     hashSum += transactions.First<string>();
                     transactions.RemoveAt(0);
-                }               
+                }
+                else
+                {
+                    hashSum += hashSum;
+                }
                 hashSum = Convert.ToBase64String(Encoding.UTF8.GetBytes(hashSum)); //dopo essere stati concatenati, gli hash delle transazioni sono passati attraverso una funzione hash
                 
                 hashList.Add(Convert.ToBase64String(SHA256Managed.Create().ComputeHash(Convert.FromBase64String(hashSum))));
