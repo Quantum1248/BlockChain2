@@ -57,12 +57,15 @@
     <Compile Include="CTemporaryBlock.cs" />
     <Compile Include="ECommand.cs" />
     <Compile Include="ERequest.cs" />
+    <Compile Include="Input.cs" />
     <Compile Include="MerkleNode.cs" />
     <Compile Include="MerkleTree.cs" />
+    <Compile Include="Output.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RSA.cs" />
     <Compile Include="Transaction.cs" />
+    <Compile Include="UTXOManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
