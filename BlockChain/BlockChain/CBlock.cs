@@ -1,4 +1,5 @@
 ﻿using System;
+using Newtonsoft.Json;
 
 namespace BlockChain
 {
@@ -27,7 +28,8 @@ namespace BlockChain
 
         public string Serialize()
         {
-            return "{" + Hash + ";" + BlockNumber + ";" + Transiction + ";" + Nonce + ";" + Timestamp + ";" + Difficutly + "}";
+            //return "{" + Hash + ";" + BlockNumber + ";" + Transiction + ";" + Nonce + ";" + Timestamp + ";" + Difficutly + "}";
+            return JsonConvert.SerializeObject(this);
         }
 
         /// <summary>
@@ -36,13 +38,15 @@ namespace BlockChain
         /// <param name="BlockString">Stringa che rappresenta l'oggetto CBlock.</param>
         public static CBlock Deserialize(string SerializedBlock)
         {
-            //forse è meglio usarlo come costruttore
+            /*
             string[] blockField;
             SerializedBlock = SerializedBlock.Trim('{', '}');
             blockField = SerializedBlock.Split(';');
             if (Program.DEBUG)
-                CIO.DebugOut("Deserializing block number: "+ blockField[1]+".");
+                CIO.DebugOut("Deserializing block number: " + blockField[1] + ".");
             return new CBlock(blockField[0], Convert.ToUInt64(blockField[1]), blockField[2], Convert.ToUInt64(blockField[3]), Convert.ToUInt64(blockField[4]), Convert.ToUInt16(blockField[5]));
+            */
+            return JsonConvert.DeserializeObject<CBlock>(SerializedBlock);
         }
 
         /*

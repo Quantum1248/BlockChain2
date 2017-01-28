@@ -12,6 +12,7 @@ namespace BlockChain
         OK,
         UPDPEERS,
         GETLASTVALID,
-        DOWNLOADBLOCK
+        DOWNLOADBLOCK,
+        DOWNLOADBLOCKS
     }
 }
