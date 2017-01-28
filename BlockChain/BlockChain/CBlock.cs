@@ -10,6 +10,7 @@ namespace BlockChain
     public class CBlock
     {
         //TODO: aggiungere riferimento a blocco precedente
+        public CBlock previousBlock;
         public string Hash;
         public ulong BlockNumber;
         public string Transiction;
@@ -33,9 +34,8 @@ namespace BlockChain
             this.Difficutly = Difficutly;
         }
 
-        public CBlock(string Hash, ulong NumBlock, List<string> Transactions, ulong Nonce, ulong Timestamp, ushort Difficutly)
+        public CBlock(ulong NumBlock, List<string> Transactions, ulong Timestamp, ushort Difficutly)
         {
-            this.Hash = Hash;
             this.BlockNumber = NumBlock;
             this.Nonce = 0;//TODO inserire nonce come parametro opzionale o toglierlo, il valore deve partire da 0
             this.Timestamp = Timestamp;
