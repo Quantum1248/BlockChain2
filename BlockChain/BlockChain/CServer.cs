@@ -7,7 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.IO;
-
+using Newtonsoft.Json;
 namespace BlockChain
 {
     class CServer
@@ -44,7 +44,12 @@ namespace BlockChain
                 string xmlString = rsaKeyPair.ToXmlString(true);
                 File.WriteAllText(RSA.PATH + "\\keystore.xml", xmlString);
             }
+            //Transaction tx = new Transaction(5, RSA.ExportPubKey(rsaKeyPair), rsaKeyPair);
+            string appDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string specificFolder = Path.Combine(appDataFolder, "Blockchain\\UTXODB");
+
             
+
             if (Program.DEBUG)
                 CIO.DebugOut("Last block number: " + CBlockChain.Instance.LastValidBlock.BlockNumber +".");
 

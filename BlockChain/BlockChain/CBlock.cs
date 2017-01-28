@@ -41,7 +41,7 @@ namespace BlockChain
             this.Timestamp = Timestamp;
             this.Difficutly = Difficutly;
             GenerateMerkleRoot(Transactions);
-            this.previousBlock = CBlockChain.GetLastBlock();
+            //this.previousBlock = CBlockChain.GetLastBlock();
         }
 
         public string Serialize()

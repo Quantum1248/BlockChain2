@@ -10,7 +10,11 @@ namespace BlockChain
     {
         public string TxHash;
         public int OutputIndex;
-        public string Signature;
-        public string PubKey;
+        
+        public Input(string hash, int index)
+        {
+            this.TxHash = hash;
+            this.OutputIndex = index;
+        }
     }
 }

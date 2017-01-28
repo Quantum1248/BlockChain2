@@ -8,8 +8,13 @@ namespace BlockChain
 {
     class Output
     {
-        public string Address;
         public double Amount;
         public string PubKeyHash;
+
+        public Output(double Amount, string PubKeyHash)
+        {
+            this.Amount = Amount;
+            this.PubKeyHash = PubKeyHash;
+        }
     }
 }

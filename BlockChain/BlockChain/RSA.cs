@@ -140,17 +140,13 @@ namespace BlockChain
 
         public static void HashSignTransaction(Transaction unsignedTx, RSACryptoServiceProvider rsaKeyPair)
         {
-            byte[] tx = Encoding.UTF8.GetBytes(Transaction.Serialize(unsignedTx));
+            byte[] tx = Encoding.UTF8.GetBytes(unsignedTx.Serialize());
             unsignedTx.Signature = RSA.Sign(tx, rsaKeyPair.ExportParameters(true), false);
         }
 
-        public static bool VerifySignedTransaction(Transaction signedTx, RSACryptoServiceProvider rsaKeyPair)
+        public static bool VerifySignedTransaction(Transaction signedTx, byte[] Hash, string PubKey)
         {
-            byte[] bUnsignedTx = Encoding.UTF8.GetBytes(Transaction.Serialize(signedTx));
-            SHA256Managed sha = new SHA256Managed();
-            byte[] digest = sha.ComputeHash(bUnsignedTx);
-
-            return RSA.VerifySignature(digest, Convert.FromBase64String(signedTx.Signature), rsaKeyPair.ExportParameters(false), false);
+            return RSA.VerifySignature(Hash, Convert.FromBase64String(signedTx.Signature), RSA.ImportPubKey(PubKey).ExportParameters(false), false);
         }
 
         public static string ExportPubKey(RSACryptoServiceProvider csp) //esporta la chiave pubblica del csp dato in una stringa codificata in base64
@@ -160,11 +156,12 @@ namespace BlockChain
             return pubKey;
         }
 
-        public static void ImportPubKey(string base64PubKey, RSACryptoServiceProvider csp)//importa la chiave pubblica nell'oggetto specificato data una stringa base64
+        public static RSACryptoServiceProvider ImportPubKey(string base64PubKey)//importa la chiave pubblica nell'oggetto specificato data una stringa base64
         {
+            RSACryptoServiceProvider csp = new RSACryptoServiceProvider();
             byte[] blob = Convert.FromBase64String(base64PubKey);
             csp.ImportCspBlob(blob);
-
+            return csp;
         }
 
         internal static RSACryptoServiceProvider GenRSAKey()
