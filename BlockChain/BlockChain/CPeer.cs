@@ -6,6 +6,7 @@ using System.Threading;
 using System.Net.Sockets;
 using System.Net;
 using System.Security.Cryptography;
+using Newtonsoft.Json;
 
 namespace BlockChain
 {
@@ -123,6 +124,31 @@ namespace BlockChain
             }
         }
 
+        public void SendBlocks(CBlock[] Blocks)
+        {
+            string msg="";
+            foreach(CBlock b in Blocks)
+                if(b!=null)
+                    msg += JsonConvert.SerializeObject(b) + "/";
+                else
+                    msg += "NULL/";
+            msg = msg.TrimEnd('/'); 
+            SendString(msg);
+        }
+
+        /*
+        public CBlock[] ReceiveBlocks()
+        {
+            List<CBlock> ris = new List<CBlock>;
+            string msg = ReceiveString();
+            foreach (string block in msg.Split('/'))
+            {
+
+                ris[rangeInDownload.Start + (ulong)c++] = new CTemporaryBlock(JsonConvert.DeserializeObject<CBlock>(block), peer);
+            }
+        }
+        */
+
         public void SendString(string Msg)
         {
             SendData(ASCIIEncoding.ASCII.GetBytes(Msg));//non è asincrono!!
@@ -189,7 +215,13 @@ namespace BlockChain
                                         Console.WriteLine("GETLASTVALID received by" + mIp);
                                     SendString(CBlockChain.Instance.LastValidBlock.Serialize());
                                     break;
-                                //case ECommand.
+                                case ECommand.DOWNLOADBLOCKS:
+                                        if (Program.DEBUG)
+                                        Console.WriteLine("DOWNLOADBLOCKS received by" + mIp);
+                                    ulong initialIndex = ReceiveULong();
+                                    ulong finalIndex = ReceiveULong();
+                                    SendBlocks(RetriveBlocks(initialIndex,finalIndex));
+                                    break;
                                 default:
                                     break;
                             }
@@ -204,6 +236,19 @@ namespace BlockChain
                 }
             }
         }
-        
+
+        private CBlock[] RetriveBlocks(ulong initialIndex,ulong finalIndex)
+        {
+            CBlock[] ris = new CBlock[finalIndex - initialIndex];
+            int c = 0;
+            while(initialIndex<finalIndex)
+            {
+                ris[c++] = CBlockChain.Instance.RetriveBlock(initialIndex);
+                initialIndex++;
+            }
+            return ris;
+        }
+
+
     }
 }

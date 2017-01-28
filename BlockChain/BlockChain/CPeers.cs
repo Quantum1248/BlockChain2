@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
-
+using Newtonsoft.Json;
 namespace BlockChain
 {
     class CPeers
@@ -101,11 +102,11 @@ namespace BlockChain
                     break;
                 case ERequest.LastValidBlock:
                     return RequestLastValidBlock();
-                    break;
                 case ERequest.DownloadMissingBlock:
-                    ulong startingIndex = Convert.ToUInt64(Arg);
-                    return DownloadBlocks(startingIndex);
-                    break;
+                    object[] args = Arg as object[];
+                    ulong startingIndex = Convert.ToUInt64(args[0]);
+                    ulong finalIndex = Convert.ToUInt64(args[1]);
+                    return DistribuiteDownloadBlocks(startingIndex, finalIndex);
                 default:
                     throw new ArgumentException("Invalid request.");
             }
@@ -229,41 +230,99 @@ namespace BlockChain
 
         }
 
-        private CTemporaryBlock[] DownloadBlocks(ulong Index)
+        private CTemporaryBlock[] DistribuiteDownloadBlocks(ulong initialIndex, ulong finalIndex)
         {
-            //TODO multithreading
-            ECommand cmd;
-            string msg=null;
-            CPeer peer;
-            bool end = false;
-            Queue<CPeer> peersQueue=new Queue<CPeer>();
-            List<CTemporaryBlock> blocksList = new List<CTemporaryBlock>();
-            CTemporaryBlock block;
-            Index++;
-            foreach (CPeer p in mPeers)
-                if(p!=null)
-                    peersQueue.Enqueue(p);
-            while(peersQueue.Count>0)
+            Queue<Thread> threadQueue=new Queue<Thread>();
+            Queue<CRange> queueRange = new Queue<CRange>();
+            CTemporaryBlock[] ris;
+            ulong module=0, rangeDim=10, totalBlocks= finalIndex - initialIndex;
+            ris = new CTemporaryBlock[totalBlocks];
+            foreach(CPeer p in mPeers)
             {
-                peer = peersQueue.Dequeue();
+                if(p!=null)
+                {
+                    threadQueue.Enqueue(new Thread(new ParameterizedThreadStart(DownloadBlocks)));
+
+                }
+            }
+
+            //creazione gruppi di blocchi
+            //(!) genera 1-10/11-20 p 1-10/10-20? è giusto il secondo 
+            //1-10 scarica i blocchi dall'1 compreso al 10 non compreso(1-2-3-4-5-6-7-8-9)
+            module = totalBlocks % rangeDim;
+            while(initialIndex<=finalIndex-module)
+            {
+                queueRange.Enqueue(new CRange(initialIndex, initialIndex + rangeDim));
+                initialIndex += rangeDim;
+            }
+            initialIndex -= rangeDim;
+            queueRange.Enqueue(new CRange(initialIndex, initialIndex + module));
+            
+            //creazione ed avvio thread
+            foreach (CPeer p in mPeers)
+            {
+                if(p!=null)
+                {
+                    threadQueue.Peek().Start(new object[] { p, queueRange ,ris});
+                    threadQueue.Enqueue(threadQueue.Dequeue());
+                }
+            }
+
+            while(threadQueue.Count>0)
+            {
+                threadQueue.Dequeue().Join();
+            }
+
+            return ris;
+        }
+
+        private void DownloadBlocks(object obj)
+        {
+            object[] args = obj as object[];
+            CPeer peer = args[0] as CPeer;
+            Queue<CRange> rangeAvailable = args[1] as Queue<CRange>;
+            CTemporaryBlock[] ris = args[2] as CTemporaryBlock[];
+
+            int c = 0;
+            CRange rangeInDownload;
+            ECommand cmd;
+            string msg;
+            while (rangeAvailable.Count > 0)
+            {
+                c = 0;
+                lock (rangeAvailable)
+                {
+                    if (rangeAvailable.Count <= 0)
+                        break;
+                    rangeInDownload = rangeAvailable.Dequeue();
+                }
                 peer.SendCommand(ECommand.LOOK);
                 cmd = peer.ReceiveCommand();
                 if(cmd==ECommand.OK)
                 {
-                    peer.SendCommand(ECommand.DOWNLOADBLOCK);
-                    peer.SendULong(Index);
+                    peer.SendCommand(ECommand.DOWNLOADBLOCKS);
+                    peer.SendULong(rangeInDownload.Start);
+                    peer.SendULong(rangeInDownload.End);
                     msg = peer.ReceiveString();
-                    if(msg!=null && msg!="NOTFOUND")
+                    foreach(string block in msg.Split('/'))
                     {
-                        block = new CTemporaryBlock(CBlock.Deserialize(msg), peer);
-                        blocksList.Add(block);
-                        peersQueue.Enqueue(peer);
-                        Index++;
+                        ris[rangeInDownload.Start + (ulong)c++] = new CTemporaryBlock(JsonConvert.DeserializeObject<CBlock>(block), peer);
                     }
                 }
             }
-            return blocksList.ToArray();
         }
     }
 }
 
+class CRange
+{
+    public ulong Start;
+    public ulong End;
+
+    public CRange(ulong Start, ulong End)
+    {
+        this.Start = Start;
+        this.End = End;
+    }
+
+}
