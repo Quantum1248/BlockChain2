@@ -63,6 +63,7 @@
     <Compile Include="RSA.cs" />
     <Compile Include="SHA1WIP.cs" />
     <Compile Include="Transaction.cs" />
+    <Compile Include="Tree.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
