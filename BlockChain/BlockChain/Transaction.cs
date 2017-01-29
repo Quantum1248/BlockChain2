@@ -13,16 +13,15 @@ namespace BlockChain
     {
         public string Hash;
         public List<Input> inputs;
-        public List<Output> outputs;
+        public Output[] outputs;
         public string Signature;
         public string PubKey;
         
-        public Transaction(double Amount, string PubKey, RSACryptoServiceProvider csp) //costruttore per testing
+        public Transaction(Output[] outputs, string PubKey, RSACryptoServiceProvider csp) //costruttore per testing
         {
             this.inputs = new List<Input>();
-            this.outputs = new List<Output>();
+            this.outputs = outputs;
             this.inputs.Add(new Input("123", 0));
-            this.outputs.Add(new Output(1, "placeholder"));
             this.PubKey = PubKey;
             this.Hash = Convert.ToBase64String(SHA256Managed.Create().ComputeHash(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(this)))); //Calcolo l'hash di questa transazione inizializzata fino a questo punto, esso farà da txId
             this.Signature = RSA.Sign(Encoding.UTF8.GetBytes(this.Serialize()), csp.ExportParameters(true), false); //firmo la transazione fino a questo punto
@@ -30,18 +29,20 @@ namespace BlockChain
             //salvo la transazione sul disco
             string appDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             string specificFolder = Path.Combine(appDataFolder, "Blockchain\\UTXODB");
+            string filename = this.Hash.Replace(@"/", "");
             if (Directory.Exists(specificFolder))
             {
-                File.WriteAllText(specificFolder + "\\utxo0", this.Serialize()); 
+                
+                File.WriteAllText(specificFolder + "\\" + filename + ".json", this.Serialize()); 
             }
             else
             {
                 Directory.CreateDirectory(specificFolder);
-                File.WriteAllText(specificFolder + "\\utxo0", this.Serialize());
+                File.WriteAllText(specificFolder + "\\" + filename + ".json", this.Serialize());
             }
         }
         
-        public Transaction(List<Input> inputs, List<Output> outputs, string Hash, string PubKey) //costruttore per generare l'hash da confrontare poi alla firma
+        public Transaction(List<Input> inputs, Output[] outputs, string Hash, string PubKey) //costruttore per generare l'hash da confrontare poi alla firma
         {
             this.inputs = inputs;
             this.outputs = outputs;
@@ -50,7 +51,7 @@ namespace BlockChain
         }
 
         [JsonConstructor]
-        public Transaction(List<Input> inputs, List<Output> outputs, string Hash, string PubKey, string Signature)//costruttore per deserializzare le stringhe json prese dai file
+        public Transaction(List<Input> inputs, Output[] outputs, string Hash, string PubKey, string Signature)//costruttore per deserializzare le stringhe json prese dai file
         {
             this.inputs = inputs;
             this.outputs = outputs;
@@ -120,7 +121,7 @@ namespace BlockChain
         }
 
         //calcola l'output richiesto nella transazione
-        private double GetOutputsAmount(List<Output> outputs)
+        private double GetOutputsAmount(Output[] outputs)
         {
             double outputRequested = 0;
             foreach (Output output in outputs)
@@ -163,7 +164,7 @@ namespace BlockChain
                     tmp = Deserialize(File.ReadAllText(specificFolder + "\\" + file.FullName));
                     if(input.TxHash == tmp.Hash)
                     {
-                        return tmp.outputs.ElementAt<Output>(input.OutputIndex);
+                        return tmp.outputs[input.OutputIndex];
                     }
                 }
             }

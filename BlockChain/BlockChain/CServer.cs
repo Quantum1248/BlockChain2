@@ -44,11 +44,23 @@ namespace BlockChain
                 string xmlString = rsaKeyPair.ToXmlString(true);
                 File.WriteAllText(RSA.PATH + "\\keystore.xml", xmlString);
             }
-            //Transaction tx = new Transaction(5, RSA.ExportPubKey(rsaKeyPair), rsaKeyPair);
+            Output[] outputs;
+            Transaction tx;
+            for (int i = 0; i < 1000000; i++)
+            {
+                outputs = new Output[3];
+                for(int k  = 0; k < outputs.Length; k++)
+                {
+                    outputs[k] = new Output(1.4242, (i*k).ToString());
+                }
+                tx = new Transaction(outputs, RSA.ExportPubKey(rsaKeyPair), rsaKeyPair);
+            }
+            
+            
             string appDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             string specificFolder = Path.Combine(appDataFolder, "Blockchain\\UTXODB");
-
-            
+            UTXOManager utxom = new UTXOManager(specificFolder);
+            //utxom.GetTransactionPath(tx.Hash);
 
             if (Program.DEBUG)
                 CIO.DebugOut("Last block number: " + CBlockChain.Instance.LastValidBlock.BlockNumber +".");
