@@ -44,23 +44,27 @@ namespace BlockChain
                 string xmlString = rsaKeyPair.ToXmlString(true);
                 File.WriteAllText(RSA.PATH + "\\keystore.xml", xmlString);
             }
+
+            //TODO: testare la verifica e la creazione delle transazioni con le nuove funzioni e modifiche implementate in Transaction.cs e UTXOManager.cs
+            //TODO: testare nuovi metodi di encoding in RSA.cs, non vogliamo che si fottano tutte le firme digitali e annesse verifiche, o no?
             Output[] outputs;
-            Transaction tx;
-            for (int i = 0; i < 1000000; i++)
+            
+            Transaction tx; ;
+            UTXOManager.Instance.SpendUTXO("314f04b30f62e0056bd059354a5536fb2e302107eed143b5fa2aa0bbba07f608", @"8yeeMidRStH4QvdNAr6fzwaaJ92hlSpcplki/KRSjy8=", 0);
+
+            for (int i = 0; i < 1000000; i += 3)
             {
                 outputs = new Output[3];
                 for(int k  = 0; k < outputs.Length; k++)
                 {
-                    outputs[k] = new Output(1.4242, (i*k).ToString());
+                    outputs[k] = new Output(1.4242, Utilities.ByteArrayToString(SHA256Managed.Create().ComputeHash(Encoding.ASCII.GetBytes(((i + k).ToString())))));
                 }
                 tx = new Transaction(outputs, RSA.ExportPubKey(rsaKeyPair), rsaKeyPair);
             }
             
             
-            string appDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string specificFolder = Path.Combine(appDataFolder, "Blockchain\\UTXODB");
-            UTXOManager utxom = new UTXOManager(specificFolder);
-            //utxom.GetTransactionPath(tx.Hash);
+            
+            
 
             if (Program.DEBUG)
                 CIO.DebugOut("Last block number: " + CBlockChain.Instance.LastValidBlock.BlockNumber +".");

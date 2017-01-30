@@ -81,7 +81,7 @@ namespace BlockChain
             while (!found)
             {
                 toHash = this.previousBlock.Hash + this.Nonce + this.Timestamp + this.Transiction + this.MerkleRoot; //si concatenano vari parametri del blocco TODO: usare i parmetri giusti, quelli usati qua sono solo per dimostrazione e placeholder
-                hash = Convert.ToBase64String(SCrypt.ComputeDerivedKey(Encoding.UTF8.GetBytes(toHash), Encoding.UTF8.GetBytes(toHash), 1024, 1, 1, 1, 32)); //calcola l'hash secondo il template di scrypt usato da litecoin
+                hash = Utilities.ByteArrayToString(SCrypt.ComputeDerivedKey(Encoding.ASCII.GetBytes(toHash), Encoding.ASCII.GetBytes(toHash), 1024, 1, 1, 1, 32)); //calcola l'hash secondo il template di scrypt usato da litecoin
                 for (int i = 0; i <= Difficutly; i++)
                 {
                     if (i == Difficutly) //se il numero di zeri davanti la stringa è pari alla difficoltà del blocco, viene settato l'hash e si esce
@@ -131,9 +131,9 @@ namespace BlockChain
                 {
                     hashSum += hashSum;
                 }
-                hashSum = Convert.ToBase64String(Encoding.UTF8.GetBytes(hashSum)); //dopo essere stati concatenati, gli hash delle transazioni sono passati attraverso una funzione hash
+                //hashSum = Convert.ToBase64String(Encoding.ASCII.GetBytes(hashSum)); //dopo essere stati concatenati, gli hash delle transazioni sono passati attraverso una funzione hash
                 
-                hashList.Add(Convert.ToBase64String(SHA256Managed.Create().ComputeHash(Convert.FromBase64String(hashSum))));
+                hashList.Add(Utilities.ByteArrayToString(SHA256Managed.Create().ComputeHash(Utilities.StringToByteArray(hashSum))));
             }
             if(hashList.Count == 1) //quando si arriva all'hash del nodo root ci si ferma
             {
