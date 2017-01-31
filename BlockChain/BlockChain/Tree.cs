@@ -80,7 +80,7 @@ namespace BlockChain
         private int mAdd(CBlock b,int Level)
         {
             int tmp;
-            if (b.PreviusBlock.Hash == Root.Hash)
+            if (b.PreviusBlockHash == Root.Hash)
             {
                 mChildren.Add(new CSideChainTree(b, MaxDepth));
                 if (ChildDepth < 1)

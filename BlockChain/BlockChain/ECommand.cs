@@ -13,6 +13,7 @@ namespace BlockChain
         UPDPEERS,
         GETLASTVALID,
         DOWNLOADBLOCK,
-        DOWNLOADBLOCKS
+        DOWNLOADBLOCKS,
+        RCVMINEDBLOCK
     }
 }

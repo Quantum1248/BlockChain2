@@ -105,6 +105,7 @@ namespace BlockChain
             }
         }
 
+        #region NetworkCommunications
         public void SendCommand(ECommand Cmd)
         {
             switch (Cmd)
@@ -136,18 +137,15 @@ namespace BlockChain
             SendString(msg);
         }
 
-        /*
-        public CBlock[] ReceiveBlocks()
+        public void SendBlock(CBlock b)
         {
-            List<CBlock> ris = new List<CBlock>;
-            string msg = ReceiveString();
-            foreach (string block in msg.Split('/'))
-            {
-
-                ris[rangeInDownload.Start + (ulong)c++] = new CTemporaryBlock(JsonConvert.DeserializeObject<CBlock>(block), peer);
-            }
+            SendString(JsonConvert.SerializeObject(b));
         }
-        */
+
+        public CBlock ReceiveBlock()
+        {
+            return JsonConvert.DeserializeObject<CBlock>(ReceiveString());
+        }
 
         public void SendString(string Msg)
         {
@@ -179,7 +177,7 @@ namespace BlockChain
         {
             return CServer.ReceiveData(mSocket);
         }
-
+        #endregion NetworkCommunications
 
 
         /// <summary>
@@ -208,7 +206,7 @@ namespace BlockChain
                                 case ECommand.UPDPEERS:
                                     if (Program.DEBUG)
                                         Console.WriteLine("UPDPEERS received by" + mIp);
-                                    CPeers.Instance.DoRequest(ERequest.SendPeersList,this);
+                                    CPeers.Instance.DoRequest(ERequest.SendPeersList, this);
                                     break;
                                 case ECommand.GETLASTVALID:
                                     if (Program.DEBUG)
@@ -216,11 +214,15 @@ namespace BlockChain
                                     SendString(CBlockChain.Instance.LastValidBlock.Serialize());
                                     break;
                                 case ECommand.DOWNLOADBLOCKS:
-                                        if (Program.DEBUG)
+                                    if (Program.DEBUG)
                                         Console.WriteLine("DOWNLOADBLOCKS received by" + mIp);
                                     ulong initialIndex = ReceiveULong();
                                     ulong finalIndex = ReceiveULong();
-                                    SendBlocks(RetriveBlocks(initialIndex,finalIndex));
+                                    SendBlocks(RetriveBlocks(initialIndex, finalIndex));
+                                    break;
+                                case ECommand.RCVMINEDBLOCK:
+                                    CTemporaryBlock newBlock =new CTemporaryBlock(ReceiveBlock(),this);
+                                    CBlockChain.Instance.Add(newBlock);
                                     break;
                                 default:
                                     break;

@@ -16,5 +16,6 @@ namespace BlockChain
         LastValidBlock,
         DownloadMissingValidBlock,
         DownloadSixtyBlock,
+        BroadcastMinedBlock,
     }
 }

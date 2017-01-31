@@ -107,6 +107,19 @@ namespace BlockChain
                     ulong startingIndex = Convert.ToUInt64(args[0]);
                     ulong finalIndex = Convert.ToUInt64(args[1]);
                     return DistribuiteDownloadBlocks(startingIndex, finalIndex);
+                case ERequest.BroadcastMinedBlock:
+                    CBlock b = Arg as CBlock;
+                    foreach (CPeer p in mPeers)
+                    {
+                        p.SendCommand(ECommand.LOOK);
+                        if (p.ReceiveCommand() == ECommand.OK)
+                        {
+                            p.SendCommand(ECommand.RCVMINEDBLOCK);
+                            p.SendBlock(b);
+                        }
+
+                    }
+                    break;
                 default:
                     throw new ArgumentException("Invalid request.");
             }

@@ -6,6 +6,7 @@ namespace BlockChain
     public class CBlock
     {
         public string Hash;
+        public string PreviusBlockHash;
         public ulong BlockNumber;
         public string Transiction;
         public ulong Nonce;

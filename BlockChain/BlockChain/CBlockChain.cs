@@ -129,5 +129,10 @@ namespace BlockChain
             //throw new System.NotImplementedException();
             return b.Length;
         }
+
+        internal void Add(CTemporaryBlock newBlock)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
