@@ -119,15 +119,33 @@ namespace BlockChain
         }
             
 
-        internal static bool Validate(CBlock b)
+        public static bool Validate(CBlock b)
         {
             throw new System.NotImplementedException();
         }
 
-        public int Add(CBlock[] b)
+        public int Add(CTemporaryBlock[] Blocks)
         {
-            //throw new System.NotImplementedException();
-            return b.Length;
+            int c = 0;
+            ulong lastValidIndex = 0;
+            string filepath = PATH + "\\" + FILENAME;
+            //(!) e se scarico tutta la blockchain da un certo punto in poi sbagliata?
+            foreach (CTemporaryBlock b in Blocks)
+            {
+                if (b == null)
+                    break;
+                if (Validate(b))
+                {
+                    File.AppendAllText(filepath, (b as CBlock).Serialize());
+                }
+                else
+                {
+                    lastValidIndex =Convert.ToUInt64(CPeers.Instance.DoRequest(ERequest.FindLastCommonIndex));
+                    FaiQualcosaDiMagico();
+                }
+                c++;
+            }
+            return c;
         }
 
         internal void Add(CTemporaryBlock newBlock)

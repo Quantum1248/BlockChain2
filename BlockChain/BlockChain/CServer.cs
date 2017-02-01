@@ -160,35 +160,50 @@ namespace BlockChain
 
         private void UpdateBlockchain()
         {
-
+            bool isSynced = false;
             CTemporaryBlock[] newBlocks;
-            CTemporaryBlock otherLastValidBlc = mPeers.DoRequest(ERequest.LastValidBlock) as CTemporaryBlock;
+            CHeaderChain[] forkChain;
+            CHeaderChain bestChain;
+            CTemporaryBlock lastCommonBlock= mPeers.DoRequest(ERequest.LastCommonValidBlock) as CTemporaryBlock;
+            CTemporaryBlock otherLastValidBlock = mPeers.DoRequest(ERequest.LastValidBlock) as CTemporaryBlock;
             if (Program.DEBUG)
-                if (otherLastValidBlc != null)
-                    CIO.DebugOut("Il numero di blocco di otherLastValidBlock è " + otherLastValidBlc.BlockNumber + ".");
+                if (otherLastValidBlock != null)
+                    CIO.DebugOut("Il numero di blocco di otherLastValidBlock è " + otherLastValidBlock.BlockNumber + ".");
                 else
                     CIO.DebugOut("Nessun otherLastValidBlock ricevuto.");
-            
-            if (CBlockChain.Instance.LastValidBlock.BlockNumber <= otherLastValidBlc?.BlockNumber)
+            if (CBlockChain.Instance.LastValidBlock.BlockNumber < otherLastValidBlock?.BlockNumber)
+                isSynced = false;
+            else
+                isSynced = true;
+
+            //TODO potrebbero dover essere scaricati un numero maggiore di MAXINT blocchi
+            while (!isSynced)
             {
-                //TODO potrebbero dover essere scaricati un numero maggiore di MAXINT blocchi
-                newBlocks=mPeers.DoRequest(ERequest.DownloadMissingBlock, new object[] {CBlockChain.Instance.LastValidBlock.BlockNumber, otherLastValidBlc.BlockNumber }) as CTemporaryBlock[];
+                newBlocks = mPeers.DoRequest(ERequest.DownloadMissingBlock, new object[] { CBlockChain.Instance.LastValidBlock.BlockNumber, lastCommonBlock.BlockNumber }) as CTemporaryBlock[];
                 CBlockChain.Instance.Add(newBlocks);
+                forkChain = mPeers.DoRequest(ERequest.FindForkChain, lastCommonBlock) as CHeaderChain[];
+                if (forkChain.Length > 0)
+                {
+                    foreach (CHeaderChain hc in forkChain)
+                        hc.DownloadHeader();
+                    bestChain = CBlockChain.Instance.BestChain(forkChain);
+                    bestChain.DownloadBlocks();
+                    if(CBlockChain.Instance.Validate(bestChain))
+                    {
+                        CBlockChain.Instance.Add(bestChain.Blocks);
+                        CMiner.Instance.Start();
+                        mPeers.CanReceiveBlock = true;
+                    }
+                    else
+                    {
+                        mPeers.InvalidPeers(bestChain.Peers);
+                        otherLastValidBlock = mPeers.DoRequest(ERequest.LastValidBlock) as CTemporaryBlock;
+                        lastCommonBlock = mPeers.DoRequest(ERequest.LastCommonValidBlock) as CTemporaryBlock;
+                    }
+                }
             }
 
-            //TODO Abilitare la ricezione di nuovi blocchi.
             
-            /*
-            CTemporaryBlock[] newBlocks;
-            CTemporaryBlock otherLastValidBlock = mPeers.DoRequest(ERequest.LastValidBlock) as CTemporaryBlock;
-
-            newBlocks = mPeers.DoRequest(ERequest.DownloadMissingBlock, new object[] { CBlockChain.Instance.LastValidBlock.BlockNumber,otherLastValidBlock.BlockNumber) as CTemporaryBlock[];
-            if (Program.DEBUG)
-                CIO.DebugOut("Scaricati " + newBlocks.Length + " nuovi blocchi.");
-            int added=CBlockChain.Instance.Add(newBlocks);
-            if (Program.DEBUG)
-                CIO.DebugOut("Aggiunti alla blockchain " + added + " blocchi validi.");
-                */
         }
 
         private void InsertNewPeer(Socket NewConnection)
