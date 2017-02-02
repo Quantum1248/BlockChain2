@@ -55,6 +55,7 @@
     <Compile Include="CBlockChain.cs" />
     <Compile Include="CGenesisBlock.cs" />
     <Compile Include="CIO.cs" />
+    <Compile Include="CoinbaseTransaction.cs" />
     <Compile Include="CPeer.cs" />
     <Compile Include="CPeers.cs" />
     <Compile Include="CServer.cs" />
@@ -62,8 +63,10 @@
     <Compile Include="ECommand.cs" />
     <Compile Include="ERequest.cs" />
     <Compile Include="Input.cs" />
+    <Compile Include="MemPool.cs" />
     <Compile Include="MerkleNode.cs" />
     <Compile Include="MerkleTree.cs" />
+    <Compile Include="Miner.cs" />
     <Compile Include="Output.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

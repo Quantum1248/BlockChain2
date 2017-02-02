@@ -47,7 +47,7 @@ namespace BlockChain
 
             //TODO: testare la verifica e la creazione delle transazioni con le nuove funzioni e modifiche implementate in Transaction.cs e UTXOManager.cs
             //TODO: testare nuovi metodi di encoding in RSA.cs, non vogliamo che si fottano tutte le firme digitali e annesse verifiche, o no?
-            Output[] outputs;
+            /*Output[] outputs;
             
             Transaction tx; ;
             UTXOManager.Instance.SpendUTXO("314f04b30f62e0056bd059354a5536fb2e302107eed143b5fa2aa0bbba07f608", @"8yeeMidRStH4QvdNAr6fzwaaJ92hlSpcplki/KRSjy8=", 0);
@@ -60,7 +60,7 @@ namespace BlockChain
                     outputs[k] = new Output(1.4242, Utilities.ByteArrayToString(SHA256Managed.Create().ComputeHash(Encoding.ASCII.GetBytes(((i + k).ToString())))));
                 }
                 tx = new Transaction(outputs, RSA.ExportPubKey(rsaKeyPair), rsaKeyPair);
-            }
+            }*/
             
             
             

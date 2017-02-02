@@ -4,49 +4,50 @@ using System.Text;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace BlockChain
 {
-    public class CBlock
+    class CBlock
     {
-        //TODO: aggiungere riferimento a blocco precedente
-        public CBlock previousBlock;
+        
+        public string prevBlockHash;
         public string Hash;
         public ulong BlockNumber;
-        public string Transiction;
+        public List<Transaction> Transactions;
         public string MerkleRoot;
+        public DateTime Timestamp; //TODO!: enorme problema di sicurezza
         public ulong Nonce;
-        public ulong Timestamp;
-        public ushort Difficutly;
+        public ushort Difficulty;
         public static int TargetMiningTime = 60;
 
-        public CBlock()
-        { }
-
-        
-        public CBlock(string Hash, ulong NumBlock, string Transiction, ulong Nonce, ulong Timestamp, ushort Difficutly)
-        {
-            this.Hash = Hash;
-            this.BlockNumber = NumBlock;
-            this.Transiction = Transiction;
-            this.Nonce = 0; //TODO inserire nonce come parametro opzionale o toglierlo, il valore deve partire da 0
-            this.Timestamp = Timestamp;
-            this.Difficutly = Difficutly;
-        }
-
-        public CBlock(ulong NumBlock, List<string> Transactions, ulong Timestamp, ushort Difficutly)
+        //Ogni blocco viene inizializzato con le transazioni al momento contenute nella MemPool.
+        //TODO: E' da implementare il caricamento asincrono di transazioni parallelo al mining
+        public CBlock(ulong NumBlock, ushort Difficulty, int txLimit = 5)
         {
             this.BlockNumber = NumBlock;
             this.Nonce = 0;
-            this.Timestamp = Timestamp;
-            this.Difficutly = Difficutly;
-            GenerateMerkleRoot(Transactions);
-            //this.previousBlock = CBlockChain.GetLastBlock();
+            this.Difficulty = Difficulty;
+            this.Transactions = GetTxFromMemPool(txLimit);
+            List<string> strList = new List<string>();
+            foreach(Transaction tx in Transactions)
+            {
+                strList.Add(tx.Serialize());
+            }
+            this.Timestamp = DateTime.Now;
+            GenerateMerkleRoot(strList);
+            //TODO: implementare funzione per rpendere last block hash
+        }
+
+        private List<Transaction> GetTxFromMemPool(int txLimit)
+        {
+            //Si assume che le transazioni in MemPool siano già state validate.
+            return new List<Transaction>();            
         }
 
         public string Serialize()
         {
-            return "{" + Hash + ";" + BlockNumber + ";" + Transiction + ";" + Nonce + ";" + Timestamp + ";" + Difficutly + "}";
+            return "{" + Hash + ";" + BlockNumber + ";" + ";" + Nonce + ";" + Timestamp + ";" + Difficulty + "}";
         }
 
         /// <summary>
@@ -55,57 +56,7 @@ namespace BlockChain
         /// <param name="BlockString">Stringa che rappresenta l'oggetto CBlock.</param>
         public static CBlock Deserialize(string SerializedBlock)
         {
-            //forse è meglio usarlo come costruttore
-            string[] blockField;
-            SerializedBlock = SerializedBlock.Trim('{', '}');
-            blockField = SerializedBlock.Split(';');
-            if (Program.DEBUG)
-                CIO.DebugOut("Deserializing block number: "+ blockField[1]+".");
-            return new CBlock(blockField[0], Convert.ToUInt64(blockField[1]), blockField[2], Convert.ToUInt64(blockField[3]), Convert.ToUInt64(blockField[4]), Convert.ToUInt16(blockField[5]));
-        }
-
-        /*
-        public ulong BlockNumber
-        {
-            get { return mBlockNumber; }
-        }
-        */
-
-        private void Scrypt() //TODO: verificare singole transazioni
-        {
-            string toHash;
-            string hash;
-            bool found = false;
-            int higher = 0, current = 0;
-
-            while (!found)
-            {
-                toHash = this.previousBlock.Hash + this.Nonce + this.Timestamp + this.Transiction + this.MerkleRoot; //si concatenano vari parametri del blocco TODO: usare i parmetri giusti, quelli usati qua sono solo per dimostrazione e placeholder
-                hash = Utilities.ByteArrayToString(SCrypt.ComputeDerivedKey(Encoding.ASCII.GetBytes(toHash), Encoding.ASCII.GetBytes(toHash), 1024, 1, 1, 1, 32)); //calcola l'hash secondo il template di scrypt usato da litecoin
-                for (int i = 0; i <= Difficutly; i++)
-                {
-                    if (i == Difficutly) //se il numero di zeri davanti la stringa è pari alla difficoltà del blocco, viene settato l'hash e si esce
-                    {
-                        this.Hash = hash;
-                        return;
-                    }
-                    if (!(hash[i] == '0'))
-                    {
-                        current = 0;
-                        break;
-                    }
-
-                    current++;
-                    if(higher < current)
-                    {
-                        higher = current;
-                    }
-                    
-                }
-                
-                this.Nonce++; //incremento della nonce per cambiare hash
-            }
-            
+            return JsonConvert.DeserializeObject<CBlock>(SerializedBlock);
         }
 
         private void GenerateMerkleRoot(List<string> transactions) 

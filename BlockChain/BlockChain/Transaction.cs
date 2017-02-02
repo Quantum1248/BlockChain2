@@ -41,7 +41,33 @@ namespace BlockChain
                 File.WriteAllText(specificFolder + "\\" + this.Hash + ".json", utxo.Serialize());
             }
         }
-        
+
+        public Transaction(double amount, string hashReceiver, string PubKey, RSACryptoServiceProvider csp) //costruttore legittimo
+        {
+
+            this.outputs = new Output[1];
+            this.outputs[1] = new Output(amount, hashReceiver);
+            this.inputs = this.GetEnoughInputs(); //forse vanno anche controllate le firme ma non penso           
+            this.PubKey = PubKey;
+            this.Hash = Utilities.ByteArrayToString(SHA256Managed.Create().ComputeHash(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(this)))); //Calcolo l'hash di questa transazione inizializzata fino a questo punto, esso farà da txId
+            this.Signature = RSA.Sign(Encoding.ASCII.GetBytes(this.Serialize()), csp.ExportParameters(true), false); //firmo la transazione fino a questo punto
+
+            //salvo la transazione sul disco
+            string appDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string specificFolder = Path.Combine(appDataFolder, "Blockchain\\UTXODB");
+            UTXO utxo = new UTXO(this.Hash, this.outputs);
+            if (Directory.Exists(specificFolder))
+            {
+
+                File.WriteAllText(specificFolder + "\\" + this.Hash + ".json", utxo.Serialize());
+            }
+            else
+            {
+                Directory.CreateDirectory(specificFolder);
+                File.WriteAllText(specificFolder + "\\" + this.Hash + ".json", utxo.Serialize());
+            }
+        }
+
         public Transaction(List<Input> inputs, Output[] outputs, string Hash, string PubKey) //costruttore per generare l'hash da confrontare poi alla firma
         {
             this.inputs = inputs;
@@ -60,6 +86,18 @@ namespace BlockChain
             this.Signature = Signature;
         }
 
+        public void Broadcast()
+        {
+            if (this.Verify())
+            {
+                //TODO: sostituire true con funzione per controllare se il client sta minando
+                if (true)
+                {
+                    MemPool.Instance.AddUTX(this);
+                }
+                //TODO: implementare funzione per inoltrare transazione, o creare una funzione nella classe CPeer che in base al valore ritornato da Verify() inoltri o meno
+            }
+        }
         //verifica della transazione
         public bool Verify()
         {
@@ -74,8 +112,9 @@ namespace BlockChain
                 if (!this.CheckUTXO()) { return false; }
                 //si verifica che gli output non spendano più di quanto referenziato dagli input
                 if (!(this.GetInputsAmount() >= this.GetOutputsAmount())) { return false; }
+                return true;
             }
-            return false;            
+            return false;
         }
 
         private bool CheckUTXO()
@@ -154,6 +193,8 @@ namespace BlockChain
             }
             return null;
         }
+
+        
         public string Serialize()
         {
             return JsonConvert.SerializeObject(this);
