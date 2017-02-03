@@ -33,6 +33,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="CryptSharp, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\CryptSharpOfficial.2.1.0.0\lib\CryptSharp.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
@@ -53,19 +57,27 @@
     <Compile Include="CGenesisBlock.cs" />
     <Compile Include="CHeaderChain.cs" />
     <Compile Include="CIO.cs" />
+    <Compile Include="CoinbaseTransaction.cs" />
     <Compile Include="CPeer.cs" />
     <Compile Include="CPeers.cs" />
     <Compile Include="CServer.cs" />
     <Compile Include="CTemporaryBlock.cs" />
     <Compile Include="ECommand.cs" />
     <Compile Include="ERequest.cs" />
-    <Compile Include="PoW.cs" />
+    <Compile Include="Input.cs" />
+    <Compile Include="MemPool.cs" />
+    <Compile Include="MerkleNode.cs" />
+    <Compile Include="MerkleTree.cs" />
+    <Compile Include="Miner.cs" />
+    <Compile Include="Output.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RSA.cs" />
-    <Compile Include="SHA1WIP.cs" />
     <Compile Include="Transaction.cs" />
     <Compile Include="Tree.cs" />
+    <Compile Include="Utilities.cs" />
+    <Compile Include="UTXO.cs" />
+    <Compile Include="UTXOManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

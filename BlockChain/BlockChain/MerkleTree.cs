@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 
 namespace BlockChain
 {
-    static class PoW
+    //TODO
+    class MerkleTree
     {
-
+        public MerkleNode Root { get; set; }
     }
 }
