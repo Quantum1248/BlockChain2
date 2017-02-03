@@ -42,7 +42,7 @@ namespace BlockChain
         private List<Transaction> GetTxFromMemPool(int txLimit)
         {
             //Si assume che le transazioni in MemPool siano già state validate.
-            return new List<Transaction>();            
+            return MemPool.Instance.GetTx(txLimit);            
         }
 
         public string Serialize()

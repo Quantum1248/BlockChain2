@@ -7,10 +7,11 @@ using System.Threading.Tasks;
 
 namespace BlockChain
 {
-    //nella classe MemPool vanno inserite le transazioni non confermate. SOLO un client che sta minando inserirà le transazioni nella MemPool
+    //nella classe MemPool vanno inserite le transazioni non confermate. SOLO un client che sta minando inserirà le transazioni nella MemPool.
+    //Va inizializzata all' inizio del mining, ogni transazione confermata va inserita qui
     class MemPool
     {
-        public Hashtable HashTable;
+        public List<Transaction> TxList;
 
         private static MemPool instance;
 
@@ -28,22 +29,50 @@ namespace BlockChain
 
         private MemPool()
         {
-            this.HashTable = new Hashtable();
+            this.TxList = new List<Transaction>();
         }
 
         public void AddUTX(Transaction utx)
         {
-            this.HashTable.Add(utx.Hash, utx);
+            this.TxList.Add(utx);
         }
 
         public Transaction GetUTX(string utxHash)
         {
-            return (Transaction)this.HashTable[utxHash];
+            foreach(Transaction tx in this.TxList)
+            {
+                if(utxHash == tx.Hash)
+                {
+                    this.TxList.Remove(tx);
+                    return tx;
+                }
+            }
+            return null;
+            
         }
 
         public void RemoveUTX(string utxHash)
         {
-            this.HashTable.Remove(utxHash);
+            foreach (Transaction tx in this.TxList)
+            {
+                if (utxHash == tx.Hash)
+                {
+                    this.TxList.Remove(tx);
+                    return;
+                }
+            }
+            
+        }
+
+        public void DumpBlock(CBlock block)
+        {
+            foreach(Transaction tx in block.Transactions)
+            {
+                if(!(tx.inputs.Count == 0))
+                {
+                    this.AddUTX(tx);
+                }
+            }
         }
     }
 }

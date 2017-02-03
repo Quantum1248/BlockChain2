@@ -52,20 +52,7 @@ namespace BlockChain
             this.Hash = Utilities.ByteArrayToString(SHA256Managed.Create().ComputeHash(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(this)))); //Calcolo l'hash di questa transazione inizializzata fino a questo punto, esso farà da txId
             this.Signature = RSA.Sign(Encoding.ASCII.GetBytes(this.Serialize()), csp.ExportParameters(true), false); //firmo la transazione fino a questo punto
 
-            //salvo la transazione sul disco
-            string appDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string specificFolder = Path.Combine(appDataFolder, "Blockchain\\UTXODB");
-            UTXO utxo = new UTXO(this.Hash, this.outputs);
-            if (Directory.Exists(specificFolder))
-            {
-
-                File.WriteAllText(specificFolder + "\\" + this.Hash + ".json", utxo.Serialize());
-            }
-            else
-            {
-                Directory.CreateDirectory(specificFolder);
-                File.WriteAllText(specificFolder + "\\" + this.Hash + ".json", utxo.Serialize());
-            }
+            CPeers.Instance.DoRequest(ERequest.SendTransaction, this);
         }
 
         public Transaction(List<Input> inputs, Output[] outputs, string Hash, string PubKey) //costruttore per generare l'hash da confrontare poi alla firma
