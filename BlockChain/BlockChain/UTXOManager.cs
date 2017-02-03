@@ -119,7 +119,7 @@ namespace BlockChain
             }
             return null;
         }
-
+        //aaa
         public Output RetrieveRemoveUTXO(string hash, string txHash, int outputIndex)
         {
             Output output;
