@@ -10,8 +10,7 @@ namespace BlockChain
     {
         public CGenesisBlock()
         {
-            this.Hash = "GENESISBLOCK";
-            this.BlockNumber = 0;
+            Header = new CHeader(0, "GENESISBLOCK", "");
             this.Transiction = "";
             this.Nonce = 0;
             this.Timestamp = 0;

@@ -16,5 +16,9 @@ namespace BlockChain
         LastValidBlock,
         DownloadMissingValidBlock,
         DownloadSixtyBlock,
+        BroadcastMinedBlock,
+        FindLastCommonIndex,
+        LastCommonValidBlock,
+        FindForkChain
     }
 }

@@ -10,10 +10,9 @@ namespace BlockChain
 {
     class CBlock
     {
-        
-        public string prevBlockHash;
-        public string Hash;
-        public ulong BlockNumber;
+
+        public CHeader Header;
+        public string Transiction;
         public List<Transaction> Transactions;
         public string MerkleRoot;
         public DateTime Timestamp; //TODO!: enorme problema di sicurezza
@@ -21,6 +20,18 @@ namespace BlockChain
         public ushort Difficulty;
         public static int TargetMiningTime = 60;
 
+
+        public CBlock()
+        { }
+
+        public CBlock(ulong NumBlock,string Hash,string PreviusBlockHash, string Transiction, ulong Nonce, ulong Timestamp, ushort Difficutly)
+        {
+            Header = new CHeader(NumBlock, Hash, PreviusBlockHash);
+            this.Transiction = Transiction;
+            this.Nonce = Nonce;
+            this.Timestamp = Timestamp;
+            this.Difficutly = Difficutly;
+        }
         //Ogni blocco viene inizializzato con le transazioni al momento contenute nella MemPool.
         //TODO: E' da implementare il caricamento asincrono di transazioni parallelo al mining
         public CBlock(ulong NumBlock, ushort Difficulty, int txLimit = 5)
@@ -43,11 +54,13 @@ namespace BlockChain
         {
             //Si assume che le transazioni in MemPool siano già state validate.
             return new List<Transaction>();            
+
         }
 
         public string Serialize()
         {
-            return "{" + Hash + ";" + BlockNumber + ";" + ";" + Nonce + ";" + Timestamp + ";" + Difficulty + "}";
+            //return "{" + Hash + ";" + BlockNumber + ";" + Transiction + ";" + Nonce + ";" + Timestamp + ";" + Difficutly + "}";
+            return JsonConvert.SerializeObject(this); 
         }
 
         /// <summary>
@@ -56,6 +69,14 @@ namespace BlockChain
         /// <param name="BlockString">Stringa che rappresenta l'oggetto CBlock.</param>
         public static CBlock Deserialize(string SerializedBlock)
         {
+            /*
+            string[] blockField;
+            SerializedBlock = SerializedBlock.Trim('{', '}');
+            blockField = SerializedBlock.Split(';');
+            if (Program.DEBUG)
+                CIO.DebugOut("Deserializing block number: " + blockField[1] + ".");
+            return new CBlock(blockField[0], Convert.ToUInt64(blockField[1]), blockField[2], Convert.ToUInt64(blockField[3]), Convert.ToUInt64(blockField[4]), Convert.ToUInt16(blockField[5]));
+            */
             return JsonConvert.DeserializeObject<CBlock>(SerializedBlock);
         }
 
