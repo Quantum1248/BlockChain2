@@ -19,7 +19,7 @@ namespace BlockChain
         private RSACryptoServiceProvider csp = null;
         private RSACryptoServiceProvider cspMine;
         private Thread mThreadListener;
-        private bool mConnect;
+        private bool mIsConnected;
         private CPeer()
         {
         }
@@ -30,7 +30,7 @@ namespace BlockChain
             mPort = Port;
             //IPEndPoint peerEndPoint = new IPEndPoint(IP_Address,Port);    Serve per fare il connect
             mSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            mConnect = false;
+            mIsConnected = false;
         }
 
         private CPeer(IPAddress IP_Address, int Port, Socket Sck)
@@ -38,7 +38,7 @@ namespace BlockChain
             mIp = IP_Address;
             mPort = Port;
             mSocket = Sck;
-            mConnect = true;
+            mIsConnected = true;
         }
 
         //Ritorna l'oggetto solo se i parametri sono corretti
@@ -91,7 +91,7 @@ namespace BlockChain
             {
                 if (Program.DEBUG)
                     CIO.DebugOut("Connection with " + mIp + ":" + mPort+" enstablished!");
-                mConnect = true;
+                mIsConnected = true;
                 mThreadListener = new Thread(new ThreadStart(Listen));
                 mThreadListener.Start();
                 return true;
@@ -103,6 +103,15 @@ namespace BlockChain
                 asyncConnection.Dispose();
                 return false;
             }
+        }
+
+        public void Disconnect()
+        {
+            SendCommand(ECommand.DISCONNETC);
+            mSocket.Close();
+            mSocket.Dispose();//(!) in teoria è inutile perchè fa già tutto Close()
+            CPeers.Instance.InvalidPeers(new CPeer[] { this });
+            mIsConnected = false;
         }
 
         #region NetworkCommunications
@@ -147,9 +156,19 @@ namespace BlockChain
             return JsonConvert.DeserializeObject<CBlock>(ReceiveString());
         }
 
+        public void SendHeader(CHeader Header)
+        {
+            SendString(JsonConvert.SerializeObject(Header));
+        }
+
+        public CHeader ReceiveHeader()
+        {
+            return JsonConvert.DeserializeObject<CHeader>(ReceiveString());
+        }
+
         public void SendString(string Msg)
         {
-            SendData(ASCIIEncoding.ASCII.GetBytes(Msg));//non è asincrono!!
+            SendData(ASCIIEncoding.ASCII.GetBytes(Msg));
         }
 
         public string ReceiveString()
@@ -159,7 +178,7 @@ namespace BlockChain
 
         public void SendULong(ulong Nmb)
         {
-            SendData(BitConverter.GetBytes(Nmb));//non è asincrono!!
+            SendData(BitConverter.GetBytes(Nmb));
         }
 
         public ulong ReceiveULong()
@@ -186,7 +205,7 @@ namespace BlockChain
         public void Listen()
         {
             ECommand cmd;
-            while (true)    //bisogna bloccarlo in qualche modo all'uscita del programma credo
+            while (mIsConnected)    //bisogna bloccarlo in qualche modo all'uscita del programma credo
             {
                 lock (mSocket)
                 {
@@ -220,9 +239,19 @@ namespace BlockChain
                                     ulong finalIndex = ReceiveULong();
                                     SendBlocks(RetriveBlocks(initialIndex, finalIndex));
                                     break;
+                                case ECommand.GETHEADER:
+                                    ulong index = ReceiveULong();
+                                    SendHeader(CBlockChain.Instance.RetriveBlock(index).Header);
+                                    break;
+                                case ECommand.CHAINLENGTH:
+                                    SendULong(CBlockChain.Instance.LastBlock.Header.BlockNumber);
+                                    break;
                                 case ECommand.RCVMINEDBLOCK:
-                                    CTemporaryBlock newBlock =new CTemporaryBlock(ReceiveBlock(),this);
-                                    CBlockChain.Instance.Add(newBlock);
+                                    if (CPeers.Instance.CanReceiveBlock)
+                                    {
+                                        CTemporaryBlock newBlock = new CTemporaryBlock(ReceiveBlock(), this);
+                                        CBlockChain.Instance.Add(newBlock);
+                                    }
                                     break;
                                 default:
                                     break;

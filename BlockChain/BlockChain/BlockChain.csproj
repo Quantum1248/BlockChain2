@@ -49,6 +49,7 @@
   <ItemGroup>
     <Compile Include="CBlock.cs" />
     <Compile Include="CBlockChain.cs" />
+    <Compile Include="CHeader.cs" />
     <Compile Include="CGenesisBlock.cs" />
     <Compile Include="CHeaderChain.cs" />
     <Compile Include="CIO.cs" />

@@ -14,6 +14,10 @@ namespace BlockChain
         GETLASTVALID,
         DOWNLOADBLOCK,
         DOWNLOADBLOCKS,
-        RCVMINEDBLOCK
+        RCVMINEDBLOCK,
+        DISCONNETC,
+        DOWNLOADHEADERS,
+        GETHEADER,
+        CHAINLENGTH
     }
 }

@@ -79,7 +79,7 @@ namespace BlockChain
 
                             JsonSerializer serializer = new JsonSerializer();
                             CBlock b = (CBlock)serializer.Deserialize(new JTokenReader(obj), typeof(CBlock));
-                            if (b.BlockNumber > mLastValidBlock.BlockNumber)
+                            if (b.Header.BlockNumber > mLastValidBlock.Header.BlockNumber)
                                 mLastValidBlock = b;
                         }
                     }
@@ -109,7 +109,7 @@ namespace BlockChain
 
                         JsonSerializer serializer = new JsonSerializer();
                         CBlock b = (CBlock)serializer.Deserialize(new JTokenReader(obj), typeof(CBlock));
-                        if (b.BlockNumber == Index)
+                        if (b.Header.BlockNumber == Index)
                             return b;
                     }
                 }
@@ -119,33 +119,54 @@ namespace BlockChain
         }
             
 
-        public static bool Validate(CBlock b)
+        public static bool ValidateHeaders(CHeaderChain HeaderChain)
         {
-            throw new System.NotImplementedException();
+            for(ulong i=0;i<HeaderChain.Length;i++)
+                if (HeaderChain[i].Hash != HeaderChain[i + 1].PreviusBlockHash && HeaderChain[i].BlockNumber != HeaderChain[i + 1].BlockNumber+1)//(!) il controllu sul numero serve?
+                    return false;
+            return true;
         }
 
-        public int Add(CTemporaryBlock[] Blocks)
+        public static bool Validate(CBlock b)
         {
-            int c = 0;
+            return CMiner.Instance.Validate(b);
+        }
+
+        /// <summary>
+        /// Aggiunge i blocchi presenti nel vettore e ritorna l'indice dell'ultimo blocco aggiunto.
+        /// </summary>
+        /// <param name="Blocks"></param>
+        /// <returns></returns>
+        public ulong Add(CTemporaryBlock[] Blocks)
+        {
             ulong lastValidIndex = 0;
             string filepath = PATH + "\\" + FILENAME;
-            //(!) e se scarico tutta la blockchain da un certo punto in poi sbagliata?
+            //(!) e se scarico tutta la blockchain e da un certo punto in poi sbagliata?
             foreach (CTemporaryBlock b in Blocks)
             {
                 if (b == null)
                     break;
-                if (Validate(b))
+                if (CMiner.Instance.Validate(b))
                 {
                     File.AppendAllText(filepath, (b as CBlock).Serialize());
                 }
                 else
                 {
                     lastValidIndex =Convert.ToUInt64(CPeers.Instance.DoRequest(ERequest.FindLastCommonIndex));
-                    FaiQualcosaDiMagico();
+                    return LastValidBlock.Header.BlockNumber;
                 }
-                c++;
             }
-            return c;
+            return LastValidBlock.Header.BlockNumber;
+        }
+
+        public CHeaderChain BestChain(CHeaderChain[] HeaderChains)
+        {
+            //TODO sceglie in base alla difficoltà
+            CHeaderChain res=new CHeaderChain();
+            foreach (CHeaderChain hc in HeaderChains)
+                if (hc.Length > res.Length)
+                    res = hc;
+            return res;
         }
 
         internal void Add(CTemporaryBlock newBlock)

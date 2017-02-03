@@ -43,11 +43,11 @@ namespace BlockChain
         }
     }
 
-    class CSideChainTree:CTree<CBlock>
+    class CSideChainTree:CTree<CTemporaryBlock>
     {
         public int ChildDepth=0,MaxDepth = 0;
 
-        public CSideChainTree(CBlock Root, int MaxDepth)
+        public CSideChainTree(CTemporaryBlock Root, int MaxDepth)
         {
             this.Root = Root;
             this.MaxDepth = MaxDepth;
@@ -58,16 +58,14 @@ namespace BlockChain
         /// </summary>
         /// <param name="b">Blocco da aggiungere.</param>
         /// <returns></returns>
-        public bool Add(CBlock b)
+        public bool Add(CTemporaryBlock b)
         {
-
-
             if (mAdd(b,1)>=MaxDepth)
             {
                 foreach (CSideChainTree t in mChildren)
                     if (t.ChildDepth >= this.MaxDepth - 1)
                     {
-                        CBlockChain.Instance.Add(new CBlock[] { mRoot });
+                        CBlockChain.Instance.Add(new CTemporaryBlock[] { mRoot });
                         this.Root = t.Root;
                         this.Children = t.Children;
                     }
@@ -77,10 +75,10 @@ namespace BlockChain
                 return false;
         }
 
-        private int mAdd(CBlock b,int Level)
+        private int mAdd(CTemporaryBlock b,int Level)
         {
             int tmp;
-            if (b.PreviusBlockHash == Root.Hash)
+            if (b.Header.PreviusBlockHash == Root.Header.Hash)
             {
                 mChildren.Add(new CSideChainTree(b, MaxDepth));
                 if (ChildDepth < 1)

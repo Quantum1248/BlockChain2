@@ -5,9 +5,7 @@ namespace BlockChain
 {
     public class CBlock
     {
-        public string Hash;
-        public string PreviusBlockHash;
-        public ulong BlockNumber;
+        public CHeader Header;
         public string Transiction;
         public ulong Nonce;
         public ulong Timestamp;
@@ -17,10 +15,9 @@ namespace BlockChain
         public CBlock()
         { }
 
-        public CBlock(string Hash, ulong NumBlock, string Transiction, ulong Nonce, ulong Timestamp, ushort Difficutly)
+        public CBlock(ulong NumBlock,string Hash,string PreviusBlockHash, string Transiction, ulong Nonce, ulong Timestamp, ushort Difficutly)
         {
-            this.Hash = Hash;
-            this.BlockNumber = NumBlock;
+            Header = new CHeader(NumBlock, Hash, PreviusBlockHash);
             this.Transiction = Transiction;
             this.Nonce = Nonce;
             this.Timestamp = Timestamp;
@@ -49,12 +46,5 @@ namespace BlockChain
             */
             return JsonConvert.DeserializeObject<CBlock>(SerializedBlock);
         }
-
-        /*
-        public ulong BlockNumber
-        {
-            get { return mBlockNumber; }
-        }
-        */
     }
 }

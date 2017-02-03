@@ -6,12 +6,13 @@ using System.Threading.Tasks;
 
 namespace BlockChain
 {
-    class CTemporaryBlock:CBlock
+    class CTemporaryBlock : CBlock
     {
         private CPeer mSender;
-        public CTemporaryBlock(CBlock Block, CPeer Sender):base(Block.Hash,Block.BlockNumber,Block.Transiction,Block.Nonce,Block.Timestamp,Block.Difficutly)
+        public CTemporaryBlock(CBlock Block, CPeer Sender) : base(Block.Header.BlockNumber, Block.Header.Hash, Block.Header.PreviusBlockHash, Block.Transiction, Block.Nonce, Block.Timestamp, Block.Difficutly)
         {
             mSender = Sender;
+            { }
         }
     }
 }
