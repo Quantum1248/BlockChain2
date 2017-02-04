@@ -77,6 +77,11 @@ namespace BlockChain
             get { return mSocket; }
         }
 
+        public bool IsConnected
+        {
+            get { return mIsConnected; }
+        }
+
         public bool Connect()
         {
             if (Program.DEBUG)
@@ -92,8 +97,7 @@ namespace BlockChain
                 if (Program.DEBUG)
                     CIO.DebugOut("Connection with " + mIp + ":" + mPort+" enstablished!");
                 mIsConnected = true;
-                mThreadListener = new Thread(new ThreadStart(Listen));
-                mThreadListener.Start();
+                StartListening();
                 return true;
             }
             else
@@ -119,6 +123,40 @@ namespace BlockChain
         {
             switch (Cmd)
             {
+
+                case ECommand.LOOK:
+                    SendString("LOOK");
+                    break;
+                case ECommand.OK:
+                    SendString("OK");
+                    break;
+                case ECommand.UPDPEERS:
+                    SendString("UPDPEERS");
+                    break;
+                case ECommand.GETLASTVALID:
+                    SendString("GETLASTVALID");
+                    break;
+                case ECommand.DOWNLOADBLOCK:
+                    SendString("DOWNLOADBLOCK");
+                    break;
+                case ECommand.DOWNLOADBLOCKS:
+                    SendString("DOWNLOADBLOCKS");
+                    break;
+                case ECommand.RCVMINEDBLOCK:
+                    SendString("RCVMINEDBLOCK");
+                    break;
+                case ECommand.DISCONNETC:
+                    SendString("DISCONNETC");
+                    break;
+                case ECommand.DOWNLOADHEADERS:
+                    SendString("DOWNLOADHEADERS");
+                    break;
+                case ECommand.GETHEADER:
+                    SendString("GETHEADER");
+                    break;
+                case ECommand.CHAINLENGTH:
+                    SendString("CHAINLENGTH");
+                    break;
                 default:
                     throw new ArgumentException("Comando al peer non supportato.");
             }
@@ -129,6 +167,28 @@ namespace BlockChain
             string msg = ReceiveString();
             switch(msg)
             {
+                case "LOOK":
+                    return ECommand.LOOK;
+                case "OK":
+                    return ECommand.OK;
+                case "UPDPEERS":
+                    return ECommand.UPDPEERS;
+                case "GETLASTVALID":
+                    return ECommand.GETLASTVALID;
+                case "DOWNLOADBLOCK":
+                    return ECommand.DOWNLOADBLOCK;
+                case "DOWNLOADBLOCKS":
+                    return ECommand.DOWNLOADBLOCKS;
+                case "RCVMINEDBLOCK":
+                    return ECommand.RCVMINEDBLOCK;
+                case "DISCONNETC":
+                    return ECommand.DISCONNETC;
+                case "DOWNLOADHEADERS":
+                    return ECommand.DOWNLOADHEADERS;
+                case "GETHEADER":
+                    return ECommand.GETHEADER;
+                case "CHAINLENGTH":
+                    return ECommand.CHAINLENGTH;
                 default:
                     throw new ArgumentException("Ricevuta stringa di comando non supportata.");
             }
@@ -258,7 +318,7 @@ namespace BlockChain
                             }
                         }
                     }
-                    catch
+                    catch(SocketException e)
                     {
                         Thread.Sleep(1000); //(!)forse è meglio attendere fuori dal lock. E forse non serve comunque perchè il thread si ferma già quando è in attesa di connessioni.
                     }
@@ -266,6 +326,12 @@ namespace BlockChain
                     mSocket.ReceiveTimeout = 0;
                 }
             }
+        }
+
+        public void StartListening()
+        {
+            mThreadListener = new Thread(new ThreadStart(Listen));
+            mThreadListener.Start();
         }
 
         private CBlock[] RetriveBlocks(ulong initialIndex,ulong finalIndex)

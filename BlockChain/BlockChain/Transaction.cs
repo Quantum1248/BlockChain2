@@ -17,6 +17,9 @@ namespace BlockChain
         public string Signature;
         public string PubKey;
         
+        public Transaction()
+        { }
+
         public Transaction(Output[] outputs, string PubKey, RSACryptoServiceProvider csp) //costruttore per testing
         {
             

@@ -9,7 +9,7 @@ namespace BlockChain
     class CTemporaryBlock : CBlock
     {
         private CPeer mSender;
-        public CTemporaryBlock(CBlock Block, CPeer Sender) : base(Block.Header.BlockNumber, Block.Header.Hash, Block.Header.PreviusBlockHash, Block.Transiction, Block.Nonce, Block.Timestamp, Block.Difficutly)
+        public CTemporaryBlock(CBlock Block, CPeer Sender) : base(Block.Header.BlockNumber, Block.Header.Hash, Block.Header.PreviousBlockHash, Block.Transiction, Block.Nonce, Block.Timestamp, Block.Difficulty)
         {
             mSender = Sender;
             { }

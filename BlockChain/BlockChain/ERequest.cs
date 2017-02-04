@@ -19,6 +19,7 @@ namespace BlockChain
         BroadcastMinedBlock,
         FindLastCommonIndex,
         LastCommonValidBlock,
-        FindForkChain
+        FindForkChain,
+        SendNewBlock
     }
 }

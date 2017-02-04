@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using System.Net;
+
 namespace BlockChain
 {
     class CPeers
@@ -41,39 +43,6 @@ namespace BlockChain
             mNumReserved = Reserved;
 
             instance = this;
-        }
-
-        public bool Insert(CPeer Peer, bool IsReserved = false)
-        {
-            //ritorna true se riesce ad inserire il peer, mentre false se il vettore è pieno o il peer è già presente nella lista
-            lock (mPeers) //rimane loccato se ritorno prima della parentesi chiusa??
-            {
-                //controlla che la connessione(e quindi il peer) non sia già presente
-                foreach (CPeer p in mPeers)
-                    if (p?.IP == Peer.IP)//e se ci sono più peer nella stessa rete che si collegano su porte diverse?
-                        return false;
-
-                //controlla se è il peer che si è collegato a me o sono io che mi sono collegato al peer
-                if (IsReserved)
-                    for (int i = mPeers.Length - 1; i > 0; i--)
-                    {
-                        if (mPeers[i] == null)
-                        {
-                            mPeers[i] = Peer;
-                            return true;
-                        }
-                    }
-                else
-                {
-                    for (int i = 0; i < mNumReserved; i++)
-                        if (mPeers[i] == null)
-                        {
-                            mPeers[i] = Peer;
-                            return true;
-                        }
-                }
-                return false;
-            }
         }
 
         public int NumConnection()
@@ -148,13 +117,15 @@ namespace BlockChain
                     CBlock b = Arg as CBlock;
                     foreach (CPeer p in mPeers)
                     {
-                        p.SendCommand(ECommand.LOOK);
-                        if (p.ReceiveCommand() == ECommand.OK)
+                        if (p != null)
                         {
-                            p.SendCommand(ECommand.RCVMINEDBLOCK);
-                            p.SendBlock(b);
+                            p.SendCommand(ECommand.LOOK);
+                            if (p.ReceiveCommand() == ECommand.OK)
+                            {
+                                p.SendCommand(ECommand.RCVMINEDBLOCK);
+                                p.SendBlock(b);
+                            }
                         }
-
                     }
                     break;
                 case ERequest.LastCommonValidBlock:
@@ -251,11 +222,10 @@ namespace BlockChain
             string ris = "";
             string msg;
             ECommand cmd;
-            string[] lists;
+            string[] listsPeer;
             string[] peers;
-            List<CPeer> receivedPeers = new List<CPeer>(), newPeers = new List<CPeer>();
-            for (int i = 0; i < mPeers.Length; i++)
-            {
+            CPeer receivedPeer;
+            for (int i = 0; i < mPeers.Length; i++)if (mPeers[i] != null)
                 if (mPeers[i] != null)
                 {
                     //blocca il peer e manda una richiesta di lock per bloccarlo anche dal nel suo client, così che non avvengano interferenze nella comunicazione
@@ -272,41 +242,64 @@ namespace BlockChain
                         // mPeers[i].SendData("ENDLOCK");
                     }
                 }
-            }
             ris = ris.TrimEnd('/');
 
             if (ris != "")
             {
-                lists = ris.Split('/');
-                foreach (string l in lists)
+                string externalIp = new WebClient().DownloadString("http://icanhazip.com");//trova il mio ip pubblico
+                listsPeer = ris.Split('/');
+                foreach (string l in listsPeer)
                 {
                     peers = l.Split(';');
-                    foreach (string p in peers)
+                    foreach (string rp in peers)
                     {
-                        receivedPeers.Add(DeserializePeer(p));
+                        receivedPeer = DeserializePeer(rp);
+                        if (receivedPeer.IP != externalIp)
+                            Insert(receivedPeer);
                     }
                 }
 
+            }
+        }
 
-                bool AlreadyPresent = false;
-                //controlla tutti i peer ricevuti presenti in receivedPeers e li mette ogni peer in newPeers solo se non è un doppione e se ci si è riusciti a collegarcisi
-                foreach (CPeer rp in receivedPeers)
+        public bool Insert(CPeer Peer, bool IsReserved = false)
+        {
+            //ritorna true se riesce ad inserire il peer, mentre false se il vettore è pieno o il peer è già presente nella lista
+            lock (mPeers) //rimane loccato se ritorno prima della parentesi chiusa??
+            {
+                if (NumConnection() < mPeers.Length)
                 {
-                    foreach (CPeer np in newPeers)
-                        if (rp.IP == np.IP)
+                    //controlla che la connessione(e quindi il peer) non sia già presente
+                    foreach (CPeer p in mPeers)
+                        if (p?.IP == Peer.IP)//e se ci sono più peer nella stessa rete che si collegano su porte diverse?
+                            return false;
+
+                    if (!Peer.IsConnected)
+                        if (!Peer.Connect())
+                            return false;
+                    //controlla se è il peer che si è collegato a me o sono io che mi sono collegato al peer
+                    if (IsReserved)
+                        for (int i = mPeers.Length - 1; i > 0; i--)
                         {
-                            AlreadyPresent = true;
-                            break;
+                            if (mPeers[i] == null)
+                            {
+                                mPeers[i] = Peer;
+                                mPeers[i].StartListening();
+                                return true;
+                            }
                         }
-                    if (!AlreadyPresent)
-                        if (rp.Connect())
-                            newPeers.Add(rp);
-                    AlreadyPresent = false;
+                    else
+                    {
+                        for (int i = 0; i < mNumReserved; i++)
+                            if (mPeers[i] == null)
+                            {
+                                mPeers[i] = Peer;
+                                return true;
+                            }
+                    }
+                    Peer.Disconnect();
                 }
-                //inserisce tutti i nuovi peer GIà COLLEGATI
-                foreach (CPeer p in newPeers)
-                    if (!this.Insert(p))
-                        break;
+                return false;
             }
         }
 
@@ -324,6 +317,7 @@ namespace BlockChain
                 if (mPeers[i] != null)
                     PeersList += mPeers[i].IP + "," + mPeers[i].Port + ";";
             }
+            //non deve in viare il peer richiedente
             PeersList = PeersList.TrimEnd(';');
             Peer.SendString(PeersList);
         }

@@ -14,10 +14,12 @@ namespace BlockChain
         public CTree()
         {
             Root = default(T);
+            mChildren = new List<CTree<T>>();
         }
         public CTree(T TreeRoot)
         {
             Root = TreeRoot;
+            mChildren = new List<CTree<T>>();
         }
 
         public T Root
@@ -47,10 +49,30 @@ namespace BlockChain
     {
         public int ChildDepth=0,MaxDepth = 0;
 
+        public CSideChainTree()
+        {
+            this.Root = null;
+            this.MaxDepth = 0;
+        }
+
         public CSideChainTree(CTemporaryBlock Root, int MaxDepth)
         {
             this.Root = Root;
             this.MaxDepth = MaxDepth;
+        }
+
+        public CTemporaryBlock GetLastBlock()
+        {
+            if (mChildren.Count <= 0)
+                return mRoot;
+            else
+            {
+                CSideChainTree deepest = new CSideChainTree();
+                foreach (CSideChainTree sc in mChildren)
+                    if (sc.ChildDepth >= deepest.ChildDepth)
+                        deepest = sc;
+                return deepest.GetLastBlock();
+            }
         }
 
         /// <summary>
@@ -60,6 +82,8 @@ namespace BlockChain
         /// <returns></returns>
         public bool Add(CTemporaryBlock b)
         {
+            if (mRoot == null)
+                mRoot = b;
             if (mAdd(b,1)>=MaxDepth)
             {
                 foreach (CSideChainTree t in mChildren)
@@ -78,7 +102,7 @@ namespace BlockChain
         private int mAdd(CTemporaryBlock b,int Level)
         {
             int tmp;
-            if (b.Header.PreviusBlockHash == Root.Header.Hash)
+            if (b.Header.PreviousBlockHash == Root.Header.Hash)
             {
                 mChildren.Add(new CSideChainTree(b, MaxDepth));
                 if (ChildDepth < 1)

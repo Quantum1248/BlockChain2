@@ -25,7 +25,7 @@ namespace BlockChain
 
         private Thread mThreadListener, mThreadPeers;
         private Socket mListener;
-        private static int DEFOULT_PORT = 100;
+        private static int DEFOULT_PORT = 2000;
 
         private bool IsStopped = false; //set true per spegnere il server
 
@@ -69,19 +69,11 @@ namespace BlockChain
                 CIO.DebugOut("Last block number: " + CBlockChain.Instance.LastValidBlock.Header.BlockNumber +".");
 
             if (Program.DEBUG)
-                CIO.DebugOut("Inizialize mPeers...");
+                CIO.DebugOut("Initialize mPeers...");
             mPeers = new CPeers(MAX_PEERS, RESERVED_CONNECTION);
 
             if (Program.DEBUG)
-                CIO.DebugOut("Inizialie the Listener...");
-            //crea un socket che attende connessioni in ingresso di peer che vogliono collegarsi, in ascolto sulla porta DEFOULT_PORT
-            IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, DEFOULT_PORT);
-            mListener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            mListener.Bind(localEndPoint);
-            mListener.Listen(DEFOULT_PORT);
-
-            if (Program.DEBUG)
-                CIO.DebugOut("Finish inizializing!");
+                CIO.DebugOut("Finish initializing!");
             Start(Peers);
         }
 
@@ -106,7 +98,7 @@ namespace BlockChain
                 if (p.Connect())
                     if (!mPeers.Insert(p))
                         break;
-
+            
             if (Program.DEBUG)
                 CIO.DebugOut("Begin to enstablish connections to other peers...");
             mThreadPeers = new Thread(new ThreadStart(UpdatePeersList));
@@ -116,12 +108,12 @@ namespace BlockChain
                 CIO.DebugOut("Start listening...");
             mThreadListener = new Thread(new ThreadStart(StartAcceptUsersConnection));
             mThreadListener.Start();
-            
+            /*
             if (Program.DEBUG)
                 CIO.DebugOut("Start update blockchain...");
             mUpdateBlockChainThread = new Thread(new ThreadStart(UpdateBlockchain));
             mUpdateBlockChainThread.Start();
-            
+            */
         }
 
         private void UpdatePeersList()
@@ -130,17 +122,26 @@ namespace BlockChain
             {
                 if (mPeers.NumConnection() < NOT_RESERVED_CONNECTION)
                     mPeers.DoRequest(ERequest.UpdatePeers);
-                Thread.Sleep(10000);
+                //inserire qui il controllo per verificare che i peer presenti siano ancora online?
+                Thread.Sleep(60000);
             }
         }
 
         //attende il collegamento di nuovi peer
         private void StartAcceptUsersConnection()
         {
+            if (Program.DEBUG)
+                CIO.DebugOut("Initialize the Listener...");
+            //crea un socket che attende connessioni in ingresso di peer che vogliono collegarsi, in ascolto sulla porta DEFOULT_PORT
+            IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, DEFOULT_PORT);
+            mListener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            mListener.Bind(localEndPoint);
+            mListener.Listen(DEFOULT_PORT);
+
             //crea un eventargs per una richiesta di connessione asincrona, se la lista dei peers non è ancora piena inizia ad attendere fino a quando non riceve
             //una richiesta di connessione o il segnale d'arresto. Se viene ricevuta una richiesta di connessione viene chiamata la funzione InsertNewPeer che
             //inserisce il nuovo peer nella lista dei peer mPeers
-            
+
             //è asincrono perchè altrimenti al segnale di spegnimento non si fermerebbe  
             SocketAsyncEventArgs asyncConnection;
             bool IncomingConnection = false;
@@ -161,21 +162,16 @@ namespace BlockChain
                     if (IncomingConnection)
                     {
                         if (Program.DEBUG)
-                            CIO.DebugOut("Established connection!");
+                            CIO.DebugOut("Established connection with "+ ((IPEndPoint)asyncConnection.AcceptSocket.RemoteEndPoint).Address+" !");
                         InsertNewPeer(asyncConnection.AcceptSocket);
                     }
                     asyncConnection.Dispose();
-
                 }
                 else
                 {
                     Thread.Sleep(10000);
                 }
             }
-            //TODO
-            //CloseAllConnection();
-            if (Program.DEBUG)
-                CIO.WriteLine("Chiuse tutte le connessioni con gli users");
         }
 
         private void UpdateBlockchain()
@@ -216,7 +212,6 @@ namespace BlockChain
                         if (addedBlocks >= bestChain.Length)    //solo se scarica tutti i blocchi
                         {
                             isSynced = true;
-                            CMiner.Instance.Start();        //(!) da cambiare a seconda di come verrà fattp il miner
                             mPeers.CanReceiveBlock = true;
                         }
                     }
@@ -228,8 +223,11 @@ namespace BlockChain
                     }
                 }
             }
+            //(!) da cambiare
+            /*while (true)
+                Miner.Scrypt(new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash,2));        //(!) da cambiare a seconda di come verrà fattp il miner
+                */
 
-            
         }
 
         private void InsertNewPeer(Socket NewConnection)

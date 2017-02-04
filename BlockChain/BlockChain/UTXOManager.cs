@@ -111,10 +111,12 @@ namespace BlockChain
             return null;
         }
 
+        //???????
+        /*
         public void SpendBlock(CBlock block)
         {
             foreach(Transaction tx in block.)
-        }
+        }*/
         public List<UTXO> GetUTXObyHash(string hash)
         {
             List<string> paths = (List<string>)this.HashTable[hash];

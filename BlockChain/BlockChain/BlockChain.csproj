@@ -74,7 +74,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RSA.cs" />
     <Compile Include="Transaction.cs" />
-    <Compile Include="Tree.cs" />
+    <Compile Include="CTree.cs" />
     <Compile Include="Utilities.cs" />
     <Compile Include="UTXO.cs" />
     <Compile Include="UTXOManager.cs" />

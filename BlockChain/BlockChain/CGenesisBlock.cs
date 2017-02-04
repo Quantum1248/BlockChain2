@@ -13,8 +13,8 @@ namespace BlockChain
             Header = new CHeader(0, "GENESISBLOCK", "");
             this.Transiction = "";
             this.Nonce = 0;
-            this.Timestamp = 0;
-            this.Difficutly = 1;
+            this.Timestamp = new DateTime(0);
+            this.Difficulty = 1;
         }
     }
 }

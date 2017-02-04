@@ -11,7 +11,7 @@ namespace BlockChain
         public CoinbaseTransaction()
         {
             this.inputs = null;
-            this.outputs = new Output
+            //this.outputs = new Output
         }
     }
 }

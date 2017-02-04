@@ -9,14 +9,17 @@ namespace BlockChain
     {
         private CBlock mLastBlock=null; //ultimo blocco ricevuto
         private CBlock mLastValidBlock = null;  //ultimo blocco sicuramente valido
+        private CSideChainTree mSideChain = null;
 
         const string FILENAME = "blockchain.txt";
+
         #region Singleton
         private static CBlockChain instance;
 
         private CBlockChain()
         {
             Load();
+            mSideChain = new CSideChainTree(null, 5);
         }
 
         public static CBlockChain Instance
@@ -34,7 +37,13 @@ namespace BlockChain
 
         public CBlock LastBlock
         {
-            get { return mLastBlock; }
+            get
+            {
+                mLastBlock = mSideChain.GetLastBlock();
+                if (mLastBlock!=null)
+                    return mLastBlock;
+                return mLastValidBlock;
+            }
         }
 
         public CBlock LastValidBlock
@@ -63,32 +72,23 @@ namespace BlockChain
         private void Load()
         {
             string filepath = PATH + "\\" + FILENAME;
+            string block="";
             mLastValidBlock = new CGenesisBlock();
             if (File.Exists(filepath))
             {
                 StreamReader streamReader = new StreamReader(filepath);
-                using (JsonTextReader reader = new JsonTextReader(streamReader))
+                while ((block = streamReader.ReadLine()) != null)
                 {
-                    while (reader.Read())
-                    {
-                        if (reader.TokenType == JsonToken.StartObject)
-                        {
-                            // Load each object from the stream and do something with it
-
-                            JObject obj = JObject.Load(reader);
-
-                            JsonSerializer serializer = new JsonSerializer();
-                            CBlock b = (CBlock)serializer.Deserialize(new JTokenReader(obj), typeof(CBlock));
-                            if (b.Header.BlockNumber > mLastValidBlock.Header.BlockNumber)
-                                mLastValidBlock = b;
-                        }
-                    }
+                    CBlock b = JsonConvert.DeserializeObject<CBlock>(block);
+                    if (b.Header.BlockNumber > mLastValidBlock.Header.BlockNumber)
+                        mLastValidBlock = b;
 
                 }
+
             }
             else
             {
-                File.WriteAllText(filepath, new CGenesisBlock().Serialize());
+                File.WriteAllText(filepath, new CGenesisBlock().Serialize() + '\n');
                 mLastValidBlock = new CGenesisBlock();
             }
         }
@@ -122,14 +122,14 @@ namespace BlockChain
         public static bool ValidateHeaders(CHeaderChain HeaderChain)
         {
             for(ulong i=0;i<HeaderChain.Length;i++)
-                if (HeaderChain[i].Hash != HeaderChain[i + 1].PreviusBlockHash && HeaderChain[i].BlockNumber != HeaderChain[i + 1].BlockNumber+1)//(!) il controllu sul numero serve?
+                if (HeaderChain[i].Hash != HeaderChain[i + 1].PreviousBlockHash && HeaderChain[i].BlockNumber != HeaderChain[i + 1].BlockNumber+1)//(!) il controllu sul numero serve?
                     return false;
             return true;
         }
 
         public static bool Validate(CBlock b)
         {
-            return CMiner.Instance.Validate(b);
+            return Miner.Verify(b);
         }
 
         /// <summary>
@@ -146,9 +146,9 @@ namespace BlockChain
             {
                 if (b == null)
                     break;
-                if (CMiner.Instance.Validate(b))
+                if (Miner.Verify(b))
                 {
-                    File.AppendAllText(filepath, (b as CBlock).Serialize());
+                    File.AppendAllText(filepath, (b as CBlock).Serialize()+ '\n');
                 }
                 else
                 {
@@ -171,7 +171,7 @@ namespace BlockChain
 
         internal void Add(CTemporaryBlock newBlock)
         {
-            throw new NotImplementedException();
+            mSideChain.Add(newBlock);
         }
 
         
