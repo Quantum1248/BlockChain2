@@ -166,7 +166,7 @@ namespace BlockChain
                 {
                     output = utxo.Output[outputIndex];
                     utxo.Output[outputIndex] = null;
-                    if (utxo.Output.Length == 0)
+                    if(Array.TrueForAll<Output>(utxo.Output, IsNull))
                     {
                         File.Delete(path);
                     }
@@ -187,6 +187,18 @@ namespace BlockChain
                 utxos.Add(UTXO.Deserialize(File.ReadAllText(path)));
             }
             return utxos;
+        }
+
+        private static bool IsNull(Output output)
+        {
+            if(output == null)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 }

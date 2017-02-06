@@ -19,7 +19,7 @@ namespace BlockChain
             return hex.ToString();
         }
 
-        public static byte[] StringToByteArray(string hex)
+        public static byte[] HexStringToByteArray(string hex)
         {
             return Enumerable.Range(0, hex.Length)
                              .Where(x => x % 2 == 0)
@@ -35,6 +35,16 @@ namespace BlockChain
         public static byte[] SHA2HashBytes(string strToHash)
         {
             return SHA256Managed.Create().ComputeHash(Encoding.ASCII.GetBytes(strToHash));
+        }
+
+        public static string ByteArrayToBase64String(byte[] base64ByteArray)
+        {
+            return Convert.ToBase64String(base64ByteArray);
+        }
+
+        public static byte[] StringToBase64ByteArray(string base64String)
+        {
+            return Convert.FromBase64String(base64String);
         }
     }
 }
