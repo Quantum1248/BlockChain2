@@ -11,7 +11,7 @@ namespace BlockChain
     //Va inizializzata all' inizio del mining, ogni transazione confermata va inserita qui
     class MemPool
     {
-        public List<Transaction> TxList;
+        public Queue<Transaction> TxQueue;
 
         private static MemPool instance;
 
@@ -29,21 +29,21 @@ namespace BlockChain
 
         private MemPool()
         {
-            this.TxList = new List<Transaction>();
+            this.TxQueue = new Queue<Transaction>();
         }
 
         public void AddUTX(Transaction utx)
         {
-            this.TxList.Add(utx);
+            this.TxQueue.Enqueue(utx);
         }
 
         public Transaction GetUTX(string utxHash)
         {
-            foreach(Transaction tx in this.TxList)
+            foreach(Transaction tx in this.TxQueue)
             {
                 if(utxHash == tx.Hash)
                 {
-                    this.TxList.Remove(tx);
+                    this.TxQueue.Dequeue();
                     return tx;
                 }
             }
@@ -53,11 +53,11 @@ namespace BlockChain
 
         public void RemoveUTX(string utxHash)
         {
-            foreach (Transaction tx in this.TxList)
+            foreach (Transaction tx in this.TxQueue)
             {
                 if (utxHash == tx.Hash)
                 {
-                    this.TxList.Remove(tx);
+                    this.TxQueue.Dequeue();
                     return;
                 }
             }
@@ -73,6 +73,16 @@ namespace BlockChain
                     this.AddUTX(tx);
                 }
             }
+        }
+
+        public List<Transaction> GetUTX(int utxLimit)
+        {
+            List<Transaction> utxList = new List<Transaction>();
+            for(int i = 0; i < utxLimit; i++)
+            {
+                utxList.Add(this.TxQueue.Dequeue());
+            }
+            return utxList;
         }
     }
 }

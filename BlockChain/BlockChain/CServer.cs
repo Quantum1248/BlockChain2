@@ -61,8 +61,8 @@ namespace BlockChain
                 }
                 tx = new Transaction(outputs, RSA.ExportPubKey(rsaKeyPair), rsaKeyPair);
             }*/
-            
-            
+
+            CoinbaseTransaction cbtx = new CoinbaseTransaction(rsaKeyPair);
             
             
 

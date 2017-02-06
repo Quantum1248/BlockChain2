@@ -16,17 +16,37 @@ namespace BlockChain
         public Output[] outputs;
         public string Signature;
         public string PubKey;
-        
-        public Transaction(Output[] outputs, string PubKey, RSACryptoServiceProvider csp) //costruttore per testing
+
+        public Transaction(double amount, string hashReceiver, RSACryptoServiceProvider csp) //costruttore legittimo
+        {
+
+            this.outputs = new Output[1];
+            this.outputs[1] = new Output(amount, hashReceiver);
+            this.PubKey = RSA.ExportPubKey(csp);
+            this.inputs = this.GetEnoughInputs(); //forse vanno anche controllate le firme ma non penso           
+            this.Hash = Utilities.SHA2Hash(JsonConvert.SerializeObject(this)); //Calcolo l'hash di questa transazione inizializzata fino a questo punto, esso farà da txId
+            this.Signature = RSA.Sign(Encoding.ASCII.GetBytes(this.Serialize()), csp.ExportParameters(true), false); //firmo la transazione fino a questo punto
+
+            //CPeers.Instance.DoRequest(ERequest.SendTransaction, this); TODO : implementa richiesta di invio transazione
+        }
+
+        //Costruttore per classi ereditanti
+        public Transaction()
+        {
+
+        }
+
+        public Transaction(Output[] outputs, RSACryptoServiceProvider csp) //costruttore per testing, 
         {
             
             this.outputs = outputs;
+            this.PubKey = RSA.ExportPubKey(csp);
             this.inputs = this.GetEnoughInputs(); //forse vanno anche controllate le firme ma non penso           
-            this.PubKey = PubKey;
-            this.Hash = Utilities.ByteArrayToString(SHA256Managed.Create().ComputeHash(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(this)))); //Calcolo l'hash di questa transazione inizializzata fino a questo punto, esso farà da txId
+            this.Hash = Utilities.SHA2Hash(JsonConvert.SerializeObject(this)); //Calcolo l'hash di questa transazione inizializzata fino a questo punto, esso farà da txId
             this.Signature = RSA.Sign(Encoding.ASCII.GetBytes(this.Serialize()), csp.ExportParameters(true), false); //firmo la transazione fino a questo punto
 
-            //salvo la transazione sul disco
+            //salvo la transazione sul disco, IMPORTANTE da usare solo in testing, le transazioni appena create non vanno mai salvate direttamente sul disco.
+            //Bisogna aspettare che scendano di blocco fino alla porzione sicura e confermata della blockchain
             string appDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             string specificFolder = Path.Combine(appDataFolder, "Blockchain\\UTXODB");
             UTXO utxo = new UTXO(this.Hash, this.outputs);
@@ -42,18 +62,7 @@ namespace BlockChain
             }
         }
 
-        public Transaction(double amount, string hashReceiver, string PubKey, RSACryptoServiceProvider csp) //costruttore legittimo
-        {
-
-            this.outputs = new Output[1];
-            this.outputs[1] = new Output(amount, hashReceiver);
-            this.inputs = this.GetEnoughInputs(); //forse vanno anche controllate le firme ma non penso           
-            this.PubKey = PubKey;
-            this.Hash = Utilities.ByteArrayToString(SHA256Managed.Create().ComputeHash(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(this)))); //Calcolo l'hash di questa transazione inizializzata fino a questo punto, esso farà da txId
-            this.Signature = RSA.Sign(Encoding.ASCII.GetBytes(this.Serialize()), csp.ExportParameters(true), false); //firmo la transazione fino a questo punto
-
-            CPeers.Instance.DoRequest(ERequest.SendTransaction, this);
-        }
+        
 
         public Transaction(List<Input> inputs, Output[] outputs, string Hash, string PubKey) //costruttore per generare l'hash da confrontare poi alla firma
         {
@@ -91,7 +100,7 @@ namespace BlockChain
             //si crea una transazione per generare l'hash da confrontare alla firma
             Transaction signedTx = new Transaction(this.inputs, this.outputs, this.Hash, this.PubKey);
             //si verifica la firma digitale
-            if(RSA.VerifySignedTransaction(this, SHA256Managed.Create().ComputeHash(Encoding.ASCII.GetBytes(signedTx.Serialize())), this.PubKey))
+            if(RSA.VerifySignedTransaction(this, Utilities.SHA2HashBytes(signedTx.Serialize()), this.PubKey))
             {
                 double outputRequested = 0;
                 double inputRequested = 0;
@@ -107,7 +116,7 @@ namespace BlockChain
         private bool CheckUTXO()
         {
             Output tmp;
-            string pubKeyHash = Utilities.ByteArrayToString(SHA256Managed.Create().ComputeHash(Encoding.ASCII.GetBytes(this.PubKey)));
+            string pubKeyHash = Utilities.SHA2Hash(this.PubKey);
             //si controlla che esistano output non spesi corrispondenti a quelli referenziati dagli input
             foreach(Input input in this.inputs) 
             {
@@ -128,7 +137,7 @@ namespace BlockChain
             Output output;
             foreach (Input input in this.inputs)
             {
-                output = UTXOManager.Instance.GetUTXO(Utilities.ByteArrayToString(SHA256Managed.Create().ComputeHash(Encoding.ASCII.GetBytes(this.PubKey))), input.TxHash, input.OutputIndex);
+                output = UTXOManager.Instance.GetUTXO(Utilities.SHA2Hash(this.PubKey), input.TxHash, input.OutputIndex);
                 inputRequested += output.Amount;
             }
             return 1;
@@ -151,7 +160,7 @@ namespace BlockChain
         {
             List<Input> inputs = new List<Input>();
             double outputRequested = this.GetOutputsAmount();
-            string pubKeyHash = Utilities.ByteArrayToString(SHA256Managed.Create().ComputeHash(Encoding.ASCII.GetBytes(this.PubKey)));
+            string pubKeyHash = Utilities.SHA2Hash(this.PubKey);
             List<UTXO> utxos = UTXOManager.Instance.GetUTXObyHash(pubKeyHash);
             foreach(UTXO utxo in utxos)
             {
@@ -164,7 +173,7 @@ namespace BlockChain
                         outputRequested -= utxo.Output[outputIndex].Amount;
                         inputs.Add(new Input(utxo.TxHash, outputIndex));
                         //L'UTXO viene speso e quindi rimosso dal database, mentre un nuovo input viene aggiunto alla lista
-                        UTXOManager.Instance.SpendUTXO(pubKeyHash, utxo.TxHash, outputIndex);
+                        UTXOManager.Instance.RemoveUTXO(pubKeyHash, utxo.TxHash, outputIndex);
                         //se l'amount richiesto scende sotto lo 0, si aggiunge una nuova transazione per rispedire a noi stessi il resto
                         if (outputRequested <= 0)
                         {
@@ -182,7 +191,7 @@ namespace BlockChain
         }
 
         
-        public string Serialize()
+        public string Serialize()//TODO: tutte le operazioni di serializzazione e deserializzazione andrebbero spostate in utilities per un codice meno ridondante e più pulito
         {
             return JsonConvert.SerializeObject(this);
         }

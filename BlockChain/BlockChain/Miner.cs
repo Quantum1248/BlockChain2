@@ -8,7 +8,7 @@ namespace BlockChain
 {
     class Miner
     {
-        public static void Scrypt(CBlock block) //TODO: implementare evento per l'uscita in caso sia stato trovato un blocco parallelo
+        public static void Scrypt(CBlock block) //TODO: implementare evento per l'uscita in caso sia stato trovato un blocco parallelo. Implementare multithreading
         {
 
             string toHash;
@@ -25,7 +25,7 @@ namespace BlockChain
                     if (i == block.Difficulty) //se il numero di zeri davanti la stringa è pari alla difficoltà del blocco, viene settato l'hash e si esce
                     {
                         block.Hash = hash;
-                        CPeers.Instance.DoRequest(ERequest.SendNewBlock, block);
+                        //CPeers.Instance.DoRequest(ERequest.SendNewBlock, block); TODO : implementa richiesta di invio blocco
                         return;
                     }
                     if (!(hash[i] == '0'))
