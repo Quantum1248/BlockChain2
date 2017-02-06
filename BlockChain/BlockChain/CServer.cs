@@ -120,11 +120,10 @@ namespace BlockChain
         {
             while (!IsStopped)
             {
-                int numPeers = mPeers.NumConnection();
-                if (numPeers < NOT_RESERVED_CONNECTION && numPeers>0)
+                if (mPeers.NumConnection() < NOT_RESERVED_CONNECTION)
                     mPeers.DoRequest(ERequest.UpdatePeers);
                 //inserire qui il controllo per verificare che i peer presenti siano ancora online?
-                Thread.Sleep(1000);
+                Thread.Sleep(60000);
             }
         }
 
@@ -251,24 +250,6 @@ namespace BlockChain
         {
             Dispatcher.Send(BitConverter.GetBytes(data.Length));
             Dispatcher.Send(data);
-        }
-
-        public static string GetLocalIPAddress()
-        {
-            var host = Dns.GetHostEntry(Dns.GetHostName());
-            foreach (var ip in host.AddressList)
-            {
-                if (ip.AddressFamily == AddressFamily.InterNetwork)
-                {
-                    return ip.ToString();
-                }
-            }
-            throw new Exception("Local IP Address Not Found!");
-        }
-
-        public static string GetPublicIPAddress()
-        {
-            return new WebClient().DownloadString("http://icanhazip.com");
         }
     }
 }
