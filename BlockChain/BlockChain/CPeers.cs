@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.Net;
+using System.Net.Sockets;
 
 namespace BlockChain
 {
@@ -119,11 +120,14 @@ namespace BlockChain
                     {
                         if (p != null)
                         {
-                            p.SendCommand(ECommand.LOOK);
-                            if (p.ReceiveCommand() == ECommand.OK)
+                            lock (p.Socket)
                             {
-                                p.SendCommand(ECommand.RCVMINEDBLOCK);
-                                p.SendBlock(b);
+                                p.SendCommand(ECommand.LOOK);
+                                if (p.ReceiveCommand() == ECommand.OK)
+                                {
+                                    p.SendCommand(ECommand.RCVMINEDBLOCK);
+                                    p.SendBlock(b);
+                                }
                             }
                         }
                     }
@@ -146,11 +150,14 @@ namespace BlockChain
             {
                 if (p != null)
                 {
-                    p.SendCommand(ECommand.LOOK);
-                    if (p.ReceiveCommand() == ECommand.OK)
+                    lock (p.Socket)
                     {
-                        p.SendCommand(ECommand.CHAINLENGTH);
-                        tmp = p.ReceiveULong();
+                        p.SendCommand(ECommand.LOOK);
+                        if (p.ReceiveCommand() == ECommand.OK)
+                        {
+                            p.SendCommand(ECommand.CHAINLENGTH);
+                            tmp = p.ReceiveULong();
+                        }
                         if (tmp < minLength)
                             minLength = tmp;
                     }
@@ -168,12 +175,15 @@ namespace BlockChain
                     {
                         if (p != null)
                         {
-                            p.SendCommand(ECommand.LOOK);
-                            if (p.ReceiveCommand() == ECommand.OK)
+                            lock (p.Socket)
                             {
-                                p.SendCommand(ECommand.GETHEADER);
-                                p.SendULong(tmp);
-                                headers.Push(p.ReceiveHeader());
+                                p.SendCommand(ECommand.LOOK);
+                                if (p.ReceiveCommand() == ECommand.OK)
+                                {
+                                    p.SendCommand(ECommand.GETHEADER);
+                                    p.SendULong(tmp);
+                                    headers.Push(p.ReceiveHeader());
+                                }
                             }
                         }
                     }
@@ -196,12 +206,15 @@ namespace BlockChain
                 {
                     if (p != null)
                     {
-                        p.SendCommand(ECommand.LOOK);
-                        if (p.ReceiveCommand() == ECommand.OK)
+                        lock (p.Socket)
                         {
-                            p.SendCommand(ECommand.DOWNLOADBLOCK);
-                            p.SendULong(r.Start);
-                            res = p.ReceiveBlock();
+                            p.SendCommand(ECommand.LOOK);
+                            if (p.ReceiveCommand() == ECommand.OK)
+                            {
+                                p.SendCommand(ECommand.DOWNLOADBLOCK);
+                                p.SendULong(r.Start);
+                                res = p.ReceiveBlock();
+                            }
                             if (res != null && CBlockChain.Validate(res))
                                 break;
                             else
@@ -220,33 +233,42 @@ namespace BlockChain
         private void UpdatePeers()
         {
             string ris = "";
-            string msg;
+            string msg="";
             ECommand cmd;
             string[] listsPeer;
             string[] peers;
             CPeer receivedPeer;
-            for (int i = 0; i < mPeers.Length; i++)if (mPeers[i] != null)
+            for (int i = 0; i < mPeers.Length; i++)
                 if (mPeers[i] != null)
                 {
                     //blocca il peer e manda una richiesta di lock per bloccarlo anche dal nel suo client, così che non avvengano interferenze nella comunicazione
                     lock (mPeers[i].Socket)
                     {
-                        mPeers[i].SendCommand(ECommand.LOOK); //(!)in realtà non serve a niente?
-                        cmd = mPeers[i].ReceiveCommand();
-                        if (cmd == ECommand.OK)
+                        try
                         {
-                            mPeers[i].SendCommand(ECommand.UPDPEERS);
-                            msg = mPeers[i].ReceiveString();
+                            mPeers[i].Socket.ReceiveTimeout = 2000;
+                            mPeers[i].SendCommand(ECommand.LOOK);
+                            if (mPeers[i].ReceiveCommand() == ECommand.OK)
+                            {
+                                mPeers[i].SendCommand(ECommand.UPDPEERS);
+                                msg = mPeers[i].ReceiveString();
+                            }
                             ris += msg + "/";
+                            // mPeers[i].SendData("ENDLOCK");
                         }
-                        // mPeers[i].SendData("ENDLOCK");
+                        catch (SocketException e)
+                        {
+                            if (Program.DEBUG)
+                                CIO.DebugOut("Nessuna risposta da " + mPeers[i].IP + " durante la richiesta dei peer.");
+                        }
                     }
                 }
             ris = ris.TrimEnd('/');
 
             if (ris != "")
             {
-                string externalIp = new WebClient().DownloadString("http://icanhazip.com");//trova il mio ip pubblico
+                string publicIp = CServer.GetPublicIPAddress();
+                string localIp = CServer.GetLocalIPAddress();
                 listsPeer = ris.Split('/');
                 foreach (string l in listsPeer)
                 {
@@ -254,7 +276,7 @@ namespace BlockChain
                     foreach (string rp in peers)
                     {
                         receivedPeer = DeserializePeer(rp);
-                        if (receivedPeer.IP != externalIp)
+                        if (receivedPeer.IP != publicIp && receivedPeer.IP != localIp)
                             Insert(receivedPeer);
                     }
                 }
@@ -333,13 +355,15 @@ namespace BlockChain
             {
                 if (p != null)
                 {
-                    p.SendCommand(ECommand.LOOK);
-                    cmd = p.ReceiveCommand();
-                    if (cmd == ECommand.OK)
+                    lock (p.Socket)
                     {
-                        p.SendCommand(ECommand.GETLASTVALID);
-                        msg = p.ReceiveString();
-                        blocks.Add(new CTemporaryBlock(CBlock.Deserialize(msg), p));
+                        p.SendCommand(ECommand.LOOK);
+                        if (p.ReceiveCommand() == ECommand.OK)
+                        {
+                            p.SendCommand(ECommand.GETLASTVALID);
+                            msg = p.ReceiveString();
+                            blocks.Add(new CTemporaryBlock(CBlock.Deserialize(msg), p));
+                        }
                     }
                 }
             }
@@ -410,7 +434,7 @@ namespace BlockChain
             int c = 0;
             CRange rangeInDownload;
             ECommand cmd;
-            string msg;
+            string msg="";
             while (rangeAvailable.Count > 0)
             {
                 c = 0;
@@ -420,14 +444,16 @@ namespace BlockChain
                         break;
                     rangeInDownload = rangeAvailable.Dequeue();
                 }
-                peer.SendCommand(ECommand.LOOK);
-                cmd = peer.ReceiveCommand();
-                if(cmd==ECommand.OK)
+                lock (peer.Socket)
                 {
-                    peer.SendCommand(ECommand.DOWNLOADBLOCKS);
-                    peer.SendULong(rangeInDownload.Start);
-                    peer.SendULong(rangeInDownload.End);
-                    msg = peer.ReceiveString();
+                    peer.SendCommand(ECommand.LOOK);
+                    if (peer.ReceiveCommand() == ECommand.OK)
+                    {
+                        peer.SendCommand(ECommand.DOWNLOADBLOCKS);
+                        peer.SendULong(rangeInDownload.Start);
+                        peer.SendULong(rangeInDownload.End);
+                        msg = peer.ReceiveString();
+                    }
                     foreach(string block in msg.Split('/'))
                     {
                         ris[rangeInDownload.Start + (ulong)c++] = new CTemporaryBlock(JsonConvert.DeserializeObject<CBlock>(block), peer);
@@ -502,9 +528,7 @@ namespace BlockChain
                         break;
                     rangeInDownload = rangeAvailable.Dequeue();
                 }
-                peer.SendCommand(ECommand.LOOK);
-                cmd = peer.ReceiveCommand();
-                if (cmd == ECommand.OK)
+                lock (peer.Socket)
                 {
                     peer.SendCommand(ECommand.DOWNLOADHEADERS);
                     peer.SendULong(rangeInDownload.Start);
