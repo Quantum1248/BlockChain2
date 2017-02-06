@@ -61,9 +61,7 @@ namespace BlockChain
                 }
                 tx = new Transaction(outputs, RSA.ExportPubKey(rsaKeyPair), rsaKeyPair);
             }*/
-            CoinbaseTransaction cbtx = new CoinbaseTransaction(rsaKeyPair, true);
-            Transaction tx = new Transaction(25, "2c934b4d7ceb5dc2f911ce8b03ff398bdd0f460fc7f4743b167fb9ae5d777dpg", rsaKeyPair, true);
-            tx.Verify();
+            
 
             if (Program.DEBUG)
                 CIO.DebugOut("Last block number: " + CBlockChain.Instance.LastValidBlock.BlockNumber +".");

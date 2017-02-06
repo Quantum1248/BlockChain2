@@ -82,9 +82,8 @@ namespace BlockChain
                 {
                     hashSum += hashSum;
                 }
-                //hashSum = Convert.ToBase64String(Encoding.ASCII.GetBytes(hashSum)); //dopo essere stati concatenati, gli hash delle transazioni sono passati attraverso una funzione hash
                 
-                hashList.Add(Utilities.ByteArrayToString(SHA256Managed.Create().ComputeHash(Utilities.HexStringToByteArray(hashSum))));
+                hashList.Add(Utilities.SHA2Hash(hashSum));
             }
             if(hashList.Count == 1) //quando si arriva all'hash del nodo root ci si ferma
             {

@@ -29,12 +29,12 @@ namespace BlockChain
 
         public static string SHA2Hash(string strToHash)
         {
-            return Utilities.ByteArrayToString(SHA256Managed.Create().ComputeHash(Encoding.ASCII.GetBytes(strToHash)));
+            return Utilities.ByteArrayToString(SHA256Managed.Create().ComputeHash(Utilities.HexStringToByteArray(strToHash)));
         }
 
         public static byte[] SHA2HashBytes(string strToHash)
         {
-            return SHA256Managed.Create().ComputeHash(Encoding.ASCII.GetBytes(strToHash));
+            return SHA256Managed.Create().ComputeHash(Utilities.HexStringToByteArray(strToHash));
         }
 
         public static string ByteArrayToBase64String(byte[] base64ByteArray)
