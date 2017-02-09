@@ -8,13 +8,12 @@ namespace BlockChain
 {
     class CGenesisBlock : CBlock
     {
-        public CGenesisBlock()
+        public CGenesisBlock() : base(0,1)
         {
             Header = new CHeader(0, "GENESISBLOCK", "");
-            this.Transiction = "";
+            this.Transactions = new List<Transaction>();
             this.Nonce = 0;
-            this.Timestamp = 0;
-            this.Difficutly = 1;
+            this.Timestamp = new DateTime(0,0,0);
         }
     }
 }

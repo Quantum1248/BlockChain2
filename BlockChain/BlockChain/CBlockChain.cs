@@ -129,7 +129,8 @@ namespace BlockChain
 
         public static bool Validate(CBlock b)
         {
-            return CMiner.Instance.Validate(b);
+            return Miner.Verify(b);
+
         }
 
         /// <summary>
@@ -146,7 +147,7 @@ namespace BlockChain
             {
                 if (b == null)
                     break;
-                if (CMiner.Instance.Validate(b))
+                if (Miner.Verify(b))
                 {
                     File.AppendAllText(filepath, (b as CBlock).Serialize());
                 }

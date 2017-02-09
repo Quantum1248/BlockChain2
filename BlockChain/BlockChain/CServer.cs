@@ -56,13 +56,10 @@ namespace BlockChain
                 outputs = new Output[3];
                 for(int k  = 0; k < outputs.Length; k++)
                 {
-                    outputs[k] = new Output(1.4242, Utilities.ByteArrayToString(SHA256Managed.Create().ComputeHash(Encoding.ASCII.GetBytes(((i + k).ToString())))));
+                    outputs[k] = new Output(1.4242, Utilities.ByteArrayToHexString(SHA256Managed.Create().ComputeHash(Encoding.ASCII.GetBytes(((i + k).ToString())))));
                 }
                 tx = new Transaction(outputs, RSA.ExportPubKey(rsaKeyPair), rsaKeyPair);
             }*/
-            
-            
-            
             
 
             if (Program.DEBUG)
@@ -216,7 +213,7 @@ namespace BlockChain
                         if (addedBlocks >= bestChain.Length)    //solo se scarica tutti i blocchi
                         {
                             isSynced = true;
-                            CMiner.Instance.Start();        //(!) da cambiare a seconda di come verrà fattp il miner
+                            //Miner.Instance.Start();        //(!) da cambiare a seconda di come verrà fattp il miner
                             mPeers.CanReceiveBlock = true;
                         }
                     }
