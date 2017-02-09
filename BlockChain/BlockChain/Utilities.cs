@@ -11,7 +11,7 @@ namespace BlockChain
     //classe contenente varie funzioni utili
     class Utilities
     {
-        public static string ByteArrayToString(byte[] ba)
+        public static string ByteArrayToHexString(byte[] ba)
         {
             StringBuilder hex = new StringBuilder(ba.Length * 2);
             foreach (byte b in ba)
@@ -27,11 +27,17 @@ namespace BlockChain
                              .ToArray();
         }
 
+        ///<summary>
+        ///Calcola hash su stringa, ritorna string esadecimale
+        ///</summary>
         public static string SHA2Hash(string strToHash)
         {
-            return Utilities.ByteArrayToString(SHA256Managed.Create().ComputeHash(Utilities.HexStringToByteArray(strToHash)));
+            return Utilities.ByteArrayToHexString(SHA256Managed.Create().ComputeHash(Utilities.HexStringToByteArray(strToHash)));
         }
 
+        ///<summary>
+        ///Calcola hash su stringa, ritorna byte[] esadecimale
+        ///</summary>
         public static byte[] SHA2HashBytes(string strToHash)
         {
             return SHA256Managed.Create().ComputeHash(Utilities.HexStringToByteArray(strToHash));

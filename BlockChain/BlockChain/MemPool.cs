@@ -7,8 +7,11 @@ using System.Threading.Tasks;
 
 namespace BlockChain
 {
-    //nella classe MemPool vanno inserite le transazioni non confermate. SOLO un client che sta minando inserirà le transazioni nella MemPool.
-    //Va inizializzata all' inizio del mining, ogni transazione confermata va inserita qui
+
+    /// <summary>
+    /// nella classe MemPool vanno inserite le transazioni non confermate. SOLO un client che sta minando inserirà le transazioni nella MemPool.
+    /// Va inizializzata all' inizio del mining, ogni transazione confermata va inserita qui
+    /// </summary>
     class MemPool
     {
         public Queue<Transaction> TxQueue;
@@ -32,11 +35,20 @@ namespace BlockChain
             this.TxQueue = new Queue<Transaction>();
         }
 
+        /// <summary>
+        /// Aggiunge una transazione alla mempool
+        /// </summary>
+        /// <param name="utx">La transazione da inserire</param>
         public void AddUTX(Transaction utx)
         {
             this.TxQueue.Enqueue(utx);
         }
 
+        /// <summary>
+        /// Ritorna una transazione dato il suo hash
+        /// </summary>
+        /// <param name="utxHash">L'hash della transazione da ritornare</param>
+        /// <returns></returns>
         public Transaction GetUTX(string utxHash)
         {
             foreach(Transaction tx in this.TxQueue)
@@ -50,7 +62,10 @@ namespace BlockChain
             return null;
             
         }
-
+        /// <summary>
+        /// Rimuove una transazione dalla mempool
+        /// </summary>
+        /// <param name="utxHash">L'hash della transazione da rimuovere</param>
         public void RemoveUTX(string utxHash)
         {
             foreach (Transaction tx in this.TxQueue)
@@ -63,7 +78,10 @@ namespace BlockChain
             }
             
         }
-
+        /// <summary>
+        /// Inserisce le transazioni di un dato blocco nella mempool
+        /// </summary>
+        /// <param name="block">Il blocco da inserire</param>
         public void DumpBlock(CBlock block)
         {
             foreach(Transaction tx in block.Transactions)
@@ -75,6 +93,11 @@ namespace BlockChain
             }
         }
 
+        /// <summary>
+        /// Ritorna una lista di transazioni
+        /// </summary>
+        /// <param name="utxLimit">Il limite di transazioni da ritornare</param>
+        /// <returns></returns>
         public List<Transaction> GetUTX(int utxLimit)
         {
             List<Transaction> utxList = new List<Transaction>();

@@ -89,6 +89,10 @@ namespace BlockChain
             {
                 return hashList.First<string>();
             }
+            else if (hashList.Count == 0)
+            {
+                return "noTxs";
+            }
             return GenerateMerkleHashes(hashList);
         }
     }

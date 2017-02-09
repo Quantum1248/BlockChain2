@@ -24,7 +24,7 @@ namespace BlockChain
             this.PubKey = RSA.ExportPubKey(csp);
             this.inputs = this.GetEnoughInputs(); //forse vanno anche controllate le firme ma non penso           
             this.Hash = Utilities.SHA2Hash(JsonConvert.SerializeObject(this)); //Calcolo l'hash di questa transazione inizializzata fino a questo punto, esso farà da txId
-            this.Signature = RSA.Sign(Encoding.ASCII.GetBytes(this.Serialize()), csp.ExportParameters(true), false); //firmo la transazione fino a questo punto
+            RSA.HashSignTransaction(this, csp); //firmo la transazione fino a questo punto
 
             //CPeers.Instance.DoRequest(ERequest.SendTransaction, this); TODO : implementa richiesta di invio transazione
         }
@@ -42,7 +42,7 @@ namespace BlockChain
             this.PubKey = RSA.ExportPubKey(csp);
             this.inputs = this.GetEnoughInputs(); //forse vanno anche controllate le firme ma non penso           
             this.Hash = Utilities.SHA2Hash(JsonConvert.SerializeObject(this)); //Calcolo l'hash di questa transazione inizializzata fino a questo punto, esso farà da txId
-            this.Signature = RSA.Sign(Encoding.ASCII.GetBytes(this.Serialize()), csp.ExportParameters(true), false); //firmo la transazione fino a questo punto
+            RSA.HashSignTransaction(this, csp); //firmo la transazione fino a questo punto
             string appDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             string specificFolder = Path.Combine(appDataFolder, "Blockchain\\UTXODB");
             UTXO utxo = new UTXO(this.Hash, this.outputs);

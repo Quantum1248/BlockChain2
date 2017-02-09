@@ -50,6 +50,9 @@ namespace BlockChain
             }
         }
 
+        ///<summary>
+        ///Dato un blocco, rimuove tutti gli UTXO dal disco in base agli input contenuti, poi crea nuovi UTXO in base agli output
+        ///</summary>
         public void ApplyBlock(CBlock block)
         {
             foreach (Transaction tx in block.Transactions)
@@ -81,6 +84,9 @@ namespace BlockChain
             HashTable[hash] = pathList;
         }
 
+        ///<summary>
+        ///Inserisce nell'hashtable un nuovo indirizzo a un dato UTXO, salvandolo poi a tale indirizzo
+        ///</summary>
         public void SetTransactionPath(UTXO utxo)
         {
             string appDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -105,6 +111,9 @@ namespace BlockChain
             HashTable[utxo.TxHash] = pathList;
         }
 
+        ///<summary>
+        ///Ritorna Output dati un address per trovare l'intestatario, un hash per trovare la transazione, e un index per trovare l'Output
+        ///</summary>
         public Output GetUTXO(string hash, string txHash, int outputIndex)
         {
             List<string> pathList = (List<string>)HashTable[hash];
@@ -119,7 +128,9 @@ namespace BlockChain
             }
             return null;
         }
-        //aaa
+        ///<summary>
+        ///Ritorna e rimuove Output dati un address per trovare l'intestatario, un hash per trovare la transazione, e un index per trovare l'Output
+        ///</summary>
         public Output RetrieveRemoveUTXO(string hash, string txHash, int outputIndex)
         {
             Output output;
@@ -150,6 +161,9 @@ namespace BlockChain
             return null;
         }
 
+        ///<summary>
+        ///Rimuove Output dati un address per trovare l'intestatario, un hash per trovare la transazione, e un index per trovare l'Output
+        ///</summary>
         public void RemoveUTXO(string hash, string txHash, int outputIndex)
         {
             Output output;
@@ -178,6 +192,10 @@ namespace BlockChain
                 }
             }
         }
+
+        ///<summary>
+        ///Ritorna lista di UTXO intestati a un dato indirizzo
+        ///</summary>
         public List<UTXO> GetUTXObyHash(string hash)
         {
             List<string> paths = (List<string>)this.HashTable[hash];

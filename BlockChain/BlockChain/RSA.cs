@@ -87,7 +87,7 @@ namespace BlockChain
 
         }
 
-        public static string Sign(byte[] v, RSAParameters RSAKeyInfo, bool DoOAEPPadding)
+        private static string Sign(byte[] v, RSAParameters RSAKeyInfo, bool DoOAEPPadding)
         {
             try
             {
@@ -116,7 +116,7 @@ namespace BlockChain
             }
         }
 
-        public static bool VerifySignature(byte[] hash, byte[] v, RSAParameters RSAKeyInfo, bool DoOAEPPadding)
+        private static bool VerifySignature(byte[] hash, byte[] v, RSAParameters RSAKeyInfo, bool DoOAEPPadding)
         {
                 bool verifiedSig;
                 //Create a new instance of RSACryptoServiceProvider.
