@@ -345,7 +345,7 @@ namespace BlockChain
                     {
                         p.SendCommand(ECommand.GETLASTVALID);
                         msg = p.ReceiveString();
-                        blocks.Add(new CTemporaryBlock(CBlock.Deserialize(msg), p));
+                        blocks.Add(new CTemporaryBlock(CBlock.Deserialize(msg), p, 5));
                     }
                 }
             }
@@ -436,7 +436,7 @@ namespace BlockChain
                     msg = peer.ReceiveString();
                     foreach(string block in msg.Split('/'))
                     {
-                        ris[rangeInDownload.Start + (ulong)c++] = new CTemporaryBlock(JsonConvert.DeserializeObject<CBlock>(block), peer);
+                        ris[rangeInDownload.Start + (ulong)c++] = new CTemporaryBlock(JsonConvert.DeserializeObject<CBlock>(block), peer, 5);
                     }
                 }
             }

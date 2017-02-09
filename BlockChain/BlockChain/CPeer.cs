@@ -249,7 +249,7 @@ namespace BlockChain
                                 case ECommand.RCVMINEDBLOCK:
                                     if (CPeers.Instance.CanReceiveBlock)
                                     {
-                                        CTemporaryBlock newBlock = new CTemporaryBlock(ReceiveBlock(), this);
+                                        CTemporaryBlock newBlock = new CTemporaryBlock(ReceiveBlock(), this, 5);
                                         CBlockChain.Instance.Add(newBlock);
                                     }
                                     break;

@@ -8,8 +8,9 @@ namespace BlockChain
 {
     class CGenesisBlock : CBlock
     {
-        public CGenesisBlock() : base(0,1)
+        public CGenesisBlock()
         {
+            this.Difficulty = 1;
             Header = new CHeader(0, "GENESISBLOCK", "");
             this.Transactions = new List<Transaction>();
             this.Nonce = 0;
