@@ -8,8 +8,6 @@ namespace BlockChain
 {
     enum ECommand
     {
-        LOOK,
-        OK,
         UPDPEERS,
         GETLASTVALID,
         DOWNLOADBLOCK,
@@ -18,6 +16,7 @@ namespace BlockChain
         DISCONNETC,
         DOWNLOADHEADERS,
         GETHEADER,
-        CHAINLENGTH
+        CHAINLENGTH,
+        GETLASTHEADER
     }
 }
