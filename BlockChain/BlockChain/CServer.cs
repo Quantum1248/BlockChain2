@@ -22,7 +22,7 @@ namespace BlockChain
         private static int MAX_PEERS = 30;//deve essere pari
         private static int RESERVED_CONNECTION = MAX_PEERS / 2;//connessioni usate per chi vuole collegarsi con me
         private static int NOT_RESERVED_CONNECTION = MAX_PEERS - RESERVED_CONNECTION;//connessioni che utilizzo io per collegarmi agli altri
-
+        private static string mPublicIp = "";
         private Thread mThreadListener, mThreadPeers;
         private Socket mListener;
         private static int DEFOULT_PORT = 2000;
@@ -102,18 +102,18 @@ namespace BlockChain
             if (Program.DEBUG)
                 CIO.DebugOut("Begin to enstablish connections to other peers...");
             mThreadPeers = new Thread(new ThreadStart(UpdatePeersList));
-            mThreadPeers.Start();
+            //mThreadPeers.Start();
             
             if (Program.DEBUG)
                 CIO.DebugOut("Start listening...");
             mThreadListener = new Thread(new ThreadStart(StartAcceptUsersConnection));
             mThreadListener.Start();
-            /*
+            
             if (Program.DEBUG)
                 CIO.DebugOut("Start update blockchain...");
             mUpdateBlockChainThread = new Thread(new ThreadStart(UpdateBlockchain));
             mUpdateBlockChainThread.Start();
-            */
+            
         }
 
         private void UpdatePeersList()
@@ -124,7 +124,7 @@ namespace BlockChain
                 if (numPeers < NOT_RESERVED_CONNECTION && numPeers>0)
                     mPeers.DoRequest(ERequest.UpdatePeers);
                 //inserire qui il controllo per verificare che i peer presenti siano ancora online?
-                Thread.Sleep(1000);
+                Thread.Sleep(60000);
             }
         }
 
@@ -180,9 +180,9 @@ namespace BlockChain
             bool isSynced = false;
             ulong addedBlocks = 0;
             CTemporaryBlock[] newBlocks;
-            CHeaderChain[] forkChain;
-            CHeaderChain bestChain;
-            CTemporaryBlock lastCommonBlock= mPeers.DoRequest(ERequest.LastCommonValidBlock) as CTemporaryBlock;
+            CParallelChain[] forkChains;
+            CParallelChain bestChain;
+            CBlock lastCommonBlock= mPeers.DoRequest(ERequest.LastCommonValidBlock) as CBlock;
             CTemporaryBlock otherLastValidBlock = mPeers.DoRequest(ERequest.LastValidBlock) as CTemporaryBlock;
             if (Program.DEBUG)
                 if (otherLastValidBlock != null)
@@ -195,16 +195,16 @@ namespace BlockChain
                 isSynced = true;
 
             //TODO potrebbero dover essere scaricati un numero maggiore di MAXINT blocchi
-            while (!isSynced)
+           // while (!isSynced)
             {
-                newBlocks = mPeers.DoRequest(ERequest.DownloadMissingBlock, new object[] { CBlockChain.Instance.LastValidBlock.Header.BlockNumber, lastCommonBlock.Header.BlockNumber }) as CTemporaryBlock[];
+                newBlocks = mPeers.DoRequest(ERequest.DownloadMissingBlock, new object[] { CBlockChain.Instance.LastValidBlock.Header.BlockNumber+1, lastCommonBlock.Header.BlockNumber +1 }) as CTemporaryBlock[];
                 CBlockChain.Instance.Add(newBlocks);
-                forkChain = mPeers.DoRequest(ERequest.FindForkChain, lastCommonBlock) as CHeaderChain[];
-                if (forkChain.Length > 0)
+                forkChains = mPeers.DoRequest(ERequest.FindParallelChain, lastCommonBlock) as CParallelChain[];
+                if (forkChains.Length > 0)
                 {
-                    foreach (CHeaderChain hc in forkChain)
+                    foreach (CParallelChain hc in forkChains)
                         hc.DownloadHeaders();
-                    bestChain = CBlockChain.Instance.BestChain(forkChain);
+                    bestChain = CBlockChain.Instance.BestChain(forkChains);
                     bestChain.DownloadBlocks();
                     if (CBlockChain.ValidateHeaders(bestChain))
                     {
@@ -227,7 +227,7 @@ namespace BlockChain
             //(!) da cambiare
             /*while (true)
                 Miner.Scrypt(new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash,2));        //(!) da cambiare a seconda di come verrà fattp il miner
-                */
+              */  
 
         }
 
@@ -268,7 +268,9 @@ namespace BlockChain
 
         public static string GetPublicIPAddress()
         {
-            return new WebClient().DownloadString("http://icanhazip.com");
+            if(mPublicIp=="")
+                mPublicIp= new WebClient().DownloadString("http://icanhazip.com");
+            return mPublicIp;
         }
     }
 }

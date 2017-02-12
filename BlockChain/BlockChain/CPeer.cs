@@ -125,76 +125,76 @@ namespace BlockChain
                 CIO.DebugOut("Send " + Cmd + ".");
             switch (Cmd)
             {
-                case ECommand.LOOK:
-                    SendString("LOOK");
-                    break;
-                case ECommand.OK:
-                    SendString("OK");
-                    break;
                 case ECommand.UPDPEERS:
-                    SendString("UPDPEERS");
+                    SendString("/UPDPEERS");
                     break;
                 case ECommand.GETLASTVALID:
-                    SendString("GETLASTVALID");
+                    SendString("/GETLASTVALID");
                     break;
                 case ECommand.DOWNLOADBLOCK:
-                    SendString("DOWNLOADBLOCK");
+                    SendString("/DOWNLOADBLOCK");
                     break;
                 case ECommand.DOWNLOADBLOCKS:
-                    SendString("DOWNLOADBLOCKS");
+                    SendString("/DOWNLOADBLOCKS");
                     break;
                 case ECommand.RCVMINEDBLOCK:
-                    SendString("RCVMINEDBLOCK");
+                    SendString("/RCVMINEDBLOCK");
                     break;
                 case ECommand.DISCONNETC:
-                    SendString("DISCONNETC");
+                    SendString("/DISCONNETC");
                     break;
                 case ECommand.DOWNLOADHEADERS:
-                    SendString("DOWNLOADHEADERS");
+                    SendString("/DOWNLOADHEADERS");
                     break;
                 case ECommand.GETHEADER:
-                    SendString("GETHEADER");
+                    SendString("/GETHEADER");
                     break;
                 case ECommand.CHAINLENGTH:
-                    SendString("CHAINLENGTH");
+                    SendString("/CHAINLENGTH");
+                    break;
+                case ECommand.GETLASTHEADER:
+                    SendString("/GETLASTHEADER");
                     break;
                 default:
                     throw new ArgumentException("Comando al peer non supportato.");
             }
         }
 
-        public ECommand ReceiveCommand()
+        public ECommand ReceiveCommand(string msg=null)
         {
-            string msg = ReceiveString();
+            if(msg==null)
+                msg = ReceiveString();
+            else
+            {
+                switch (msg)
+                {
+                    case "/UPDPEERS":
+                        return ECommand.UPDPEERS;
+                    case "/GETLASTVALID":
+                        return ECommand.GETLASTVALID;
+                    case "/DOWNLOADBLOCK":
+                        return ECommand.DOWNLOADBLOCK;
+                    case "/DOWNLOADBLOCKS":
+                        return ECommand.DOWNLOADBLOCKS;
+                    case "/RCVMINEDBLOCK":
+                        return ECommand.RCVMINEDBLOCK;
+                    case "/DISCONNETC":
+                        return ECommand.DISCONNETC;
+                    case "/DOWNLOADHEADERS":
+                        return ECommand.DOWNLOADHEADERS;
+                    case "/GETHEADER":
+                        return ECommand.GETHEADER;
+                    case "/CHAINLENGTH":
+                        return ECommand.CHAINLENGTH;
+                    case "/GETLASTHEADER":
+                        return ECommand.GETLASTHEADER;
+                    default:
+                        throw new ArgumentException("Ricevuta stringa di comando non supportata.");
+                }
+            }
             if (Program.DEBUG)
                 CIO.DebugOut("Received " + msg + ".");
-            switch (msg)
-            {
-                case "LOOK":
-                    return ECommand.LOOK;
-                case "OK":
-                    return ECommand.OK;
-                case "UPDPEERS":
-                    return ECommand.UPDPEERS;
-                case "GETLASTVALID":
-                    return ECommand.GETLASTVALID;
-                case "DOWNLOADBLOCK":
-                    return ECommand.DOWNLOADBLOCK;
-                case "DOWNLOADBLOCKS":
-                    return ECommand.DOWNLOADBLOCKS;
-                case "RCVMINEDBLOCK":
-                    return ECommand.RCVMINEDBLOCK;
-                case "DISCONNETC":
-                    return ECommand.DISCONNETC;
-                case "DOWNLOADHEADERS":
-                    return ECommand.DOWNLOADHEADERS;
-                case "GETHEADER":
-                    return ECommand.GETHEADER;
-                case "CHAINLENGTH":
-                    return ECommand.CHAINLENGTH;
-                default:
-                    throw new ArgumentException("Ricevuta stringa di comando non supportata.");
-            }
+            return default(ECommand);
         }
 
         public void SendBlocks(CBlock[] Blocks)
@@ -231,12 +231,17 @@ namespace BlockChain
 
         public void SendString(string Msg)
         {
+            if (Program.DEBUG)
+                CIO.DebugOut("Send string " + Msg + ".");
             SendData(ASCIIEncoding.ASCII.GetBytes(Msg));
         }
 
         public string ReceiveString()
         {
-            return ASCIIEncoding.ASCII.GetString(ReceiveData());
+            string msg= ASCIIEncoding.ASCII.GetString(ReceiveData());
+            if (Program.DEBUG)
+                CIO.DebugOut("Received string " + msg + ".");
+            return msg;
         }
 
         public void SendULong(ulong Nmb)
@@ -257,7 +262,23 @@ namespace BlockChain
 
         public byte[] ReceiveData()
         {
-            return CServer.ReceiveData(mSocket);
+            int c = 0;
+            byte[] res = null;
+            
+                while (c < 10)
+                {
+
+                    if (Program.DEBUG)
+                        CIO.DebugOut(Convert.ToString(c));
+                    res = CServer.ReceiveData(mSocket);
+                    if (Encoding.ASCII.GetString(res)[0] == '/')
+                        DoCommand(ReceiveCommand(ASCIIEncoding.ASCII.GetString(res)));
+                    else
+                        c = 10;
+                    c++;
+                }
+            
+            return res;
         }
         #endregion NetworkCommunications
 
@@ -267,7 +288,6 @@ namespace BlockChain
         /// </summary>
         public void Listen()
         {
-            ECommand cmd;
             while (mIsConnected)    //bisogna bloccarlo in qualche modo all'uscita del programma credo
             {
                 lock (mSocket)
@@ -276,63 +296,73 @@ namespace BlockChain
                     mSocket.ReceiveTimeout = 1000;
                     try
                     {
-                        cmd = ReceiveCommand();
-                        if (cmd == ECommand.LOOK)
-                        {
-                            cmd = ReceiveCommand();
-                            switch (cmd)
-                            {
-                                case ECommand.UPDPEERS:
-                                    if (Program.DEBUG)
-                                        Console.WriteLine("UPDPEERS received by " + mIp);
-                                    CPeers.Instance.DoRequest(ERequest.SendPeersList, this);
-                                    break;
-                                case ECommand.GETLASTVALID:
-                                    if (Program.DEBUG)
-                                        Console.WriteLine("GETLASTVALID received by " + mIp);
-                                    SendString(CBlockChain.Instance.LastValidBlock.Serialize());
-                                    break;
-                                case ECommand.DOWNLOADBLOCKS:
-                                    if (Program.DEBUG)
-                                        Console.WriteLine("DOWNLOADBLOCKS received by " + mIp);
-                                    ulong initialIndex = ReceiveULong();
-                                    ulong finalIndex = ReceiveULong();
-                                    SendBlocks(RetriveBlocks(initialIndex, finalIndex));
-                                    break;
-                                case ECommand.GETHEADER:
-                                    if (Program.DEBUG)
-                                        Console.WriteLine("GETHEADER received by " + mIp);
-                                    ulong index = ReceiveULong();
-                                    SendHeader(CBlockChain.Instance.RetriveBlock(index).Header);
-                                    break;
-                                case ECommand.CHAINLENGTH:
-                                    if (Program.DEBUG)
-                                        Console.WriteLine("CHAINLENGTH received by " + mIp);
-                                    SendULong(CBlockChain.Instance.LastBlock.Header.BlockNumber);
-                                    break;
-                                case ECommand.RCVMINEDBLOCK:
-                                    if (Program.DEBUG)
-                                        Console.WriteLine("RCVMINEDBLOCK received by " + mIp);
-                                    if (CPeers.Instance.CanReceiveBlock)
-                                    {
-                                        CTemporaryBlock newBlock = new CTemporaryBlock(ReceiveBlock(), this);
-                                        CBlockChain.Instance.Add(newBlock);
-                                    }
-                                    break;
-                                default:
-                                    if (Program.DEBUG)
-                                        CIO.DebugOut("Ricevuto comando sconosciuto: " + cmd + " da " + IP);
-                                    break;
-                            }
-                        }
+                        ReceiveCommand();
                     }
                     catch (SocketException)
                     {
-                        Thread.Sleep(1000); //(!)forse è meglio attendere fuori dal lock. E forse non serve comunque perchè il thread si ferma già quando è in attesa di connessioni.
                     }
                     //il timer viene reinpostato a defoult per non causare problemi con altre comunicazioni che potrebbero avvenire in altre parti del codice.
                     mSocket.ReceiveTimeout = 0;
                 }
+                Thread.Sleep(5000);
+            }
+        }
+
+        public void DoCommand(ECommand cmd)
+        {
+            ulong index;
+            switch (cmd)
+            {
+                case ECommand.UPDPEERS:
+                    if (Program.DEBUG)
+                        CIO.DebugOut("UPDPEERS received by " + mIp);
+                    CPeers.Instance.DoRequest(ERequest.SendPeersList, this);
+                    break;
+                case ECommand.GETLASTVALID:
+                    if (Program.DEBUG)
+                        CIO.DebugOut("GETLASTVALID received by " + mIp);
+                    SendString(CBlockChain.Instance.LastValidBlock.Serialize());
+                    break;
+                case ECommand.DOWNLOADBLOCK:
+                    if (Program.DEBUG)
+                        CIO.DebugOut("DOWNLOADBLOCK received by " + mIp);
+                    index = ReceiveULong();
+                    SendBlock(CBlockChain.Instance.RetriveBlock(index));
+                    break;
+                case ECommand.DOWNLOADBLOCKS:
+                    if (Program.DEBUG)
+                        CIO.DebugOut("DOWNLOADBLOCKS received by " + mIp);
+                    ulong initialIndex = ReceiveULong();
+                    ulong finalIndex = ReceiveULong();
+                    SendBlocks(RetriveBlocks(initialIndex, finalIndex));
+                    break;
+                case ECommand.GETHEADER:
+                    if (Program.DEBUG)
+                        CIO.DebugOut("GETHEADER received by " + mIp);
+                    index = ReceiveULong();
+                    SendHeader(CBlockChain.Instance.RetriveBlock(index).Header);
+                    break;
+                case ECommand.CHAINLENGTH:
+                    if (Program.DEBUG)
+                        CIO.DebugOut("CHAINLENGTH received by " + mIp);
+                    SendULong(CBlockChain.Instance.LastBlock.Header.BlockNumber);
+                    break;
+                case ECommand.RCVMINEDBLOCK:
+                    if (Program.DEBUG)
+                        CIO.DebugOut("RCVMINEDBLOCK received by " + mIp);
+                    if (CPeers.Instance.CanReceiveBlock)
+                    {
+                        CTemporaryBlock newBlock = new CTemporaryBlock(ReceiveBlock(), this);
+                        CBlockChain.Instance.Add(newBlock);
+                    }
+                    break;
+                case ECommand.GETLASTHEADER:
+                    SendHeader(CBlockChain.Instance.LastValidBlock.Header);
+                    break;
+                default:
+                    if (Program.DEBUG)
+                        CIO.DebugOut("Ricevuto comando sconosciuto: " + cmd + " da " + IP);
+                    break;
             }
         }
         

@@ -10,16 +10,10 @@ namespace BlockChain
     {
         UpdatePeers,
         SendPeersList,
-        LastBlockNumber,
-        UpdateBlockchain,
-        DownloadMissingBlock,
         LastValidBlock,
-        DownloadMissingValidBlock,
-        DownloadSixtyBlock,
+        DownloadMissingBlock,
         BroadcastMinedBlock,
-        FindLastCommonIndex,
         LastCommonValidBlock,
-        FindForkChain,
-        SendNewBlock
+        FindParallelChain
     }
 }
