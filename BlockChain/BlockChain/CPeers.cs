@@ -388,6 +388,7 @@ namespace BlockChain
                         tmp1 = peersPool[i].ReceiveHeader();
                         res.Push(new CParallelChain());
                         res.Peek().AddPeer(peersPool[i]);
+                        res.Peek().FinalIndex = tmp1.BlockNumber;
                         peersPool[i] = null;
                         for(int j=i+1;j<peersPool.Length;j++)
                         {

@@ -195,7 +195,7 @@ namespace BlockChain
                 isSynced = true;
 
             //TODO potrebbero dover essere scaricati un numero maggiore di MAXINT blocchi
-           // while (!isSynced)
+            while (!isSynced)
             {
                 newBlocks = mPeers.DoRequest(ERequest.DownloadMissingBlock, new object[] { CBlockChain.Instance.LastValidBlock.Header.BlockNumber+1, lastCommonBlock.Header.BlockNumber +1 }) as CTemporaryBlock[];
                 CBlockChain.Instance.Add(newBlocks);

@@ -109,8 +109,7 @@ namespace BlockChain
             streamReader.Close();
 
             return null;
-        }
-            
+        }  
 
         public static bool ValidateHeaders(CParallelChain HeaderChain)
         {

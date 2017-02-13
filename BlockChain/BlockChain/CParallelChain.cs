@@ -44,12 +44,14 @@ namespace BlockChain
 
         public void DownloadHeaders()
         {
+            InitialIndex = CBlockChain.Instance.LastValidBlock.Header.BlockNumber;
             mHeaders = CPeers.Instance.DistribuiteDownloadHeaders(InitialIndex, FinalIndex, mPeers.ToArray());
             mLength =(ulong) mHeaders.Length;
         }
 
         public void DownloadBlocks()
         {
+            InitialIndex = CBlockChain.Instance.LastValidBlock.Header.BlockNumber;
             mBlocks = CPeers.Instance.DistribuiteDownloadBlocks(InitialIndex, FinalIndex, mPeers.ToArray());
             mLength = (ulong)mBlocks.Length;
         }
