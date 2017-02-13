@@ -21,6 +21,8 @@ namespace BlockChain
         private Thread mThreadListener;
         private bool mIsConnected;
 
+        private Queue<string> RequestQueue = new Queue<string>();
+        private Queue<string> DataQueue = new Queue<string>();
         #region Constructors&Properties
         private CPeer()
         {
@@ -113,7 +115,48 @@ namespace BlockChain
 
         #endregion Constructors&Properties
 
+        /// <summary>
+        /// Rimane in attesa di messaggi dal peer a cui è collegato il socket mSocket.
+        /// </summary>
+        private void Listen()
+        {
+            string msg;
+            while (mIsConnected)    //bisogna bloccarlo in qualche modo all'uscita del programma credo
+            {
+                lock (mSocket)
+                {
+                    //il timer viene settato cosicchè in caso non si ricevino comunicazioni venga ritornata un'eccezione, in modo che il programma vada avanti e tolga il lock al socket.
+                    mSocket.ReceiveTimeout = 1000;
+                    try
+                    {
+                        msg=ReceiveString();
+                        if(FormatIsCorrect(msg))
+                        {
+                            if(MessageTypeOf(msg)==EMessageType.Request)
+                                if (FormatIsCorrect(msg, RequestType(msg)))
+                                    RequestQueue.Enqueue(msg);
+                                else
+                                    Disconnetc();
+                            else if(EMessageType(msg)==EMessageType.Data)
+                                if (FormatIsCorrect(msg, DataType(msg)))
+                                    DataQueue.Enqueue(msg);
+                                else
+                                    Disconnetc();
+                        }
+                        else
+                            Disconnetc();
+                    }
+                    catch (SocketException)
+                    {
+                    }
+                    //il timer viene reinpostato a defoult per non causare problemi con altre comunicazioni che potrebbero avvenire in altre parti del codice.
+                    mSocket.ReceiveTimeout = 0;
+                }
+                Thread.Sleep(1000);
+            }
+        }
 
+      
         /*public void Disconnect()
         {
             SendCommand(ECommand.DISCONNETC);
@@ -288,30 +331,7 @@ namespace BlockChain
         #endregion NetworkCommunications
 
 
-        /// <summary>
-        /// Rimane in attesa di messaggi dal peer a cui è collegato il socket mSocket.
-        /// </summary>
-        public void Listen()
-        {
-            while (mIsConnected)    //bisogna bloccarlo in qualche modo all'uscita del programma credo
-            {
-                lock (mSocket)
-                {
-                    //il timer viene settato cosicchè in caso non si ricevino comunicazioni venga ritornata un'eccezione, in modo che il programma vada avanti e tolga il lock al socket.
-                    mSocket.ReceiveTimeout = 1000;
-                    try
-                    {
-                        ReceiveCommand();
-                    }
-                    catch (SocketException)
-                    {
-                    }
-                    //il timer viene reinpostato a defoult per non causare problemi con altre comunicazioni che potrebbero avvenire in altre parti del codice.
-                    mSocket.ReceiveTimeout = 0;
-                }
-                Thread.Sleep(5000);
-            }
-        }
+        
 
         public void DoCommand(ECommand cmd)
         {

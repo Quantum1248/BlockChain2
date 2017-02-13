@@ -63,6 +63,7 @@
     <Compile Include="CServer.cs" />
     <Compile Include="CTemporaryBlock.cs" />
     <Compile Include="ECommand.cs" />
+    <Compile Include="EMessageType.cs" />
     <Compile Include="ERequest.cs" />
     <Compile Include="Input.cs" />
     <Compile Include="MemPool.cs" />
