@@ -20,6 +20,8 @@ namespace BlockChain
         private RSACryptoServiceProvider cspMine;
         private Thread mThreadListener;
         private bool mIsConnected;
+
+        #region Constructors&Properties
         private CPeer()
         {
         }
@@ -109,7 +111,10 @@ namespace BlockChain
             }
         }
 
-        public void Disconnect()
+        #endregion Constructors&Properties
+
+
+        /*public void Disconnect()
         {
             SendCommand(ECommand.DISCONNETC);
             mSocket.Close();
@@ -386,5 +391,5 @@ namespace BlockChain
         }
 
 
+    }*/
     }
-}
