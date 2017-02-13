@@ -6,9 +6,7 @@ using System.Threading.Tasks;
 
 namespace BlockChain
 {
-    enum EMessageType
+    class CMessage
     {
-        Request,
-        Data
     }
 }
