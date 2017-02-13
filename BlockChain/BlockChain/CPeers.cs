@@ -141,24 +141,27 @@ namespace BlockChain
             Stack<CHeader> headers = new Stack<CHeader>();
             CBlock res=null;
             foreach (CPeer p in mPeers)
-            {
                 if (p != null)
-                {
                     lock (p.Socket)
                     {
-
+                        try
+                        {
+                            p.Socket.ReceiveTimeout = 5000;
                             p.SendCommand(ECommand.CHAINLENGTH);
                             tmp = p.ReceiveULong();
-                        
-                        if (tmp < minLength)
-                            minLength = tmp;
+                            if (tmp < minLength)
+                                minLength = tmp;
+                            
+                        }
+                        catch (SocketException)
+                        {  }
+                        p.Socket.ReceiveTimeout = 0;
                     }
-                }
-            }
 
             CRange r = new CRange(CBlockChain.Instance.LastValidBlock.Header.BlockNumber, minLength);
-            if (r.Start < r.End)
+            if (r.End != ulong.MaxValue && r.Start < r.End)
             {
+                //trova l'ultimo blocco uguale tra i peer e salva l'indice di quel blocco in r.start
                 while (r.Start<r.End)
                 {
                     found = true;
@@ -166,24 +169,16 @@ namespace BlockChain
                     if (r.End-r.Start == 1)
                         tmp++;
                     foreach (CPeer p in mPeers)
-                    {
                         if (p != null)
-                        {
                             lock (p.Socket)
                             {
-
-                                    p.SendCommand(ECommand.GETHEADER);
-                                    p.SendULong(tmp);
-                                    headers.Push(p.ReceiveHeader());
-                                
+                                p.SendCommand(ECommand.GETHEADER);
+                                p.SendULong(tmp);
+                                headers.Push(p.ReceiveHeader());
                             }
-                        }
-                    }
                     while (headers.Count > 1 && found)
-                    {
                         if (!(headers?.Pop().Hash == headers?.Peek().Hash))
                             found = false;
-                    }
                     if (headers.Count == 1)
                         headers.Pop();
                     //se tutti i blocchi sono uguali allora found=true, mentre se ce n'è qualcuno di diverso found=false
@@ -193,26 +188,29 @@ namespace BlockChain
                         r.End = tmp;
                     else
                         r.End--;
-
                 }
+                /*
+                //controlla se l'ultimo blocco è valido?
                 foreach (CPeer p in mPeers)
-                {
                     if (p != null)
-                    {
                         lock (p.Socket)
                         {
-
+                            try
+                            {
+                                p.Socket.ReceiveTimeout = 5000;
                                 p.SendCommand(ECommand.DOWNLOADBLOCK);
                                 p.SendULong(r.Start);
                                 res = p.ReceiveBlock();
-                            
-                            if (res != null && CBlockChain.Validate(res))
-                                break;
-                            else
-                                p.Disconnect();
+                                if (res != null && CBlockChain.Validate(res))
+                                    break;
+                                else
+                                    p.Disconnect();
+                            }
+                            catch (SocketException)
+                            { }
+                            p.Socket.ReceiveTimeout = 0;
                         }
-                    }
-                }
+                        */
                 return res;
             }
             else
@@ -343,28 +341,20 @@ namespace BlockChain
             string msg;
 
             foreach (CPeer p in mPeers)
-            {
                 if (p != null)
-                {
                     lock (p.Socket)
                     {
- 
-                            p.SendCommand(ECommand.GETLASTVALID);
-                            msg = p.ReceiveString();
-                            blocks.Add(new CTemporaryBlock(CBlock.Deserialize(msg), p));
-                        
+                        p.SendCommand(ECommand.GETLASTVALID);
+                        msg = p.ReceiveString();
+                        blocks.Add(new CTemporaryBlock(CBlock.Deserialize(msg), p));
                     }
-                }
-            }
             if (blocks.Count > 0)
                 if (blocks[0] != null)
                 {
                     ris = blocks[0];
                     foreach (CTemporaryBlock b in blocks)
-                    {
                         if (ris.Header.BlockNumber < b.Header.BlockNumber)
                             ris = b;
-                    }
                 }
             return ris;
 
@@ -388,6 +378,7 @@ namespace BlockChain
                         tmp1 = peersPool[i].ReceiveHeader();
                         res.Push(new CParallelChain());
                         res.Peek().AddPeer(peersPool[i]);
+                        res.Peek().FinalIndex = tmp1.BlockNumber;
                         peersPool[i] = null;
                         for(int j=i+1;j<peersPool.Length;j++)
                         {

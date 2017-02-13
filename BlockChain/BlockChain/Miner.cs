@@ -32,7 +32,6 @@ namespace BlockChain
                         block.Header.Hash = hash;
                         CBlockChain.Instance.Add(new CTemporaryBlock(block,null));
                         CPeers.Instance.DoRequest(ERequest.BroadcastMinedBlock, block);
-                        Thread.Sleep(200);
                         return;
                     }
                     if (!(hash[i] == '0'))
@@ -56,15 +55,15 @@ namespace BlockChain
 
         public static bool Verify(CBlock block)
         {
-            string toHash = block.Header.PreviousBlockHash + block.Nonce + block.Timestamp + block.MerkleRoot;
-            if (block.Header.Hash == Utilities.ByteArrayToString(SCrypt.ComputeDerivedKey(Encoding.ASCII.GetBytes(toHash), Encoding.ASCII.GetBytes(toHash), 1024, 1, 1, 1, 32)))
+            if (block.Header.PreviousBlockHash == CBlockChain.Instance.RetriveBlock(block.Header.BlockNumber - 1).Header.Hash)
             {
-                return true;
+                string toHash = block.Header.PreviousBlockHash + block.Nonce + block.Timestamp + block.MerkleRoot;
+                if (block.Header.Hash == Utilities.ByteArrayToString(SCrypt.ComputeDerivedKey(Encoding.ASCII.GetBytes(toHash), Encoding.ASCII.GetBytes(toHash), 1024, 1, 1, 1, 32)))
+                {
+                    return true;
+                }
             }
-            else
-            {
-                return false;
-            }
+            return false;
         }
     }
 }

@@ -195,7 +195,7 @@ namespace BlockChain
                 isSynced = true;
 
             //TODO potrebbero dover essere scaricati un numero maggiore di MAXINT blocchi
-           // while (!isSynced)
+            while (!isSynced)
             {
                 newBlocks = mPeers.DoRequest(ERequest.DownloadMissingBlock, new object[] { CBlockChain.Instance.LastValidBlock.Header.BlockNumber+1, lastCommonBlock.Header.BlockNumber +1 }) as CTemporaryBlock[];
                 CBlockChain.Instance.Add(newBlocks);
@@ -205,9 +205,9 @@ namespace BlockChain
                     foreach (CParallelChain hc in forkChains)
                         hc.DownloadHeaders();
                     bestChain = CBlockChain.Instance.BestChain(forkChains);
-                    bestChain.DownloadBlocks();
                     if (CBlockChain.ValidateHeaders(bestChain))
                     {
+                        bestChain.DownloadBlocks();
                         mPeers.ValidPeers(bestChain.Peers);
                         addedBlocks = CBlockChain.Instance.Add(bestChain.Blocks);
                         if (addedBlocks >= bestChain.Length)    //solo se scarica tutti i blocchi
@@ -225,9 +225,10 @@ namespace BlockChain
                 }
             }
             //(!) da cambiare
-            /*while (true)
+            /*
+            while (true)
                 Miner.Scrypt(new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash,2));        //(!) da cambiare a seconda di come verrà fattp il miner
-              */  
+              */
 
         }
 
