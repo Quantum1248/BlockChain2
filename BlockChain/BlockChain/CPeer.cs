@@ -99,7 +99,7 @@ namespace BlockChain
             if (SuccessfulConnected)
             {
                 if (Program.DEBUG)
-                    CIO.DebugOut("Connection with " + mIp + ":" + mPort+" enstablished!");
+                    CIO.DebugOut("Connection with " + mIp + ":" + mPort + " enstablished!");
                 mIsConnected = true;
                 StartListening();
                 return true;
@@ -107,10 +107,18 @@ namespace BlockChain
             else
             {
                 if (Program.DEBUG)
-                    CIO.DebugOut("Connection with " + mIp + ":" + mPort+" failed!");
+                    CIO.DebugOut("Connection with " + mIp + ":" + mPort + " failed!");
                 asyncConnection.Dispose();
                 return false;
             }
+        }
+
+        public void Disconnect()
+        {
+            mSocket.Close();
+            mSocket.Dispose();//(!) in teoria è inutile perchè fa già tutto Close()
+            CPeers.Instance.InvalidPeers(new CPeer[] { this });
+            mIsConnected = false;
         }
 
         #endregion Constructors&Properties
@@ -120,7 +128,7 @@ namespace BlockChain
         /// </summary>
         private void Listen()
         {
-            string msg;
+            CMessage msg;
             while (mIsConnected)    //bisogna bloccarlo in qualche modo all'uscita del programma credo
             {
                 lock (mSocket)
@@ -129,26 +137,22 @@ namespace BlockChain
                     mSocket.ReceiveTimeout = 1000;
                     try
                     {
-                        msg=ReceiveString();
-                        if(FormatIsCorrect(msg))
+                        msg =JsonConvert.DeserializeObject<CMessage>(ReceiveString());
+                        if (FormatIsCorrect(msg))
                         {
-                            if(MessageTypeOf(msg)==EMessageType.Request)
-                                if (FormatIsCorrect(msg, RequestType(msg)))
+                            if (msg.Type == EMessageType.Request)
                                     RequestQueue.Enqueue(msg);
-                                else
-                                    Disconnetc();
-                            else if(EMessageType(msg)==EMessageType.Data)
-                                if (FormatIsCorrect(msg, DataType(msg)))
+                            else if (msg.Type == EMessageType.Data)
                                     DataQueue.Enqueue(msg);
-                                else
-                                    Disconnetc();
                         }
                         else
-                            Disconnetc();
+                            Disconnect();
                     }
                     catch (SocketException)
                     {
                     }
+                    catch(JsonSerializationException)
+                    { Disconnect(); }
                     //il timer viene reinpostato a defoult per non causare problemi con altre comunicazioni che potrebbero avvenire in altre parti del codice.
                     mSocket.ReceiveTimeout = 0;
                 }
@@ -156,15 +160,8 @@ namespace BlockChain
             }
         }
 
-      
-        /*public void Disconnect()
-        {
-            SendCommand(ECommand.DISCONNETC);
-            mSocket.Close();
-            mSocket.Dispose();//(!) in teoria è inutile perchè fa già tutto Close()
-            CPeers.Instance.InvalidPeers(new CPeer[] { this });
-            mIsConnected = false;
-        }
+
+        /*
 
         #region NetworkCommunications
         public void SendCommand(ECommand Cmd)
@@ -410,6 +407,6 @@ namespace BlockChain
             return ris;
         }
 
-
-    }*/
+    */
     }
+}

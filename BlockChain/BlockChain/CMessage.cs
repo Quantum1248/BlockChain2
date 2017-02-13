@@ -8,5 +8,15 @@ namespace BlockChain
 {
     class CMessage
     {
+        public EMessageType Type;
+        public string Data;
+        public int ID;
+
+        public CMessage()
+        {
+            Type = default(EMessageType);
+            Data = "";
+            ID = 0;
+        }
     }
 }
