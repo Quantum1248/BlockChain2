@@ -21,9 +21,13 @@ namespace BlockChain
         private Thread mThreadListener;
         private bool mIsConnected;
 
-        private Queue<string> RequestQueue = new Queue<string>();
-        private Queue<string> DataQueue = new Queue<string>();
-        #region Constructors&Properties
+        private Queue<CMessage> RequestQueue = new Queue<CMessage>();
+        private Queue<CMessage> DataQueue = new Queue<CMessage>();
+        private List<int> ValidID = new List<int>();//forse non serve
+        public DateTime LastCommunication = DateTime.Now;
+
+        #region Constructors&Properties&Inizialization
+
         private CPeer()
         {
         }
@@ -45,9 +49,9 @@ namespace BlockChain
             mIsConnected = true;
         }
 
-        //Ritorna l'oggetto solo se i parametri sono corretti
         public static CPeer CreatePeer(string IP_Address, int Port)
         {
+            //Ritorna l'oggetto solo se i parametri sono corretti
             IPAddress ip;
             if (IPAddress.TryParse(IP_Address, out ip))
                 return new CPeer(ip, Port);
@@ -55,6 +59,7 @@ namespace BlockChain
                 return null;
 
         }
+
         public static CPeer CreatePeer(string IP_Address, int Port, Socket Sck)
         {
             IPAddress ip;
@@ -121,7 +126,13 @@ namespace BlockChain
             mIsConnected = false;
         }
 
-        #endregion Constructors&Properties
+        public void StartListening()
+        {
+            mThreadListener = new Thread(new ThreadStart(Listen));
+            mThreadListener.Start();
+        }
+
+        #endregion Constructors&Properties&Inizialization
 
         /// <summary>
         /// Rimane in attesa di messaggi dal peer a cui è collegato il socket mSocket.
@@ -138,12 +149,14 @@ namespace BlockChain
                     try
                     {
                         msg =JsonConvert.DeserializeObject<CMessage>(ReceiveString());
-                        if (FormatIsCorrect(msg))
+                        if (CValidator.ValidateMessage(msg))
                         {
                             if (msg.Type == EMessageType.Request)
-                                    RequestQueue.Enqueue(msg);
-                            else if (msg.Type == EMessageType.Data)
-                                    DataQueue.Enqueue(msg);
+                                RequestQueue.Enqueue(msg);
+                            else if (msg.Type == EMessageType.Data && ValidID.Contains(msg.ID))
+                                DataQueue.Enqueue(msg);
+                            else if (Program.DEBUG)
+                                throw new ArgumentException("MessageType "+msg.Type+" non supportato.");
                         }
                         else
                             Disconnect();
@@ -160,6 +173,34 @@ namespace BlockChain
             }
         }
 
+
+        private void SendString(string Msg)
+        {
+            SendData(ASCIIEncoding.ASCII.GetBytes(Msg));
+            if (Program.DEBUG)
+                CIO.DebugOut("Sent string " + Msg + ".");
+        }
+
+        private string ReceiveString()
+        {
+            string msg = ASCIIEncoding.ASCII.GetString(ReceiveData());
+            if (Program.DEBUG)
+                CIO.DebugOut("Received string " + msg + ".");
+            return msg;
+        }
+
+        //TODO Criptare le comunicazioni
+        private void SendData(byte[] Msg)
+        {
+            CServer.SendData(mSocket, Msg);
+        }
+
+        private byte[] ReceiveData()
+        {
+            byte[] res= CServer.ReceiveData(mSocket);
+            LastCommunication = DateTime.Now;
+            return res;
+        }
 
         /*
 
@@ -299,32 +340,6 @@ namespace BlockChain
             return BitConverter.ToUInt64(ReceiveData(),0);
         }
 
-        //TODO Criptare le comunicazioni
-        public void SendData(byte[] Msg)
-        {
-            CServer.SendData(mSocket, Msg);//non è asincrono!!
-        }
-
-        public byte[] ReceiveData()
-        {
-            int c = 0;
-            byte[] res = null;
-            
-                while (c < 10)
-                {
-
-                    if (Program.DEBUG)
-                        CIO.DebugOut(Convert.ToString(c));
-                    res = CServer.ReceiveData(mSocket);
-                    if (Encoding.ASCII.GetString(res)[0] == '/')
-                        DoCommand(ReceiveCommand(ASCIIEncoding.ASCII.GetString(res)));
-                    else
-                        c = 10;
-                    c++;
-                }
-            
-            return res;
-        }
         #endregion NetworkCommunications
 
 
@@ -389,11 +404,7 @@ namespace BlockChain
         }
         
 
-        public void StartListening()
-        {
-            mThreadListener = new Thread(new ThreadStart(Listen));
-            mThreadListener.Start();
-        }
+
 
         private CBlock[] RetriveBlocks(ulong initialIndex,ulong finalIndex)
         {

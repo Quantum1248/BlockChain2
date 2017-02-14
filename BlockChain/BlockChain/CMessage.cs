@@ -18,5 +18,11 @@ namespace BlockChain
             Data = "";
             ID = 0;
         }
+
+        public CMessage(EMessageType Type, string Data)
+        {
+            this.Type = Type;
+            this.Data = Data;
+        }
     }
 }

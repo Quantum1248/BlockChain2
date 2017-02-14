@@ -80,6 +80,7 @@
     <Compile Include="Utilities.cs" />
     <Compile Include="UTXO.cs" />
     <Compile Include="UTXOManager.cs" />
+    <Compile Include="CValidator.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

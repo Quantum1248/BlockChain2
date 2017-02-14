@@ -134,12 +134,60 @@ namespace BlockChain
             return null;
         }
 
+        private void UpdatePeers()
+        {
+            string ris = "";
+            string msg="";
+            int id;
+            string[] listsPeer;
+            string[] peers;
+            CPeer receivedPeer;
+            for (int i = 0; i < mPeers.Length; i++)
+                if (mPeers[i] != null)
+                {
+                    //blocca il peer e manda una richiesta di lock per bloccarlo anche dal nel suo client, così che non avvengano interferenze nella comunicazione
+                    lock (mPeers[i].Socket)
+                    {
+                        try
+                        {
+                            id=mPeers[i].SendRequest(new CMessage(EMessageType.Request,"UPDPEERS"));
+                            msg = mPeers[i].ReceiveData(id, 2000).Data;
+                            ris += msg + "/";
+                        }
+                        catch (SocketException)
+                        {
+                            if (Program.DEBUG)
+                                CIO.DebugOut("Nessuna risposta da " + mPeers[i].IP + " durante la richiesta dei peer.");
+                        }
+                    }
+                }
+            ris = ris.TrimEnd('/');
+
+            if (ris != "")
+            {
+                string publicIp = CServer.GetPublicIPAddress();
+                string localIp = CServer.GetLocalIPAddress();
+                listsPeer = ris.Split('/');
+                foreach (string l in listsPeer)
+                {
+                    peers = l.Split(';');
+                    foreach (string rp in peers)
+                    {
+                        receivedPeer = DeserializePeer(rp);
+                        if (receivedPeer.IP != publicIp && receivedPeer.IP != localIp)
+                            Insert(receivedPeer);
+                    }
+                }
+
+            }
+        }
+
         private CBlock FindLastCommonBlocks()
         {
             ulong minLength = ulong.MaxValue, tmp = 0;
             bool found = false;
             Stack<CHeader> headers = new Stack<CHeader>();
-            CBlock res=null;
+            CBlock res = null;
             foreach (CPeer p in mPeers)
                 if (p != null)
                     lock (p.Socket)
@@ -151,10 +199,10 @@ namespace BlockChain
                             tmp = p.ReceiveULong();
                             if (tmp < minLength)
                                 minLength = tmp;
-                            
+
                         }
                         catch (SocketException)
-                        {  }
+                        { }
                         p.Socket.ReceiveTimeout = 0;
                     }
 
@@ -162,11 +210,11 @@ namespace BlockChain
             if (r.End != ulong.MaxValue && r.Start < r.End)
             {
                 //trova l'ultimo blocco uguale tra i peer e salva l'indice di quel blocco in r.start
-                while (r.Start<r.End)
+                while (r.Start < r.End)
                 {
                     found = true;
                     tmp = (r.Start + r.End) / 2;
-                    if (r.End-r.Start == 1)
+                    if (r.End - r.Start == 1)
                         tmp++;
                     foreach (CPeer p in mPeers)
                         if (p != null)
@@ -184,7 +232,7 @@ namespace BlockChain
                     //se tutti i blocchi sono uguali allora found=true, mentre se ce n'è qualcuno di diverso found=false
                     if (found)
                         r.Start = tmp;
-                    else if(!(r.End - r.Start == 1))
+                    else if (!(r.End - r.Start == 1))
                         r.End = tmp;
                     else
                         r.End--;
@@ -216,55 +264,6 @@ namespace BlockChain
             else
             {
                 return CBlockChain.Instance.LastValidBlock;
-            }
-        }
-
-        private void UpdatePeers()
-        {
-            string ris = "";
-            string msg="";
-            string[] listsPeer;
-            string[] peers;
-            CPeer receivedPeer;
-            for (int i = 0; i < mPeers.Length; i++)
-                if (mPeers[i] != null)
-                {
-                    //blocca il peer e manda una richiesta di lock per bloccarlo anche dal nel suo client, così che non avvengano interferenze nella comunicazione
-                    lock (mPeers[i].Socket)
-                    {
-                        try
-                        {
-                            mPeers[i].Socket.ReceiveTimeout = 2000;
-                            mPeers[i].SendCommand(ECommand.UPDPEERS);
-                            msg = mPeers[i].ReceiveString();
-                            ris += msg + "/";
-                            // mPeers[i].SendData("ENDLOCK");
-                        }
-                        catch (SocketException)
-                        {
-                            if (Program.DEBUG)
-                                CIO.DebugOut("Nessuna risposta da " + mPeers[i].IP + " durante la richiesta dei peer.");
-                        }
-                    }
-                }
-            ris = ris.TrimEnd('/');
-
-            if (ris != "")
-            {
-                string publicIp = CServer.GetPublicIPAddress();
-                string localIp = CServer.GetLocalIPAddress();
-                listsPeer = ris.Split('/');
-                foreach (string l in listsPeer)
-                {
-                    peers = l.Split(';');
-                    foreach (string rp in peers)
-                    {
-                        receivedPeer = DeserializePeer(rp);
-                        if (receivedPeer.IP != publicIp && receivedPeer.IP != localIp)
-                            Insert(receivedPeer);
-                    }
-                }
-
             }
         }
 
