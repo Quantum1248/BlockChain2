@@ -9,24 +9,48 @@ namespace BlockChain
     class CMessage
     {
         public EMessageType Type;
-        public ERequestType RqsType;
+        private ERequestType mRqsType;
         public EDataType DataType;
         public string Data;
         public int ID;
+        public bool WillReceiveResponse;
         public DateTime TimeOfReceipt;
         public CMessage()
         {
             Type = default(EMessageType);
+            RqsType = ERequestType.NULL;
+            DataType = EDataType.NULL;
             Data = null;
             ID = 0;
+            WillReceiveResponse = true;
         }
 
-        public CMessage(EMessageType Type, string Data)
+        public CMessage(EMessageType Type, ERequestType RqsType) : this()
         {
             this.Type = Type;
+            this.RqsType = RqsType;
+        }
+
+        public CMessage(EMessageType Type, ERequestType RqsType, EDataType DataType ,string Data) : this()
+        {
+            this.Type = Type;
+            this.RqsType = RqsType;
+            this.DataType = DataType;
             this.Data = Data;
         }
+
+        public ERequestType RqsType
+        {
+            get { return mRqsType; }
+            set
+            {
+                if (value == ERequestType.NewBlockMined)
+                    WillReceiveResponse = false;
+                mRqsType = value;
+            }
+        }
     }
+
 
     enum EMessageType
     {
@@ -37,21 +61,22 @@ namespace BlockChain
     public enum ERequestType
     {
         NULL,
-        UPDPEERS,
+        UpdPeers,
         GETLASTVALID,
         DOWNLOADBLOCK,
         DOWNLOADBLOCKS,
-        RCVMINEDBLOCK,
         DISCONNETC,
         DOWNLOADHEADERS,
         GETHEADER,
         CHAINLENGTH,
-        GETLASTHEADER
+        GETLASTHEADER,
+        NewBlockMined
     }
 
     public enum EDataType
     {
         NULL,
         PeersList,
+        Block,
     }
 }

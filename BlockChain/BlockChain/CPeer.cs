@@ -180,16 +180,95 @@ namespace BlockChain
             }
         }
 
+        private void ExecuteRequest()
+        {
+            CMessage rqs;
+            while (mIsConnected)
+            {
+                Thread.Sleep(500);
+                lock (RequestQueue)
+                {
+                    if (RequestQueue.Count > 0)
+                    {
+                        rqs = RequestQueue.Dequeue();
+                        switch (rqs.RqsType)
+                        {
+                            case ERequestType.UpdPeers:
+                                if (Program.DEBUG)
+                                    CIO.DebugOut("UpdPeers received by " + mIp);
+                                CPeers.Instance.DoRequest(ERequest.SendPeersList, this);
+                                break;
+                            case ERequestType.NewBlockMined:
+                                if (Program.DEBUG)
+                                    CIO.DebugOut("NewBlockMined received by " + mIp);
+                                if (CPeers.Instance.CanReceiveBlock)
+                                {
+                                    CTemporaryBlock newBlock = new CTemporaryBlock(CBlock.Deserialize(rqs.Data), this);
+                                    if (!CValidator.ValidateBlock(newBlock))
+                                    {
+                                        Disconnect();
+                                        break;
+                                    }
+                                    //TODO scaricare i blocchi mancanti se ne mancano(sono al blocco 10 e mi arriva il blocco 50)
+                                    CBlockChain.Instance.Add(newBlock);
+                                }
+                                break;
+                            /*
+                        case ECommand.GETLASTVALID:
+                            if (Program.DEBUG)
+                                CIO.DebugOut("GETLASTVALID received by " + mIp);
+                            SendString(CBlockChain.Instance.LastValidBlock.Serialize());
+                            break;
+                        case ECommand.DOWNLOADBLOCK:
+                            if (Program.DEBUG)
+                                CIO.DebugOut("DOWNLOADBLOCK received by " + mIp);
+                            index = ReceiveULong();
+                            SendBlock(CBlockChain.Instance.RetriveBlock(index));
+                            break;
+                        case ECommand.DOWNLOADBLOCKS:
+                            if (Program.DEBUG)
+                                CIO.DebugOut("DOWNLOADBLOCKS received by " + mIp);
+                            ulong initialIndex = ReceiveULong();
+                            ulong finalIndex = ReceiveULong();
+                            SendBlocks(RetriveBlocks(initialIndex, finalIndex));
+                            break;
+                        case ECommand.GETHEADER:
+                            if (Program.DEBUG)
+                                CIO.DebugOut("GETHEADER received by " + mIp);
+                            index = ReceiveULong();
+                            SendHeader(CBlockChain.Instance.RetriveBlock(index).Header);
+                            break;
+                        case ECommand.CHAINLENGTH:
+                            if (Program.DEBUG)
+                                CIO.DebugOut("CHAINLENGTH received by " + mIp);
+                            SendULong(CBlockChain.Instance.LastBlock.Header.BlockNumber);
+                            break;
+                        case ECommand.GETLASTHEADER:
+                            SendHeader(CBlockChain.Instance.LastValidBlock.Header);
+                            break;*/
+                            default:
+                                if (Program.DEBUG)
+                                    CIO.DebugOut("Ricevuto comando sconosciuto: " + rqs.RqsType + " da " + IP);
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+
 
         public int SendRequest(CMessage Msg)
         {
             //genera un nuovo id per la richiesta
-            Msg.ID= Rnd.Next();
-            while(ValidID.Contains(Msg.ID))
+            if (Msg.WillReceiveResponse)
             {
                 Msg.ID = Rnd.Next();
+                while (ValidID.Contains(Msg.ID))
+                {
+                    Msg.ID = Rnd.Next();
+                }
+                ValidID.Add(Msg.ID);
             }
-            ValidID.Add(Msg.ID);
             SendMessage(Msg);
             return Msg.ID;
         }
@@ -407,63 +486,7 @@ namespace BlockChain
 
         
 
-        public void DoCommand(ECommand cmd)
-        {
-            ulong index;
-            switch (cmd)
-            {
-                case ECommand.UPDPEERS:
-                    if (Program.DEBUG)
-                        CIO.DebugOut("UPDPEERS received by " + mIp);
-                    CPeers.Instance.DoRequest(ERequest.SendPeersList, this);
-                    break;
-                case ECommand.GETLASTVALID:
-                    if (Program.DEBUG)
-                        CIO.DebugOut("GETLASTVALID received by " + mIp);
-                    SendString(CBlockChain.Instance.LastValidBlock.Serialize());
-                    break;
-                case ECommand.DOWNLOADBLOCK:
-                    if (Program.DEBUG)
-                        CIO.DebugOut("DOWNLOADBLOCK received by " + mIp);
-                    index = ReceiveULong();
-                    SendBlock(CBlockChain.Instance.RetriveBlock(index));
-                    break;
-                case ECommand.DOWNLOADBLOCKS:
-                    if (Program.DEBUG)
-                        CIO.DebugOut("DOWNLOADBLOCKS received by " + mIp);
-                    ulong initialIndex = ReceiveULong();
-                    ulong finalIndex = ReceiveULong();
-                    SendBlocks(RetriveBlocks(initialIndex, finalIndex));
-                    break;
-                case ECommand.GETHEADER:
-                    if (Program.DEBUG)
-                        CIO.DebugOut("GETHEADER received by " + mIp);
-                    index = ReceiveULong();
-                    SendHeader(CBlockChain.Instance.RetriveBlock(index).Header);
-                    break;
-                case ECommand.CHAINLENGTH:
-                    if (Program.DEBUG)
-                        CIO.DebugOut("CHAINLENGTH received by " + mIp);
-                    SendULong(CBlockChain.Instance.LastBlock.Header.BlockNumber);
-                    break;
-                case ECommand.RCVMINEDBLOCK:
-                    if (Program.DEBUG)
-                        CIO.DebugOut("RCVMINEDBLOCK received by " + mIp);
-                    if (CPeers.Instance.CanReceiveBlock)
-                    {
-                        CTemporaryBlock newBlock = new CTemporaryBlock(ReceiveBlock(), this);
-                        CBlockChain.Instance.Add(newBlock);
-                    }
-                    break;
-                case ECommand.GETLASTHEADER:
-                    SendHeader(CBlockChain.Instance.LastValidBlock.Header);
-                    break;
-                default:
-                    if (Program.DEBUG)
-                        CIO.DebugOut("Ricevuto comando sconosciuto: " + cmd + " da " + IP);
-                    break;
-            }
-        }
+        
         
 
 

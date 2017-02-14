@@ -120,8 +120,10 @@ namespace BlockChain
                         if (p != null)
                             lock (p.Socket)
                             {
+                                p.SendRequest(new CMessage(EMessageType.Request,ERequestType.NewBlockMined,EDataType.Block,b.Serialize()));
+                                /*
                                 p.SendCommand(ECommand.RCVMINEDBLOCK);
-                                p.SendBlock(b);
+                                p.SendBlock(b);*/
                             }
                     break;
                 case ERequest.LastCommonValidBlock:
@@ -150,7 +152,7 @@ namespace BlockChain
                     {
                         try
                         {
-                            id=mPeers[i].SendRequest(new CMessage(EMessageType.Request,"UPDPEERS"));
+                            id=mPeers[i].SendRequest(new CMessage(EMessageType.Request, ERequestType.UpdPeers));
                             msg = mPeers[i].ReceiveData(id, 2000).Data;
                             ris += msg + "/";
                         }
@@ -173,7 +175,7 @@ namespace BlockChain
                     peers = l.Split(';');
                     foreach (string rp in peers)
                     {
-                        receivedPeer = DeserializePeer(rp);
+                        receivedPeer = CPeer.Deserialize(rp);
                         if (receivedPeer.IP != publicIp && receivedPeer.IP != localIp)
                             Insert(receivedPeer);
                     }
