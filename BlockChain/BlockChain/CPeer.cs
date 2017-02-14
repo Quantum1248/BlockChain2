@@ -24,6 +24,7 @@ namespace BlockChain
         private Queue<CMessage> RequestQueue = new Queue<CMessage>();
         private Queue<CMessage> DataQueue = new Queue<CMessage>();
         private List<int> ValidID = new List<int>();//forse non serve
+        private static Random Rnd=new Random();
         public DateTime LastCommunication = DateTime.Now;
 
         #region Constructors&Properties&Inizialization
@@ -151,12 +152,18 @@ namespace BlockChain
                         msg =JsonConvert.DeserializeObject<CMessage>(ReceiveString());
                         if (CValidator.ValidateMessage(msg))
                         {
+                            msg.TimeOfReceipt = DateTime.Now;
                             if (msg.Type == EMessageType.Request)
-                                RequestQueue.Enqueue(msg);
+                                lock (RequestQueue)
+                                    RequestQueue.Enqueue(msg);
                             else if (msg.Type == EMessageType.Data && ValidID.Contains(msg.ID))
-                                DataQueue.Enqueue(msg);
+                                lock (DataQueue)
+                                {
+                                    DataQueue.Enqueue(msg);
+                                    ValidID.Remove(msg.ID);
+                                }
                             else if (Program.DEBUG)
-                                throw new ArgumentException("MessageType "+msg.Type+" non supportato.");
+                                throw new ArgumentException("MessageType " + msg.Type + " non supportato.");
                         }
                         else
                             Disconnect();
@@ -173,6 +180,55 @@ namespace BlockChain
             }
         }
 
+
+        public int SendRequest(CMessage Msg)
+        {
+            //genera un nuovo id per la richiesta
+            Msg.ID= Rnd.Next();
+            while(ValidID.Contains(Msg.ID))
+            {
+                Msg.ID = Rnd.Next();
+            }
+            ValidID.Add(Msg.ID);
+            SendMessage(Msg);
+            return Msg.ID;
+        }
+
+        public CMessage ReceiveData(int ID, int Timeout)
+        {
+            CMessage res;
+            lock (DataQueue)
+            {
+                int count = DataQueue.Count;
+                for (int i = 0; i < count; i++)
+                {
+                    res = DataQueue.Dequeue();
+                    if (res.ID == ID)
+                        return res;
+                    else if ((DateTime.Now - res.TimeOfReceipt).TotalSeconds < 300)
+                        DataQueue.Enqueue(res);
+                }
+            }
+            Thread.Sleep(Timeout);
+            lock (DataQueue)
+            {
+                int count = DataQueue.Count;
+                for (int i = 0; i < count; i++)
+                {
+                    res = DataQueue.Dequeue();
+                    if (res.ID == ID)
+                        return res;
+                    else if ((DateTime.Now - res.TimeOfReceipt).TotalSeconds < 300)
+                        DataQueue.Enqueue(res);
+                }
+            }
+            return null;
+        }
+
+        private void SendMessage(CMessage Msg)
+        {
+            SendString(JsonConvert.SerializeObject(Msg));
+        }
 
         private void SendString(string Msg)
         {
@@ -200,6 +256,12 @@ namespace BlockChain
             byte[] res= CServer.ReceiveData(mSocket);
             LastCommunication = DateTime.Now;
             return res;
+        }
+
+        public static CPeer Deserialize(string Peer)
+        {
+            string[] peerField = Peer.Split(',');
+            return CPeer.CreatePeer(peerField[0], Convert.ToInt32(peerField[1]));
         }
 
         /*

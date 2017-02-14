@@ -314,11 +314,7 @@ namespace BlockChain
             }
         }
 
-        private static CPeer DeserializePeer(string Peer)
-        {
-            string[] peerField = Peer.Split(',');
-            return CPeer.CreatePeer(peerField[0], Convert.ToInt32(peerField[1]));
-        }
+        
 
         private void SendPeersList(CPeer Peer)
         {
