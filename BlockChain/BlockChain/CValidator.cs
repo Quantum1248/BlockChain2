@@ -9,17 +9,20 @@ namespace BlockChain
     static class CValidator
     {
 
-        public static bool ValidateBlock(CBlock b)
+        public static bool ValidateBlock(CBlock b, bool CheckPreviusHash = false)
         {
-            if (b.Header.PreviousBlockHash == CBlockChain.Instance.RetriveBlock(b.Header.BlockNumber - 1).Header.Hash)
-            {
-                string toHash = b.Header.PreviousBlockHash + b.Nonce + b.Timestamp + b.MerkleRoot;
-                if (b.Header.Hash == Utilities.ByteArrayToString(SCrypt.ComputeDerivedKey(Encoding.ASCII.GetBytes(toHash), Encoding.ASCII.GetBytes(toHash), 1024, 1, 1, 1, 32)))
-                {
-                    return true;
-                }
-            }
 
+            //devo tenere conto della difficoltà?
+            if (b.Header.Hash == Miner.Hash(b))
+            {
+                if (!CheckPreviusHash)
+                    return true;
+                else if (CheckPreviusHash)
+                    if (CBlockChain.Instance.RetriveBlock(b.Header.BlockNumber - 1)?.Header.Hash == b.Header.PreviousBlockHash)
+                        return true;
+                    else
+                        return false;
+            }
             return false;
         }
 
@@ -37,26 +40,36 @@ namespace BlockChain
             switch (Msg.RqsType)
             {
                 case ERequestType.UpdPeers:
-                    if (Msg.DataType == default(EDataType) && Msg.Data == null)
-                        return true;
-                    else
-                        return false;
-                case ERequestType.NewBlockMined:
-                    if (Msg.DataType == EDataType.Block && Msg.Data != null)
                     {
-                        try
-                        {
-                            CBlock.Deserialize(Msg.Data);
+                        if (Msg.DataType == EDataType.NULL && Msg.Data == null)
                             return true;
-                        }
-                        catch
-                        {
+                        else
                             return false;
-                        }
                     }
-                    else
-                        return false;
-
+                case ERequestType.NewBlockMined:
+                    {
+                        if (Msg.DataType == EDataType.Block && Msg.Data != null)
+                        {
+                            try
+                            {
+                                CBlock.Deserialize(Msg.Data);
+                                return true;
+                            }
+                            catch
+                            {
+                                return false;
+                            }
+                        }
+                        else
+                            return false;
+                    }
+                case ERequestType.ChainLength:
+                    {
+                        if (Msg.DataType == EDataType.NULL && Msg.Data == null)
+                            return true;
+                        else
+                            return false;
+                    }
                 default:
                     return false;
             }

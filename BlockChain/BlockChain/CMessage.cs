@@ -62,15 +62,11 @@ namespace BlockChain
     {
         NULL,
         UpdPeers,
-        GETLASTVALID,
-        DOWNLOADBLOCK,
-        DOWNLOADBLOCKS,
-        DISCONNETC,
-        DOWNLOADHEADERS,
-        GETHEADER,
-        CHAINLENGTH,
-        GETLASTHEADER,
-        NewBlockMined
+        GetLastHeader,
+        NewBlockMined,
+        ChainLength,
+        GetLastValid,
+        DownloadHeaders
     }
 
     public enum EDataType
@@ -78,5 +74,7 @@ namespace BlockChain
         NULL,
         PeersList,
         Block,
+        ULong,
+        ULongList,
     }
 }

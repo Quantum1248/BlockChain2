@@ -256,6 +256,20 @@ namespace BlockChain
             }
         }
 
+        public CBlock ReceiveBlock(int ID, int Timeout)
+        {
+            return JsonConvert.DeserializeObject<CBlock>(ReceiveData(ID,Timeout).Data);
+        }
+
+        public CHeader ReceiveHeader(int ID, int Timeout)
+        {
+            return JsonConvert.DeserializeObject<CHeader>(ReceiveData(ID,Timeout).Data);
+        }
+
+        public ulong ReceiveULong(int ID, int Timeout)
+        {
+            return Convert.ToUInt64(ReceiveData(ID,Timeout).Data);
+        }
 
         public int SendRequest(CMessage Msg)
         {
@@ -318,7 +332,7 @@ namespace BlockChain
 
         private string ReceiveString()
         {
-            string msg = ASCIIEncoding.ASCII.GetString(ReceiveData());
+            string msg = ASCIIEncoding.ASCII.GetString(Receive());
             if (Program.DEBUG)
                 CIO.DebugOut("Received string " + msg + ".");
             return msg;
@@ -330,7 +344,7 @@ namespace BlockChain
             CServer.SendData(mSocket, Msg);
         }
 
-        private byte[] ReceiveData()
+        private byte[] Receive()
         {
             byte[] res= CServer.ReceiveData(mSocket);
             LastCommunication = DateTime.Now;
@@ -441,20 +455,14 @@ namespace BlockChain
             SendString(JsonConvert.SerializeObject(b));
         }
 
-        public CBlock ReceiveBlock()
-        {
-            return JsonConvert.DeserializeObject<CBlock>(ReceiveString());
-        }
+
 
         public void SendHeader(CHeader Header)
         {
             SendString(JsonConvert.SerializeObject(Header));
         }
 
-        public CHeader ReceiveHeader()
-        {
-            return JsonConvert.DeserializeObject<CHeader>(ReceiveString());
-        }
+
 
         public void SendString(string Msg)
         {
@@ -474,11 +482,6 @@ namespace BlockChain
         public void SendULong(ulong Nmb)
         {
             SendData(BitConverter.GetBytes(Nmb));
-        }
-
-        public ulong ReceiveULong()
-        {
-            return BitConverter.ToUInt64(ReceiveData(),0);
         }
 
         #endregion NetworkCommunications
