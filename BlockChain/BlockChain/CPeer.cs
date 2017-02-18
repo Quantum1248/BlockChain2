@@ -256,19 +256,46 @@ namespace BlockChain
             }
         }
 
+        #region TypedReceive
+
         public CBlock ReceiveBlock(int ID, int Timeout)
         {
-            return JsonConvert.DeserializeObject<CBlock>(ReceiveData(ID,Timeout).Data);
+            return JsonConvert.DeserializeObject<CBlock>(ReceiveData(ID, Timeout).Data);
         }
 
         public CHeader ReceiveHeader(int ID, int Timeout)
         {
-            return JsonConvert.DeserializeObject<CHeader>(ReceiveData(ID,Timeout).Data);
+            return JsonConvert.DeserializeObject<CHeader>(ReceiveData(ID, Timeout).Data);
         }
 
         public ulong ReceiveULong(int ID, int Timeout)
         {
-            return Convert.ToUInt64(ReceiveData(ID,Timeout).Data);
+            return Convert.ToUInt64(ReceiveData(ID, Timeout).Data);
+        }
+
+        #endregion TypedReceive
+
+        public CMessage ReceiveData(int ID, int Timeout, int checkFrequency=100)
+        {
+            int timeoutSlice = (Timeout / checkFrequency);
+            CMessage res;
+            for (int i = 0; i < checkFrequency; i++)
+            {
+                lock (DataQueue)
+                {
+                    int count = DataQueue.Count;
+                    for (int j = 0; j < count; j++)
+                    {
+                        res = DataQueue.Dequeue();
+                        if (res.ID == ID)
+                            return res;
+                        else if ((DateTime.Now - res.TimeOfReceipt).TotalSeconds < 300)
+                            DataQueue.Enqueue(res);
+                    }
+                }
+            Thread.Sleep(timeoutSlice);
+            }  
+            return null;
         }
 
         public int SendRequest(CMessage Msg)
@@ -287,35 +314,10 @@ namespace BlockChain
             return Msg.ID;
         }
 
-        public CMessage ReceiveData(int ID, int Timeout)
+        public static CPeer Deserialize(string Peer)
         {
-            CMessage res;
-            lock (DataQueue)
-            {
-                int count = DataQueue.Count;
-                for (int i = 0; i < count; i++)
-                {
-                    res = DataQueue.Dequeue();
-                    if (res.ID == ID)
-                        return res;
-                    else if ((DateTime.Now - res.TimeOfReceipt).TotalSeconds < 300)
-                        DataQueue.Enqueue(res);
-                }
-            }
-            Thread.Sleep(Timeout);
-            lock (DataQueue)
-            {
-                int count = DataQueue.Count;
-                for (int i = 0; i < count; i++)
-                {
-                    res = DataQueue.Dequeue();
-                    if (res.ID == ID)
-                        return res;
-                    else if ((DateTime.Now - res.TimeOfReceipt).TotalSeconds < 300)
-                        DataQueue.Enqueue(res);
-                }
-            }
-            return null;
+            string[] peerField = Peer.Split(',');
+            return CPeer.CreatePeer(peerField[0], Convert.ToInt32(peerField[1]));
         }
 
         private void SendMessage(CMessage Msg)
@@ -351,13 +353,23 @@ namespace BlockChain
             return res;
         }
 
-        public static CPeer Deserialize(string Peer)
-        {
-            string[] peerField = Peer.Split(',');
-            return CPeer.CreatePeer(peerField[0], Convert.ToInt32(peerField[1]));
-        }
+        
 
-        /*
+        
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+/*
 
         #region NetworkCommunications
         public void SendCommand(ECommand Cmd)
@@ -507,5 +519,3 @@ namespace BlockChain
         }
 
     */
-    }
-}
