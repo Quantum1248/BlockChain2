@@ -65,5 +65,14 @@ namespace BlockChain
             }
             return false;
         }
+
+        public static string Hash(CBlock b)
+        {
+            toHash = b.Header.PreviousBlockHash + b.Nonce + b.Timestamp + b.MerkleRoot; //si concatenano vari parametri del blocco TODO: usare i parmetri giusti, quelli usati qua sono solo per dimostrazione e placeholder
+            Utilities.ByteArrayToString(
+                SCrypt.ComputeDerivedKey(
+                    Encoding.ASCII.GetBytes(toHash), Encoding.ASCII.GetBytes(toHash), 1024, 1, 1, 1, 32)
+                    ); //calcola l'hash secondo il template di scrypt usato da litecoin
+        }
     }
 }
