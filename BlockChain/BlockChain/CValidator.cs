@@ -8,6 +8,21 @@ namespace BlockChain
 {
     static class CValidator
     {
+
+        public static bool ValidateBlock(CBlock b)
+        {
+            if (b.Header.PreviousBlockHash == CBlockChain.Instance.RetriveBlock(b.Header.BlockNumber - 1).Header.Hash)
+            {
+                string toHash = b.Header.PreviousBlockHash + b.Nonce + b.Timestamp + b.MerkleRoot;
+                if (b.Header.Hash == Utilities.ByteArrayToString(SCrypt.ComputeDerivedKey(Encoding.ASCII.GetBytes(toHash), Encoding.ASCII.GetBytes(toHash), 1024, 1, 1, 1, 32)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public static bool ValidateMessage(CMessage Msg)
         {
             if (Msg.Type == EMessageType.Request)
