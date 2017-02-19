@@ -10,7 +10,7 @@ namespace BlockChain
     {
         public EMessageType Type;
         private ERequestType mRqsType;
-        public EDataType DataType;
+        public EDataType mDataType;
         public string Data;
         public int ID;
         public bool WillReceiveResponse;
@@ -31,12 +31,21 @@ namespace BlockChain
             this.RqsType = RqsType;
         }
 
-        public CMessage(EMessageType Type, ERequestType RqsType, EDataType DataType ,string Data) : this()
+        public CMessage(EMessageType Type, ERequestType RqsType, EDataType DataType, string Data) : this()
         {
             this.Type = Type;
             this.RqsType = RqsType;
             this.DataType = DataType;
             this.Data = Data;
+        }
+
+        public CMessage(EMessageType Type, ERequestType RqsType, EDataType DataType, string Data, int ID) : this()
+        {
+            this.Type = Type;
+            this.RqsType = RqsType;
+            this.DataType = DataType;
+            this.Data = Data;
+            this.ID = ID;
         }
 
         public ERequestType RqsType
@@ -47,6 +56,16 @@ namespace BlockChain
                 if (value == ERequestType.NewBlockMined)
                     WillReceiveResponse = false;
                 mRqsType = value;
+            }
+        }
+
+        public EDataType DataType
+        {
+            get { return mDataType; }
+            set
+            {
+                if (RqsType == ERequestType.NULL)
+                    WillReceiveResponse = false;
             }
         }
     }
@@ -66,7 +85,9 @@ namespace BlockChain
         NewBlockMined,
         ChainLength,
         GetLastValid,
-        DownloadHeaders
+        DownloadHeaders,
+        GetHeader,
+        DownloadBlocks
     }
 
     public enum EDataType
@@ -76,5 +97,8 @@ namespace BlockChain
         Block,
         ULong,
         ULongList,
+        Header,
+        BlockList,
+        HeaderList,
     }
 }

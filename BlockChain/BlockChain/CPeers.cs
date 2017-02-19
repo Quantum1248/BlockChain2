@@ -102,34 +102,48 @@ namespace BlockChain
             switch (Rqs)
             {
                 case ERequest.UpdatePeers:
-                    UpdatePeers();
-                    break;
+                    {
+                        UpdatePeers();
+                        break;
+                    }
                 case ERequest.SendPeersList:
-                    SendPeersList(Arg as CPeer);
-                    break;
+                    {
+                        SendPeersList(Arg as CPeer);
+                        break;
+                    }
                 case ERequest.LastValidBlock:
-                    return RequestLastValidBlock();
+                    {
+                        return RequestLastValidBlock();
+                    }
                 case ERequest.DownloadMissingBlock:
-                    object[] args = Arg as object[];
-                    ulong startingIndex = Convert.ToUInt64(args[0]);
-                    ulong finalIndex = Convert.ToUInt64(args[1]);
-                    return DistribuiteDownloadBlocks(startingIndex, finalIndex);
+                    {
+                        object[] args = Arg as object[];
+                        ulong startingIndex = Convert.ToUInt64(args[0]);
+                        ulong finalIndex = Convert.ToUInt64(args[1]);
+                        return DistribuiteDownloadBlocks(startingIndex, finalIndex);
+                    }
                 case ERequest.BroadcastMinedBlock:
-                    CBlock b = Arg as CBlock;
-                    foreach (CPeer p in mPeers)
-                        if (p != null)
-                            lock (p.Socket)
-                            {
-                                p.SendRequest(new CMessage(EMessageType.Request,ERequestType.NewBlockMined,EDataType.Block,b.Serialize()));
-                                /*
-                                p.SendCommand(ECommand.RCVMINEDBLOCK);
-                                p.SendBlock(b);*/
-                            }
-                    break;
+                    {
+                        CBlock b = Arg as CBlock;
+                        foreach (CPeer p in mPeers)
+                            if (p != null)
+                                lock (p.Socket)
+                                {
+                                    p.SendRequest(new CMessage(EMessageType.Request, ERequestType.NewBlockMined, EDataType.Block, b.Serialize()));
+                                    /*
+                                    p.SendCommand(ECommand.RCVMINEDBLOCK);
+                                    p.SendBlock(b);*/
+                                }
+                        break;
+                    }
                 case ERequest.LastCommonValidBlock:
-                    return FindLastCommonBlocks();
+                    {
+                        return FindLastCommonBlocks();
+                    }
                 case ERequest.FindParallelChain:
-                    return FindParallelChains(Arg as CBlock);
+                    {
+                        return FindParallelChains(Arg as CBlock);
+                    }
                 default:
                     throw new ArgumentException("Invalid request: " + Rqs);
             }
@@ -222,7 +236,7 @@ namespace BlockChain
                         if (p != null)
                             lock (p.Socket)
                             {
-                                ID=p.SendRequest(new CMessage(EMessageType.Request, ERequestType.GetLastHeader, EDataType.ULong, Convert.ToString(tmp)));
+                                ID=p.SendRequest(new CMessage(EMessageType.Request, ERequestType.GetHeader, EDataType.ULong, Convert.ToString(tmp)));
                                 headers.Push(p.ReceiveHeader(ID,5000));
                             }
                     while (headers.Count > 1 && found)
@@ -314,8 +328,6 @@ namespace BlockChain
                 return false;
             }
         }
-
-        
 
         private void SendPeersList(CPeer Peer)
         {
@@ -459,7 +471,7 @@ namespace BlockChain
                 }
                 lock (peer.Socket)
                 {
-                    ID=peer.SendRequest(new CMessage(EMessageType.Request, ERequestType.DownloadHeaders, EDataType.ULongList, Convert.ToString(rangeInDownload.Start) + ";" + Convert.ToString(rangeInDownload.End)));
+                    ID=peer.SendRequest(new CMessage(EMessageType.Request, ERequestType.DownloadBlocks, EDataType.ULongList, Convert.ToString(rangeInDownload.Start) + ";" + Convert.ToString(rangeInDownload.End)));
                     msg = peer.ReceiveData(ID, 5000).Data;
                     foreach (string block in msg.Split('/'))
                     {

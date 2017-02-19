@@ -109,7 +109,31 @@ namespace BlockChain
             streamReader.Close();
 
             return null;
-        }  
+        }
+
+        public CBlock[] RetriveBlocks(ulong initialIndex, ulong finalIndex)
+        {
+            CBlock[] ris = new CBlock[finalIndex - initialIndex];
+            int c = 0;
+            while (initialIndex < finalIndex)
+            {
+                ris[c++] = RetriveBlock(initialIndex);
+                initialIndex++;
+            }
+            return ris;
+        }
+
+        public CHeader[] RetriveHeaders(ulong initialIndex, ulong finalIndex)
+        {
+            CHeader[] ris = new CHeader[finalIndex - initialIndex];
+            int c = 0;
+            while (initialIndex < finalIndex)
+            {
+                ris[c++] = RetriveBlock(initialIndex).Header;
+                initialIndex++;
+            }
+            return ris;
+        }
 
         public static bool ValidateHeaders(CParallelChain HeaderChain)
         {

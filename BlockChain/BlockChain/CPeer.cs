@@ -194,58 +194,100 @@ namespace BlockChain
                         switch (rqs.RqsType)
                         {
                             case ERequestType.UpdPeers:
-                                if (Program.DEBUG)
-                                    CIO.DebugOut("UpdPeers received by " + mIp);
-                                CPeers.Instance.DoRequest(ERequest.SendPeersList, this);
-                                break;
-                            case ERequestType.NewBlockMined:
-                                if (Program.DEBUG)
-                                    CIO.DebugOut("NewBlockMined received by " + mIp);
-                                if (CPeers.Instance.CanReceiveBlock)
                                 {
-                                    CTemporaryBlock newBlock = new CTemporaryBlock(CBlock.Deserialize(rqs.Data), this);
-                                    if (!CValidator.ValidateBlock(newBlock))
-                                    {
-                                        Disconnect();
-                                        break;
-                                    }
-                                    //TODO scaricare i blocchi mancanti se ne mancano(sono al blocco 10 e mi arriva il blocco 50)
-                                    CBlockChain.Instance.Add(newBlock);
+                                    if (Program.DEBUG)
+                                        CIO.DebugOut("UpdPeers received by " + mIp);
+                                    //(!) è meglio farsi ritornare la lista e poi usare json?
+                                    CPeers.Instance.DoRequest(ERequest.SendPeersList, this);
+                                    break;
                                 }
-                                break;
+                            case ERequestType.NewBlockMined:
+                                {
+                                    if (Program.DEBUG)
+                                        CIO.DebugOut("NewBlockMined received by " + mIp);
+                                    if (CPeers.Instance.CanReceiveBlock)
+                                    {
+                                        CTemporaryBlock newBlock = new CTemporaryBlock(CBlock.Deserialize(rqs.Data), this);
+                                        if (!CValidator.ValidateBlock(newBlock))
+                                        {
+                                            Disconnect();
+                                            break;
+                                        }
+                                        //TODO scaricare i blocchi mancanti se ne mancano(sono al blocco 10 e mi arriva il blocco 50)
+                                        CBlockChain.Instance.Add(newBlock);
+                                    }
+                                    break;
+                                }
+                            case ERequestType.GetLastHeader:
+                                {
+                                    if (Program.DEBUG)
+                                        CIO.DebugOut("GetLastHeader received by " + mIp);
+                                    SendRequest(new CMessage(EMessageType.Data, ERequestType.NULL, EDataType.Header,
+                                        JsonConvert.SerializeObject(CBlockChain.Instance.LastValidBlock.Header), rqs.ID));
+                                    break;
+                                }
+                            case ERequestType.ChainLength:
+                                {
+                                    if (Program.DEBUG)
+                                        CIO.DebugOut("ChainLength received by " + mIp);
+                                    SendRequest(new CMessage(EMessageType.Data,ERequestType.NULL,EDataType.ULong,
+                                        Convert.ToString(CBlockChain.Instance.LastBlock.Header.BlockNumber),rqs.ID));
+                                    break;
+                                }
+                            case ERequestType.GetLastValid:
+                                {
+                                    if (Program.DEBUG)
+                                        CIO.DebugOut("GetLastValid received by " + mIp);
+                                    SendRequest(new CMessage(EMessageType.Data,ERequestType.NULL,EDataType.Block,
+                                        CBlockChain.Instance.LastValidBlock.Serialize(), rqs.ID));
+                                    break;
+                                }
+                            case ERequestType.DownloadBlocks:
+                                {
+                                    if (Program.DEBUG)
+                                        CIO.DebugOut("DownloadBlocks received by " + mIp);
+
+                                    SendRequest(new CMessage(EMessageType.Data, ERequestType.NULL, EDataType.BlockList,
+                                        JsonConvert.SerializeObject(CBlockChain.Instance.RetriveBlocks(Convert.ToUInt64(rqs.Data.Split(';')[0]), Convert.ToUInt64(rqs.Data.Split(';')[1]))),rqs.ID));
+                                    break;
+                                }
+                            case ERequestType.DownloadHeaders:
+                                {
+                                    if (Program.DEBUG)
+                                        CIO.DebugOut("DownloadBlocks received by " + mIp);
+
+                                    SendRequest(new CMessage(EMessageType.Data, ERequestType.NULL, EDataType.HeaderList,
+                                        JsonConvert.SerializeObject(CBlockChain.Instance.RetriveHeaders(Convert.ToUInt64(rqs.Data.Split(';')[0]), Convert.ToUInt64(rqs.Data.Split(';')[1]))), rqs.ID));
+                                    break;
+                                }
+                            case ERequestType.GetHeader:
+                                {
+                                    if (Program.DEBUG)
+                                        CIO.DebugOut("GetLastHeader received by " + mIp);
+                                    SendRequest(new CMessage(EMessageType.Data, ERequestType.NULL, EDataType.Header,
+                                        JsonConvert.SerializeObject(CBlockChain.Instance.RetriveBlock(Convert.ToUInt64(rqs.Data)).Header), rqs.ID));
+                                    break;
+                                }
                             /*
-                        case ECommand.GETLASTVALID:
-                            if (Program.DEBUG)
-                                CIO.DebugOut("GETLASTVALID received by " + mIp);
-                            SendString(CBlockChain.Instance.LastValidBlock.Serialize());
-                            break;
-                        case ECommand.DOWNLOADBLOCK:
-                            if (Program.DEBUG)
+                                case ECommand.GETLASTVALID:
+                                
+                                case ECommand.DOWNLOADBLOCK:
+                                if (Program.DEBUG)
                                 CIO.DebugOut("DOWNLOADBLOCK received by " + mIp);
-                            index = ReceiveULong();
-                            SendBlock(CBlockChain.Instance.RetriveBlock(index));
-                            break;
-                        case ECommand.DOWNLOADBLOCKS:
-                            if (Program.DEBUG)
-                                CIO.DebugOut("DOWNLOADBLOCKS received by " + mIp);
-                            ulong initialIndex = ReceiveULong();
-                            ulong finalIndex = ReceiveULong();
-                            SendBlocks(RetriveBlocks(initialIndex, finalIndex));
-                            break;
-                        case ECommand.GETHEADER:
-                            if (Program.DEBUG)
+                                index = ReceiveULong();
+                                SendBlock(CBlockChain.Instance.RetriveBlock(index));
+                                break;
+                                case ECommand.DOWNLOADBLOCKS:
+
+                                case ECommand.GETHEADER:
+                                if (Program.DEBUG)
                                 CIO.DebugOut("GETHEADER received by " + mIp);
-                            index = ReceiveULong();
-                            SendHeader(CBlockChain.Instance.RetriveBlock(index).Header);
-                            break;
-                        case ECommand.CHAINLENGTH:
-                            if (Program.DEBUG)
-                                CIO.DebugOut("CHAINLENGTH received by " + mIp);
-                            SendULong(CBlockChain.Instance.LastBlock.Header.BlockNumber);
-                            break;
-                        case ECommand.GETLASTHEADER:
-                            SendHeader(CBlockChain.Instance.LastValidBlock.Header);
-                            break;*/
+                                index = ReceiveULong();
+                                SendHeader(CBlockChain.Instance.RetriveBlock(index).Header);
+                                break;
+                                case ECommand.CHAINLENGTH:
+                                
+                                */
                             default:
                                 if (Program.DEBUG)
                                     CIO.DebugOut("Ricevuto comando sconosciuto: " + rqs.RqsType + " da " + IP);
@@ -353,9 +395,7 @@ namespace BlockChain
             return res;
         }
 
-        
 
-        
     }
 }
 
@@ -506,16 +546,6 @@ namespace BlockChain
 
 
 
-        private CBlock[] RetriveBlocks(ulong initialIndex,ulong finalIndex)
-        {
-            CBlock[] ris = new CBlock[finalIndex - initialIndex];
-            int c = 0;
-            while(initialIndex<finalIndex)
-            {
-                ris[c++] = CBlockChain.Instance.RetriveBlock(initialIndex);
-                initialIndex++;
-            }
-            return ris;
-        }
+        
 
     */

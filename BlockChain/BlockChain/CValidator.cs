@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace BlockChain
 {
@@ -37,6 +38,7 @@ namespace BlockChain
 
         private static bool ValidateRequest(CMessage Msg)
         {
+
             switch (Msg.RqsType)
             {
                 case ERequestType.UpdPeers:
@@ -70,6 +72,69 @@ namespace BlockChain
                         else
                             return false;
                     }
+                case ERequestType.GetHeader:
+                    {
+                        if (Msg.DataType == EDataType.ULong)
+                        {
+                            try { Convert.ToInt64(Msg.Data); }
+                            catch { return false; }
+                            return true;
+                        }
+                        else
+                            return false;
+                    }
+                case ERequestType.GetLastHeader:
+                    {
+                        {
+                            if (Msg.DataType == EDataType.NULL && Msg.Data == null)
+                                return true;
+                            else
+                                return false;
+                        }
+                    }
+                case ERequestType.GetLastValid:
+                    {
+                        {
+                            if (Msg.DataType == EDataType.NULL && Msg.Data == null)
+                                return true;
+                            else
+                                return false;
+                        }
+                    }
+                case ERequestType.DownloadBlocks:
+                    {
+                        if (Msg.DataType == EDataType.ULong && Msg.Data != null)
+                        {
+                            try
+                            {
+                                string[] stringToConvert = Msg.Data.Split(';');
+                                if (stringToConvert.Length != 2)
+                                    return false;
+                                foreach (string s in stringToConvert)
+                                    Convert.ToUInt64(s);
+                                return true;
+                            }
+                            catch { return false; }
+                        }
+                        return false;
+                    }
+                case ERequestType.DownloadHeaders:
+                    {
+                        if (Msg.DataType == EDataType.ULong && Msg.Data != null)
+                        {
+                            try
+                            {
+                                string[] stringToConvert = Msg.Data.Split(';');
+                                if (stringToConvert.Length != 2)
+                                    return false;
+                                foreach (string s in stringToConvert)
+                                    Convert.ToUInt64(s);
+                                return true;
+                            }
+                            catch { return false; }
+                        }
+                        return false;
+                    }
                 default:
                     return false;
             }
@@ -77,29 +142,88 @@ namespace BlockChain
 
         private static bool ValidateData(CMessage Msg)
         {
+            if (Msg.RqsType != ERequestType.NULL)
+                return false;
             switch (Msg.DataType)
             {
                 case EDataType.PeersList:
-                    if (Msg.RqsType == default(ERequestType))
-                        try
-                        {
-                            string[] peers = Msg.Data.Split(';');
-                            foreach (string rp in peers)
-                                CPeer.Deserialize(rp);
-                            return true;
-                        }
-                        catch
-                        {
-                            return false;
-                        }
-                    else
+                    try
+                    {
+                        string[] peers = Msg.Data.Split(';');
+                        foreach (string rp in peers)
+                            CPeer.Deserialize(rp);
+                        return true;
+                    }
+                    catch
+                    {
                         return false;
+                    }
+                case EDataType.Block:
+                    try
+                    {
+                        CBlock.Deserialize(Msg.Data);
+                        return true;
+                    }
+                    catch
+                    {
+                        return false;
+                    }
+                case EDataType.ULong:
+                    try
+                    {
+                        Convert.ToUInt64(Msg.Data);
+                        return true;
+                    }
+                    catch
+                    {
+                        return false;
+                    }
+                case EDataType.ULongList:
+                    try
+                    {
+                        JsonConvert.DeserializeObject<ulong[]>(Msg.Data);
+                        return true;
+                    }
+                    catch
+                    {
+                        return false;
+                    }
+                case EDataType.Header:
+                    try
+                    {
+                        JsonConvert.DeserializeObject<CHeader>(Msg.Data);
+                        return true;
+                    }
+                    catch
+                    {
+                        return false;
+                    }
+                case EDataType.BlockList:
+                    try
+                    {
+                        JsonConvert.DeserializeObject<CBlock[]>(Msg.Data);
+                        return true;
+                    }
+                    catch
+                    {
+                        return false;
+                    }
+                case EDataType.HeaderList:
+                    try
+                    {
+                        JsonConvert.DeserializeObject<CHeader[]>(Msg.Data);
+                        return true;
+                    }
+                    catch
+                    {
+                        return false;
+                    }
                 default:
                     return false;
             }
         }
-            
 
-        
+
+
     }
 }
