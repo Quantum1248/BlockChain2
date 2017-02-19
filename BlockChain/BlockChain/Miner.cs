@@ -12,7 +12,6 @@ namespace BlockChain
     {
         public static void Scrypt(CBlock block) //TODO: implementare evento per l'uscita in caso sia stato trovato un blocco parallelo
         {
-
             string toHash;
             string hash;
             bool found = false;
@@ -22,7 +21,7 @@ namespace BlockChain
             {
                 block.Timestamp = DateTime.Now;
                 toHash = block.Header.PreviousBlockHash + block.Nonce + block.Timestamp + block.MerkleRoot; //si concatenano vari parametri del blocco TODO: usare i parmetri giusti, quelli usati qua sono solo per dimostrazione e placeholder
-                hash = Utilities.ByteArrayToString(SCrypt.ComputeDerivedKey(Encoding.ASCII.GetBytes(toHash), Encoding.ASCII.GetBytes(toHash), 1024, 1, 1, 1, 32)); //calcola l'hash secondo il template di scrypt usato da litecoin
+                hash = Hash(block); //calcola l'hash secondo il template di scrypt usato da litecoin
                 if (Program.DEBUG)
                     CIO.DebugOut("Hash corrente blocco " + block.Header.BlockNumber + ": " + hash);
                 for (int i = 0; i <= block.Difficulty; i++)
@@ -64,6 +63,15 @@ namespace BlockChain
                 }
             }
             return false;
+        }
+
+        public static string Hash(CBlock b)
+        {
+            string toHash = b.Header.PreviousBlockHash + b.Nonce + b.Timestamp + b.MerkleRoot; //si concatenano vari parametri del blocco TODO: usare i parmetri giusti, quelli usati qua sono solo per dimostrazione e placeholder
+            return Utilities.ByteArrayToString(
+                SCrypt.ComputeDerivedKey(
+                    Encoding.ASCII.GetBytes(toHash), Encoding.ASCII.GetBytes(toHash), 1024, 1, 1, 1, 32)
+                    ); //calcola l'hash secondo il template di scrypt usato da litecoin
         }
     }
 }

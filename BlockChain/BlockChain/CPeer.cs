@@ -20,6 +20,15 @@ namespace BlockChain
         private RSACryptoServiceProvider cspMine;
         private Thread mThreadListener;
         private bool mIsConnected;
+
+        private Queue<CMessage> RequestQueue = new Queue<CMessage>();
+        private Queue<CMessage> DataQueue = new Queue<CMessage>();
+        private List<int> ValidID = new List<int>();//forse non serve
+        private static Random Rnd=new Random();
+        public DateTime LastCommunication = DateTime.Now;
+
+        #region Constructors&Properties&Inizialization
+
         private CPeer()
         {
         }
@@ -41,9 +50,9 @@ namespace BlockChain
             mIsConnected = true;
         }
 
-        //Ritorna l'oggetto solo se i parametri sono corretti
         public static CPeer CreatePeer(string IP_Address, int Port)
         {
+            //Ritorna l'oggetto solo se i parametri sono corretti
             IPAddress ip;
             if (IPAddress.TryParse(IP_Address, out ip))
                 return new CPeer(ip, Port);
@@ -51,6 +60,7 @@ namespace BlockChain
                 return null;
 
         }
+
         public static CPeer CreatePeer(string IP_Address, int Port, Socket Sck)
         {
             IPAddress ip;
@@ -95,7 +105,7 @@ namespace BlockChain
             if (SuccessfulConnected)
             {
                 if (Program.DEBUG)
-                    CIO.DebugOut("Connection with " + mIp + ":" + mPort+" enstablished!");
+                    CIO.DebugOut("Connection with " + mIp + ":" + mPort + " enstablished!");
                 mIsConnected = true;
                 StartListening();
                 return true;
@@ -103,7 +113,7 @@ namespace BlockChain
             else
             {
                 if (Program.DEBUG)
-                    CIO.DebugOut("Connection with " + mIp + ":" + mPort+" failed!");
+                    CIO.DebugOut("Connection with " + mIp + ":" + mPort + " failed!");
                 asyncConnection.Dispose();
                 return false;
             }
@@ -111,12 +121,295 @@ namespace BlockChain
 
         public void Disconnect()
         {
-            SendCommand(ECommand.DISCONNETC);
             mSocket.Close();
             mSocket.Dispose();//(!) in teoria è inutile perchè fa già tutto Close()
             CPeers.Instance.InvalidPeers(new CPeer[] { this });
             mIsConnected = false;
         }
+
+        public void StartListening()
+        {
+            mThreadListener = new Thread(new ThreadStart(Listen));
+            mThreadListener.Start();
+        }
+
+        #endregion Constructors&Properties&Inizialization
+
+        /// <summary>
+        /// Rimane in attesa di messaggi dal peer a cui è collegato il socket mSocket.
+        /// </summary>
+        private void Listen()
+        {
+            CMessage msg;
+            while (mIsConnected)    //bisogna bloccarlo in qualche modo all'uscita del programma credo
+            {
+                lock (mSocket)
+                {
+                    //il timer viene settato cosicchè in caso non si ricevino comunicazioni venga ritornata un'eccezione, in modo che il programma vada avanti e tolga il lock al socket.
+                    mSocket.ReceiveTimeout = 1000;
+                    try
+                    {
+                        msg =JsonConvert.DeserializeObject<CMessage>(ReceiveString());
+                        if (CValidator.ValidateMessage(msg))
+                        {
+                            msg.TimeOfReceipt = DateTime.Now;
+                            if (msg.Type == EMessageType.Request)
+                                lock (RequestQueue)
+                                    RequestQueue.Enqueue(msg);
+                            else if (msg.Type == EMessageType.Data && ValidID.Contains(msg.ID))
+                                lock (DataQueue)
+                                {
+                                    DataQueue.Enqueue(msg);
+                                    ValidID.Remove(msg.ID);
+                                }
+                            else if (Program.DEBUG)
+                                throw new ArgumentException("MessageType " + msg.Type + " non supportato.");
+                        }
+                        else
+                            Disconnect();
+                    }
+                    catch (SocketException)
+                    {
+                    }
+                    catch(JsonSerializationException)
+                    { Disconnect(); }
+                    //il timer viene reinpostato a defoult per non causare problemi con altre comunicazioni che potrebbero avvenire in altre parti del codice.
+                    mSocket.ReceiveTimeout = 0;
+                }
+                Thread.Sleep(1000);
+            }
+        }
+
+        private void ExecuteRequest()
+        {
+            CMessage rqs;
+            while (mIsConnected)
+            {
+                Thread.Sleep(500);
+                lock (RequestQueue)
+                {
+                    if (RequestQueue.Count > 0)
+                    {
+                        rqs = RequestQueue.Dequeue();
+                        switch (rqs.RqsType)
+                        {
+                            case ERequestType.UpdPeers:
+                                {
+                                    if (Program.DEBUG)
+                                        CIO.DebugOut("UpdPeers received by " + mIp);
+                                    //(!) è meglio farsi ritornare la lista e poi usare json?
+                                    CPeers.Instance.DoRequest(ERequest.SendPeersList, this);
+                                    break;
+                                }
+                            case ERequestType.NewBlockMined:
+                                {
+                                    if (Program.DEBUG)
+                                        CIO.DebugOut("NewBlockMined received by " + mIp);
+                                    if (CPeers.Instance.CanReceiveBlock)
+                                    {
+                                        CTemporaryBlock newBlock = new CTemporaryBlock(CBlock.Deserialize(rqs.Data), this);
+                                        if (!CValidator.ValidateBlock(newBlock))
+                                        {
+                                            Disconnect();
+                                            break;
+                                        }
+                                        //TODO scaricare i blocchi mancanti se ne mancano(sono al blocco 10 e mi arriva il blocco 50)
+                                        CBlockChain.Instance.Add(newBlock);
+                                    }
+                                    break;
+                                }
+                            case ERequestType.GetLastHeader:
+                                {
+                                    if (Program.DEBUG)
+                                        CIO.DebugOut("GetLastHeader received by " + mIp);
+                                    SendRequest(new CMessage(EMessageType.Data, ERequestType.NULL, EDataType.Header,
+                                        JsonConvert.SerializeObject(CBlockChain.Instance.LastValidBlock.Header), rqs.ID));
+                                    break;
+                                }
+                            case ERequestType.ChainLength:
+                                {
+                                    if (Program.DEBUG)
+                                        CIO.DebugOut("ChainLength received by " + mIp);
+                                    SendRequest(new CMessage(EMessageType.Data,ERequestType.NULL,EDataType.ULong,
+                                        Convert.ToString(CBlockChain.Instance.LastBlock.Header.BlockNumber),rqs.ID));
+                                    break;
+                                }
+                            case ERequestType.GetLastValid:
+                                {
+                                    if (Program.DEBUG)
+                                        CIO.DebugOut("GetLastValid received by " + mIp);
+                                    SendRequest(new CMessage(EMessageType.Data,ERequestType.NULL,EDataType.Block,
+                                        CBlockChain.Instance.LastValidBlock.Serialize(), rqs.ID));
+                                    break;
+                                }
+                            case ERequestType.DownloadBlocks:
+                                {
+                                    if (Program.DEBUG)
+                                        CIO.DebugOut("DownloadBlocks received by " + mIp);
+
+                                    SendRequest(new CMessage(EMessageType.Data, ERequestType.NULL, EDataType.BlockList,
+                                        JsonConvert.SerializeObject(CBlockChain.Instance.RetriveBlocks(Convert.ToUInt64(rqs.Data.Split(';')[0]), Convert.ToUInt64(rqs.Data.Split(';')[1]))),rqs.ID));
+                                    break;
+                                }
+                            case ERequestType.DownloadHeaders:
+                                {
+                                    if (Program.DEBUG)
+                                        CIO.DebugOut("DownloadBlocks received by " + mIp);
+
+                                    SendRequest(new CMessage(EMessageType.Data, ERequestType.NULL, EDataType.HeaderList,
+                                        JsonConvert.SerializeObject(CBlockChain.Instance.RetriveHeaders(Convert.ToUInt64(rqs.Data.Split(';')[0]), Convert.ToUInt64(rqs.Data.Split(';')[1]))), rqs.ID));
+                                    break;
+                                }
+                            case ERequestType.GetHeader:
+                                {
+                                    if (Program.DEBUG)
+                                        CIO.DebugOut("GetLastHeader received by " + mIp);
+                                    SendRequest(new CMessage(EMessageType.Data, ERequestType.NULL, EDataType.Header,
+                                        JsonConvert.SerializeObject(CBlockChain.Instance.RetriveBlock(Convert.ToUInt64(rqs.Data)).Header), rqs.ID));
+                                    break;
+                                }
+                            /*
+                                case ECommand.GETLASTVALID:
+                                
+                                case ECommand.DOWNLOADBLOCK:
+                                if (Program.DEBUG)
+                                CIO.DebugOut("DOWNLOADBLOCK received by " + mIp);
+                                index = ReceiveULong();
+                                SendBlock(CBlockChain.Instance.RetriveBlock(index));
+                                break;
+                                case ECommand.DOWNLOADBLOCKS:
+
+                                case ECommand.GETHEADER:
+                                if (Program.DEBUG)
+                                CIO.DebugOut("GETHEADER received by " + mIp);
+                                index = ReceiveULong();
+                                SendHeader(CBlockChain.Instance.RetriveBlock(index).Header);
+                                break;
+                                case ECommand.CHAINLENGTH:
+                                
+                                */
+                            default:
+                                if (Program.DEBUG)
+                                    CIO.DebugOut("Ricevuto comando sconosciuto: " + rqs.RqsType + " da " + IP);
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+
+        #region TypedReceive
+
+        public CBlock ReceiveBlock(int ID, int Timeout)
+        {
+            return JsonConvert.DeserializeObject<CBlock>(ReceiveData(ID, Timeout).Data);
+        }
+
+        public CHeader ReceiveHeader(int ID, int Timeout)
+        {
+            return JsonConvert.DeserializeObject<CHeader>(ReceiveData(ID, Timeout).Data);
+        }
+
+        public ulong ReceiveULong(int ID, int Timeout)
+        {
+            return Convert.ToUInt64(ReceiveData(ID, Timeout).Data);
+        }
+
+        #endregion TypedReceive
+
+        public CMessage ReceiveData(int ID, int Timeout, int checkFrequency=100)
+        {
+            int timeoutSlice = (Timeout / checkFrequency);
+            CMessage res;
+            for (int i = 0; i < checkFrequency; i++)
+            {
+                lock (DataQueue)
+                {
+                    int count = DataQueue.Count;
+                    for (int j = 0; j < count; j++)
+                    {
+                        res = DataQueue.Dequeue();
+                        if (res.ID == ID)
+                            return res;
+                        else if ((DateTime.Now - res.TimeOfReceipt).TotalSeconds < 300)
+                            DataQueue.Enqueue(res);
+                    }
+                }
+            Thread.Sleep(timeoutSlice);
+            }  
+            return null;
+        }
+
+        public int SendRequest(CMessage Msg)
+        {
+            //genera un nuovo id per la richiesta
+            if (Msg.WillReceiveResponse)
+            {
+                Msg.ID = Rnd.Next();
+                while (ValidID.Contains(Msg.ID))
+                {
+                    Msg.ID = Rnd.Next();
+                }
+                ValidID.Add(Msg.ID);
+            }
+            SendMessage(Msg);
+            return Msg.ID;
+        }
+
+        public static CPeer Deserialize(string Peer)
+        {
+            string[] peerField = Peer.Split(',');
+            return CPeer.CreatePeer(peerField[0], Convert.ToInt32(peerField[1]));
+        }
+
+        private void SendMessage(CMessage Msg)
+        {
+            SendString(JsonConvert.SerializeObject(Msg));
+        }
+
+        private void SendString(string Msg)
+        {
+            SendData(ASCIIEncoding.ASCII.GetBytes(Msg));
+            if (Program.DEBUG)
+                CIO.DebugOut("Sent string " + Msg + ".");
+        }
+
+        private string ReceiveString()
+        {
+            string msg = ASCIIEncoding.ASCII.GetString(Receive());
+            if (Program.DEBUG)
+                CIO.DebugOut("Received string " + msg + ".");
+            return msg;
+        }
+
+        //TODO Criptare le comunicazioni
+        private void SendData(byte[] Msg)
+        {
+            CServer.SendData(mSocket, Msg);
+        }
+
+        private byte[] Receive()
+        {
+            byte[] res= CServer.ReceiveData(mSocket);
+            LastCommunication = DateTime.Now;
+            return res;
+        }
+
+
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+/*
 
         #region NetworkCommunications
         public void SendCommand(ECommand Cmd)
@@ -214,20 +507,14 @@ namespace BlockChain
             SendString(JsonConvert.SerializeObject(b));
         }
 
-        public CBlock ReceiveBlock()
-        {
-            return JsonConvert.DeserializeObject<CBlock>(ReceiveString());
-        }
+
 
         public void SendHeader(CHeader Header)
         {
             SendString(JsonConvert.SerializeObject(Header));
         }
 
-        public CHeader ReceiveHeader()
-        {
-            return JsonConvert.DeserializeObject<CHeader>(ReceiveString());
-        }
+
 
         public void SendString(string Msg)
         {
@@ -249,142 +536,16 @@ namespace BlockChain
             SendData(BitConverter.GetBytes(Nmb));
         }
 
-        public ulong ReceiveULong()
-        {
-            return BitConverter.ToUInt64(ReceiveData(),0);
-        }
-
-        //TODO Criptare le comunicazioni
-        public void SendData(byte[] Msg)
-        {
-            CServer.SendData(mSocket, Msg);//non è asincrono!!
-        }
-
-        public byte[] ReceiveData()
-        {
-            int c = 0;
-            byte[] res = null;
-            
-                while (c < 10)
-                {
-
-                    if (Program.DEBUG)
-                        CIO.DebugOut(Convert.ToString(c));
-                    res = CServer.ReceiveData(mSocket);
-                    if (Encoding.ASCII.GetString(res)[0] == '/')
-                        DoCommand(ReceiveCommand(ASCIIEncoding.ASCII.GetString(res)));
-                    else
-                        c = 10;
-                    c++;
-                }
-            
-            return res;
-        }
         #endregion NetworkCommunications
 
 
-        /// <summary>
-        /// Rimane in attesa di messaggi dal peer a cui è collegato il socket mSocket.
-        /// </summary>
-        public void Listen()
-        {
-            while (mIsConnected)    //bisogna bloccarlo in qualche modo all'uscita del programma credo
-            {
-                lock (mSocket)
-                {
-                    //il timer viene settato cosicchè in caso non si ricevino comunicazioni venga ritornata un'eccezione, in modo che il programma vada avanti e tolga il lock al socket.
-                    mSocket.ReceiveTimeout = 1000;
-                    try
-                    {
-                        ReceiveCommand();
-                    }
-                    catch (SocketException)
-                    {
-                    }
-                    //il timer viene reinpostato a defoult per non causare problemi con altre comunicazioni che potrebbero avvenire in altre parti del codice.
-                    mSocket.ReceiveTimeout = 0;
-                }
-                Thread.Sleep(5000);
-            }
-        }
-
-        public void DoCommand(ECommand cmd)
-        {
-            ulong index;
-            switch (cmd)
-            {
-                case ECommand.UPDPEERS:
-                    if (Program.DEBUG)
-                        CIO.DebugOut("UPDPEERS received by " + mIp);
-                    CPeers.Instance.DoRequest(ERequest.SendPeersList, this);
-                    break;
-                case ECommand.GETLASTVALID:
-                    if (Program.DEBUG)
-                        CIO.DebugOut("GETLASTVALID received by " + mIp);
-                    SendString(CBlockChain.Instance.LastValidBlock.Serialize());
-                    break;
-                case ECommand.DOWNLOADBLOCK:
-                    if (Program.DEBUG)
-                        CIO.DebugOut("DOWNLOADBLOCK received by " + mIp);
-                    index = ReceiveULong();
-                    SendBlock(CBlockChain.Instance.RetriveBlock(index));
-                    break;
-                case ECommand.DOWNLOADBLOCKS:
-                    if (Program.DEBUG)
-                        CIO.DebugOut("DOWNLOADBLOCKS received by " + mIp);
-                    ulong initialIndex = ReceiveULong();
-                    ulong finalIndex = ReceiveULong();
-                    SendBlocks(RetriveBlocks(initialIndex, finalIndex));
-                    break;
-                case ECommand.GETHEADER:
-                    if (Program.DEBUG)
-                        CIO.DebugOut("GETHEADER received by " + mIp);
-                    index = ReceiveULong();
-                    SendHeader(CBlockChain.Instance.RetriveBlock(index).Header);
-                    break;
-                case ECommand.CHAINLENGTH:
-                    if (Program.DEBUG)
-                        CIO.DebugOut("CHAINLENGTH received by " + mIp);
-                    SendULong(CBlockChain.Instance.LastBlock.Header.BlockNumber);
-                    break;
-                case ECommand.RCVMINEDBLOCK:
-                    if (Program.DEBUG)
-                        CIO.DebugOut("RCVMINEDBLOCK received by " + mIp);
-                    if (CPeers.Instance.CanReceiveBlock)
-                    {
-                        CTemporaryBlock newBlock = new CTemporaryBlock(ReceiveBlock(), this);
-                        CBlockChain.Instance.Add(newBlock);
-                    }
-                    break;
-                case ECommand.GETLASTHEADER:
-                    SendHeader(CBlockChain.Instance.LastValidBlock.Header);
-                    break;
-                default:
-                    if (Program.DEBUG)
-                        CIO.DebugOut("Ricevuto comando sconosciuto: " + cmd + " da " + IP);
-                    break;
-            }
-        }
         
 
-        public void StartListening()
-        {
-            mThreadListener = new Thread(new ThreadStart(Listen));
-            mThreadListener.Start();
-        }
-
-        private CBlock[] RetriveBlocks(ulong initialIndex,ulong finalIndex)
-        {
-            CBlock[] ris = new CBlock[finalIndex - initialIndex];
-            int c = 0;
-            while(initialIndex<finalIndex)
-            {
-                ris[c++] = CBlockChain.Instance.RetriveBlock(initialIndex);
-                initialIndex++;
-            }
-            return ris;
-        }
+        
+        
 
 
-    }
-}
+
+        
+
+    */

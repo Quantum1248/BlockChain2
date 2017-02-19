@@ -55,6 +55,7 @@
     <Compile Include="CBlockChain.cs" />
     <Compile Include="CHeader.cs" />
     <Compile Include="CGenesisBlock.cs" />
+    <Compile Include="CMessage.cs" />
     <Compile Include="CParallelChain.cs" />
     <Compile Include="CIO.cs" />
     <Compile Include="CoinbaseTransaction.cs" />
@@ -78,6 +79,7 @@
     <Compile Include="Utilities.cs" />
     <Compile Include="UTXO.cs" />
     <Compile Include="UTXOManager.cs" />
+    <Compile Include="CValidator.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
