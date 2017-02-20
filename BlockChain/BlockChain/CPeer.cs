@@ -243,6 +243,15 @@ namespace BlockChain
                                         CBlockChain.Instance.LastValidBlock.Serialize(), rqs.ID));
                                     break;
                                 }
+                            case ERequestType.DownloadBlock:
+                                {
+                                    if (Program.DEBUG)
+                                        CIO.DebugOut("DownloadBlocks received by " + mIp);
+
+                                    SendRequest(new CMessage(EMessageType.Data, ERequestType.NULL, EDataType.Block,
+                                        JsonConvert.SerializeObject(CBlockChain.Instance.RetriveBlock(Convert.ToUInt64(rqs.Data))), rqs.ID));
+                                    break;
+                                }
                             case ERequestType.DownloadBlocks:
                                 {
                                     if (Program.DEBUG)
@@ -273,11 +282,7 @@ namespace BlockChain
                                 case ECommand.GETLASTVALID:
                                 
                                 case ECommand.DOWNLOADBLOCK:
-                                if (Program.DEBUG)
-                                CIO.DebugOut("DOWNLOADBLOCK received by " + mIp);
-                                index = ReceiveULong();
-                                SendBlock(CBlockChain.Instance.RetriveBlock(index));
-                                break;
+                                
                                 case ECommand.DOWNLOADBLOCKS:
 
                                 case ECommand.GETHEADER:

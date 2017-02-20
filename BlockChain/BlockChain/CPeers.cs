@@ -250,7 +250,7 @@ namespace BlockChain
                         ID = p.SendRequest(new CMessage(EMessageType.Request, ERequestType.DownloadBlock, EDataType.ULong, Convert.ToString(r.Start)));
                         res = p.ReceiveBlock(ID, 5000);
 
-                        if (res != null && CBlockChain.Validate(res))
+                        if (res != null && CValidator.ValidateBlock(res))
                             break;
                         else
                             p.Disconnect();
