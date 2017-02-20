@@ -437,7 +437,7 @@ namespace BlockChain
             ulong offset =Convert.ToUInt64(args[3]);
             int c = 0, ID=0;
             CRange rangeInDownload;
-            string msg="";
+            CBlock[] msg;
             while (rangeAvailable.Count > 0)
             {
                 c = 0;
@@ -448,10 +448,10 @@ namespace BlockChain
                     rangeInDownload = rangeAvailable.Dequeue();
                 }
                 ID = peer.SendRequest(new CMessage(EMessageType.Request, ERequestType.DownloadBlocks, EDataType.ULongList, Convert.ToString(rangeInDownload.Start) + ";" + Convert.ToString(rangeInDownload.End)));
-                msg = peer.ReceiveData(ID, 5000).Data;
-                foreach (string block in msg.Split('/'))
+                msg =JsonConvert.DeserializeObject<CBlock[]>(peer.ReceiveData(ID, 5000).Data);
+                foreach (CBlock block in msg)
                 {
-                    ris[rangeInDownload.Start - offset + (ulong)c++] = new CTemporaryBlock(JsonConvert.DeserializeObject<CBlock>(block), peer);
+                    ris[rangeInDownload.Start - offset + (ulong)c++] = new CTemporaryBlock(block, peer);
                 }
             }
         }
