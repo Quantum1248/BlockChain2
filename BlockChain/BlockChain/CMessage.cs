@@ -88,7 +88,8 @@ namespace BlockChain
         GetLastValid,
         DownloadHeaders,
         GetHeader,
-        DownloadBlocks
+        DownloadBlocks,
+        DownloadBlock
     }
 
     public enum EDataType

@@ -225,10 +225,10 @@ namespace BlockChain
                 }
             }
             //(!) da cambiare
-            /*
+/*
             while (true)
                 Miner.Scrypt(new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash,2));        //(!) da cambiare a seconda di come verrà fattp il miner
-              */
+                */
 
         }
 

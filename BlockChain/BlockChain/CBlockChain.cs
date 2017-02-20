@@ -104,10 +104,13 @@ namespace BlockChain
                 // Load each object from the stream and do something with it
                 CBlock b = JsonConvert.DeserializeObject<CBlock>(block);
                 if (b.Header.BlockNumber == Index)
+                {
+                    streamReader.Close();
                     return b;
+                }
             }
-            streamReader.Close();
 
+            streamReader.Close();
             return null;
         }
 
@@ -159,6 +162,7 @@ namespace BlockChain
             //(!) e se scarico tutta la blockchain e da un certo punto in poi sbagliata?
             foreach (CTemporaryBlock b in Blocks)
             {
+               
                 if (b == null)
                     break;
                 if (Miner.Verify(b))

@@ -83,11 +83,13 @@ namespace BlockChain
             foreach (CPeer InvldP in Peers)
                 for (int i = 0; i < mPeers.Length; i++)
                 {
-                    if (mPeers[i]?.IP == InvldP.IP)
+                    if (mPeers[i]?.IP == InvldP.IP && mPeers[i].IsConnected)
                     {
                         mPeers[i].Disconnect();
                         mPeers[i] = null;
                     }
+                    else if(mPeers[i]?.IP == InvldP.IP && !mPeers[i].IsConnected)
+                        mPeers[i] = null;
                 }
         }
 
@@ -240,28 +242,21 @@ namespace BlockChain
                     else
                         r.End--;
                 }
-                /*
+
                 //controlla se l'ultimo blocco è valido?
                 foreach (CPeer p in mPeers)
                     if (p != null)
-                        lock (p.Socket)
-                        {
-                            try
-                            {
-                                p.Socket.ReceiveTimeout = 5000;
-                                p.SendCommand(ECommand.DOWNLOADBLOCK);
-                                p.SendULong(r.Start);
-                                res = p.ReceiveBlock();
-                                if (res != null && CBlockChain.Validate(res))
-                                    break;
-                                else
-                                    p.Disconnect();
-                            }
-                            catch (SocketException)
-                            { }
-                            p.Socket.ReceiveTimeout = 0;
-                        }
-                        */
+                    {
+                        ID = p.SendRequest(new CMessage(EMessageType.Request, ERequestType.DownloadBlock, EDataType.ULong, Convert.ToString(r.Start)));
+                        res = p.ReceiveBlock(ID, 5000);
+
+                        if (res != null && CBlockChain.Validate(res))
+                            break;
+                        else
+                            p.Disconnect();
+                        p.Socket.ReceiveTimeout = 0;
+                    }
+                      
                 return res;
             }
             else

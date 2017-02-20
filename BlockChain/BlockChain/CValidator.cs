@@ -101,9 +101,22 @@ namespace BlockChain
                                 return false;
                         }
                     }
-                case ERequestType.DownloadBlocks:
+                case ERequestType.DownloadBlock:
                     {
                         if (Msg.DataType == EDataType.ULong && Msg.Data != null)
+                        {
+                            try
+                            {
+                                Convert.ToUInt64(Msg.Data);
+                                return true;
+                            }
+                            catch { return false; }
+                        }
+                        return false;
+                    }
+                case ERequestType.DownloadBlocks:
+                    {
+                        if (Msg.DataType == EDataType.ULongList && Msg.Data != null)
                         {
                             try
                             {
@@ -120,7 +133,7 @@ namespace BlockChain
                     }
                 case ERequestType.DownloadHeaders:
                     {
-                        if (Msg.DataType == EDataType.ULong && Msg.Data != null)
+                        if (Msg.DataType == EDataType.ULongList && Msg.Data != null)
                         {
                             try
                             {

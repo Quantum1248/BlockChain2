@@ -124,8 +124,8 @@ namespace BlockChain
         {
             mSocket.Close();
             mSocket.Dispose();//(!) in teoria è inutile perchè fa già tutto Close()
-            CPeers.Instance.InvalidPeers(new CPeer[] { this });
             mIsConnected = false;
+            CPeers.Instance.InvalidPeers(new CPeer[] { this });        
         }
 
         public void StartListening()
@@ -313,7 +313,7 @@ namespace BlockChain
 
         public ulong ReceiveULong(int ID, int Timeout)
         {
-                return Convert.ToUInt64(ReceiveData(ID, Timeout).Data);
+            return Convert.ToUInt64(ReceiveData(ID, Timeout).Data);
         }
 
         #endregion TypedReceive
