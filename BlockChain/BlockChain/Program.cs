@@ -22,7 +22,6 @@ namespace BlockChain
 
             CServer s = CServer.StartNewServer(lp);
 
-
         }
     }
 

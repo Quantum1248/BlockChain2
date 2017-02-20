@@ -66,6 +66,7 @@ namespace BlockChain
             {
                 if (RqsType == ERequestType.NULL)
                     WillReceiveResponse = false;
+                mDataType = value;
             }
         }
     }

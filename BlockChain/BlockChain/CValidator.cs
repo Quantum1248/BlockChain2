@@ -29,9 +29,9 @@ namespace BlockChain
 
         public static bool ValidateMessage(CMessage Msg)
         {
-            if (Msg.Type == EMessageType.Request)
+            if (Msg?.Type == EMessageType.Request)
                 return ValidateRequest(Msg);
-            else if (Msg.Type == EMessageType.Data)
+            else if (Msg?.Type == EMessageType.Data)
                 return ValidateData(Msg);
             return false;
         }

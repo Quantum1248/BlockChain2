@@ -95,7 +95,7 @@ namespace BlockChain
                 CIO.DebugOut("Begin to enstablish connections to initial peers...");
             //si collega ai peer inseriti nella lista iniziale.
             foreach (CPeer p in Peers)
-                if (p.Connect())
+                if (p.Connect(500))
                     if (!mPeers.Insert(p))
                         break;
             

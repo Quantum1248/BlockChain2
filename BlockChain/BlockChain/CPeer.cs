@@ -19,6 +19,7 @@ namespace BlockChain
         private RSACryptoServiceProvider csp = null;
         private RSACryptoServiceProvider cspMine;
         private Thread mThreadListener;
+        private Thread mThreadRequest;
         private bool mIsConnected;
 
         private Queue<CMessage> RequestQueue = new Queue<CMessage>();
@@ -92,7 +93,7 @@ namespace BlockChain
             get { return mIsConnected; }
         }
 
-        public bool Connect()
+        public bool Connect(int Timeout)
         {
             if (Program.DEBUG)
                 CIO.DebugOut("Connecting to " + mIp + ":" + mPort);
@@ -101,7 +102,7 @@ namespace BlockChain
             asyncConnection.Completed += (object sender, SocketAsyncEventArgs e) => { SuccessfulConnected = true; };
             asyncConnection.RemoteEndPoint = new IPEndPoint(mIp, mPort);
             mSocket.ConnectAsync(asyncConnection);
-            Thread.Sleep(3000);
+            Thread.Sleep(Timeout);
             if (SuccessfulConnected)
             {
                 if (Program.DEBUG)
@@ -129,8 +130,11 @@ namespace BlockChain
 
         public void StartListening()
         {
+            mThreadRequest = new Thread(new ThreadStart(ExecuteRequest));
+            mThreadRequest.Start();
             mThreadListener = new Thread(new ThreadStart(Listen));
             mThreadListener.Start();
+
         }
 
         #endregion Constructors&Properties&Inizialization
@@ -143,8 +147,6 @@ namespace BlockChain
             CMessage msg;
             while (mIsConnected)    //bisogna bloccarlo in qualche modo all'uscita del programma credo
             {
-                lock (mSocket)
-                {
                     //il timer viene settato cosicchè in caso non si ricevino comunicazioni venga ritornata un'eccezione, in modo che il programma vada avanti e tolga il lock al socket.
                     mSocket.ReceiveTimeout = 1000;
                     try
@@ -175,7 +177,6 @@ namespace BlockChain
                     { Disconnect(); }
                     //il timer viene reinpostato a defoult per non causare problemi con altre comunicazioni che potrebbero avvenire in altre parti del codice.
                     mSocket.ReceiveTimeout = 0;
-                }
                 Thread.Sleep(1000);
             }
         }
@@ -312,7 +313,7 @@ namespace BlockChain
 
         public ulong ReceiveULong(int ID, int Timeout)
         {
-            return Convert.ToUInt64(ReceiveData(ID, Timeout).Data);
+                return Convert.ToUInt64(ReceiveData(ID, Timeout).Data);
         }
 
         #endregion TypedReceive

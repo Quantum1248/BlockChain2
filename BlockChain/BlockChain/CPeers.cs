@@ -127,13 +127,7 @@ namespace BlockChain
                         CBlock b = Arg as CBlock;
                         foreach (CPeer p in mPeers)
                             if (p != null)
-                                lock (p.Socket)
-                                {
                                     p.SendRequest(new CMessage(EMessageType.Request, ERequestType.NewBlockMined, EDataType.Block, b.Serialize()));
-                                    /*
-                                    p.SendCommand(ECommand.RCVMINEDBLOCK);
-                                    p.SendBlock(b);*/
-                                }
                         break;
                     }
                 case ERequest.LastCommonValidBlock:
@@ -162,8 +156,6 @@ namespace BlockChain
                 if (mPeers[i] != null)
                 {
                     //blocca il peer e manda una richiesta di lock per bloccarlo anche dal nel suo client, così che non avvengano interferenze nella comunicazione
-                    lock (mPeers[i].Socket)
-                    {
                         try
                         {
                             id=mPeers[i].SendRequest(new CMessage(EMessageType.Request, ERequestType.UpdPeers));
@@ -175,7 +167,6 @@ namespace BlockChain
                             if (Program.DEBUG)
                                 CIO.DebugOut("Nessuna risposta da " + mPeers[i].IP + " durante la richiesta dei peer.");
                         }
-                    }
                 }
             ris = ris.TrimEnd('/');
 
@@ -201,26 +192,24 @@ namespace BlockChain
         private CBlock FindLastCommonBlocks()
         {
             ulong minLength = ulong.MaxValue, tmp = 0;
-            int rqsID=0;
+            int rqsID = 0;
             bool found = false;
             Stack<CHeader> headers = new Stack<CHeader>();
             CBlock res = null;
             foreach (CPeer p in mPeers)
                 if (p != null)
-                    lock (p.Socket)
-                    {
+                {
                         try
                         {
-                            rqsID=p.SendRequest(new CMessage(EMessageType.Request, ERequestType.ChainLength));
-                            tmp = p.ReceiveULong(rqsID,5000);
+                            rqsID = p.SendRequest(new CMessage(EMessageType.Request, ERequestType.ChainLength));
+                            tmp = p.ReceiveULong(rqsID, 5000);
                             if (tmp < minLength)
                                 minLength = tmp;
                         }
                         catch (SocketException)
                         { }
-                        p.Socket.ReceiveTimeout = 0;
-                    }
-
+                    p.Socket.ReceiveTimeout = 0;
+                } 
             CRange r = new CRange(CBlockChain.Instance.LastValidBlock.Header.BlockNumber, minLength);
             if (r.End != ulong.MaxValue && r.Start < r.End)
             {
@@ -234,11 +223,10 @@ namespace BlockChain
                         tmp++;
                     foreach (CPeer p in mPeers)
                         if (p != null)
-                            lock (p.Socket)
-                            {
-                                ID=p.SendRequest(new CMessage(EMessageType.Request, ERequestType.GetHeader, EDataType.ULong, Convert.ToString(tmp)));
-                                headers.Push(p.ReceiveHeader(ID,5000));
-                            }
+                        {
+                            ID = p.SendRequest(new CMessage(EMessageType.Request, ERequestType.GetHeader, EDataType.ULong, Convert.ToString(tmp)));
+                            headers.Push(p.ReceiveHeader(ID, 5000));
+                        }
                     while (headers.Count > 1 && found)
                         if (!(headers?.Pop().Hash == headers?.Peek().Hash))
                             found = false;
@@ -298,7 +286,7 @@ namespace BlockChain
                         }
 
                     if (!Peer.IsConnected)
-                        if (!Peer.Connect())
+                        if (!Peer.Connect(2000))
                         {
                             Peer.Disconnect();
                             return false;
@@ -350,12 +338,11 @@ namespace BlockChain
             int ID = 0;
             foreach (CPeer p in mPeers)
                 if (p != null)
-                    lock (p.Socket)
-                    {
-                        ID = p.SendRequest(new CMessage(EMessageType.Request, ERequestType.GetLastValid));
-                        block = p.ReceiveBlock(ID,5000);
-                        blocks.Add(new CTemporaryBlock(block, p));
-                    }
+                {
+                    ID = p.SendRequest(new CMessage(EMessageType.Request, ERequestType.GetLastValid));
+                    block = p.ReceiveBlock(ID, 5000);
+                    blocks.Add(new CTemporaryBlock(block, p));
+                }
             if (blocks.Count > 0)
                 if (blocks[0] != null)
                 {
@@ -378,30 +365,26 @@ namespace BlockChain
                 if (p != null)
                     peersPool[c++] = p;
 
-            for(int i=0;i<peersPool.Length;i++)
+            for (int i = 0; i < peersPool.Length; i++)
                 if (peersPool[i] != null)
-                    lock (peersPool[i].Socket)
+                {
+                    peersPool[i].SendRequest(new CMessage(EMessageType.Request, ERequestType.GetLastHeader));
+                    tmp1 = peersPool[i].ReceiveHeader(ID, 5000);
+                    res.Push(new CParallelChain());
+                    res.Peek().AddPeer(peersPool[i]);
+                    res.Peek().FinalIndex = tmp1.BlockNumber;
+                    peersPool[i] = null;
+                    for (int j = i + 1; j < peersPool.Length; j++)
                     {
-                        peersPool[i].SendRequest(new CMessage(EMessageType.Request, ERequestType.GetLastHeader));
-                        tmp1 = peersPool[i].ReceiveHeader(ID, 5000);
-                        res.Push(new CParallelChain());
-                        res.Peek().AddPeer(peersPool[i]);
-                        res.Peek().FinalIndex = tmp1.BlockNumber;
-                        peersPool[i] = null;
-                        for(int j=i+1;j<peersPool.Length;j++)
+                        ID = peersPool[j].SendRequest(new CMessage(EMessageType.Request, ERequestType.GetLastHeader));
+                        tmp2 = peersPool[j].ReceiveHeader(ID, 5000);
+                        if (tmp1.Hash == tmp2.Hash)
                         {
-                            lock (peersPool[j].Socket)
-                            {
-                                ID = peersPool[j].SendRequest(new CMessage(EMessageType.Request, ERequestType.GetLastHeader));
-                                tmp2 = peersPool[j].ReceiveHeader(ID, 5000);
-                                if (tmp1.Hash == tmp2.Hash)
-                                {
-                                    res.Peek().AddPeer(peersPool[j]);
-                                    peersPool[j] = null;
-                                }
-                            }
+                            res.Peek().AddPeer(peersPool[j]);
+                            peersPool[j] = null;
                         }
                     }
+                }
             return res.ToArray();
         }
 
@@ -469,14 +452,11 @@ namespace BlockChain
                         break;
                     rangeInDownload = rangeAvailable.Dequeue();
                 }
-                lock (peer.Socket)
+                ID = peer.SendRequest(new CMessage(EMessageType.Request, ERequestType.DownloadBlocks, EDataType.ULongList, Convert.ToString(rangeInDownload.Start) + ";" + Convert.ToString(rangeInDownload.End)));
+                msg = peer.ReceiveData(ID, 5000).Data;
+                foreach (string block in msg.Split('/'))
                 {
-                    ID=peer.SendRequest(new CMessage(EMessageType.Request, ERequestType.DownloadBlocks, EDataType.ULongList, Convert.ToString(rangeInDownload.Start) + ";" + Convert.ToString(rangeInDownload.End)));
-                    msg = peer.ReceiveData(ID, 5000).Data;
-                    foreach (string block in msg.Split('/'))
-                    {
-                        ris[rangeInDownload.Start - offset + (ulong)c++] = new CTemporaryBlock(JsonConvert.DeserializeObject<CBlock>(block), peer);
-                    }
+                    ris[rangeInDownload.Start - offset + (ulong)c++] = new CTemporaryBlock(JsonConvert.DeserializeObject<CBlock>(block), peer);
                 }
             }
         }
@@ -544,15 +524,12 @@ namespace BlockChain
                         break;
                     rangeInDownload = rangeAvailable.Dequeue();
                 }
-                lock (peer.Socket)
-                {
-                    ID = peer.SendRequest(new CMessage(EMessageType.Request, ERequestType.DownloadHeaders, EDataType.ULongList, Convert.ToString(rangeInDownload.Start) + ";" + Convert.ToString(rangeInDownload.End)));
-                    msg = peer.ReceiveData(ID, 5000).Data;
+                ID = peer.SendRequest(new CMessage(EMessageType.Request, ERequestType.DownloadHeaders, EDataType.ULongList, Convert.ToString(rangeInDownload.Start) + ";" + Convert.ToString(rangeInDownload.End)));
+                msg = peer.ReceiveData(ID, 5000).Data;
 
-                    foreach (string header in msg.Split('/'))
-                    {
-                        ris[rangeInDownload.Start + (ulong)c++] = JsonConvert.DeserializeObject<CHeader>(header);
-                    }
+                foreach (string header in msg.Split('/'))
+                {
+                    ris[rangeInDownload.Start + (ulong)c++] = JsonConvert.DeserializeObject<CHeader>(header);
                 }
             }
         }
