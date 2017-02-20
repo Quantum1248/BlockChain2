@@ -146,11 +146,6 @@ namespace BlockChain
             return true;
         }
 
-        public static bool Validate(CBlock b)
-        {
-            return Miner.Verify(b);
-        }
-
         /// <summary>
         /// Aggiunge i blocchi presenti nel vettore e ritorna l'indice dell'ultimo blocco aggiunto.
         /// </summary>
@@ -166,7 +161,10 @@ namespace BlockChain
                 if (b == null)
                     break;
                 if (Miner.Verify(b))
+                {
+                    mLastValidBlock = b as CBlock;
                     File.AppendAllText(filepath, (b as CBlock).Serialize() + '\n');
+                }
                 else
                     break;
             }

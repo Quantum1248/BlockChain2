@@ -363,7 +363,7 @@ namespace BlockChain
             for (int i = 0; i < peersPool.Length; i++)
                 if (peersPool[i] != null)
                 {
-                    peersPool[i].SendRequest(new CMessage(EMessageType.Request, ERequestType.GetLastHeader));
+                    ID=peersPool[i].SendRequest(new CMessage(EMessageType.Request, ERequestType.GetLastHeader));
                     tmp1 = peersPool[i].ReceiveHeader(ID, 5000);
                     res.Push(new CParallelChain());
                     res.Peek().AddPeer(peersPool[i]);
