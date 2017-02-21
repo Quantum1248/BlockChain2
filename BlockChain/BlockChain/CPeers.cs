@@ -383,44 +383,39 @@ namespace BlockChain
             return res.ToArray();
         }
 
-        public CTemporaryBlock[] DistribuiteDownloadBlocks(ulong initialIndex, ulong finalIndex, CPeer[] Peers=null)
+        public CTemporaryBlock[] DistribuiteDownloadBlocks(ulong initialIndex, ulong finalIndex, CPeer[] Peers = null)
         {
             if (Peers == null)
                 Peers = mPeers;
-            Queue<Thread> threadQueue=new Queue<Thread>();
+            Queue<Thread> threadQueue = new Queue<Thread>();
             Queue<CRange> queueRange = new Queue<CRange>();
             CTemporaryBlock[] ris;
-            ulong module=0, rangeDim=10, totalBlocks= finalIndex - initialIndex;
+            ulong module = 0, rangeDim = 10, totalBlocks = finalIndex - initialIndex;
             ulong rangeInitialIndex = initialIndex;
             ris = new CTemporaryBlock[totalBlocks];
-            foreach(CPeer p in Peers)
-                if(p!=null)
+            foreach (CPeer p in Peers)
+                if (p != null)
                     threadQueue.Enqueue(new Thread(new ParameterizedThreadStart(DownloadBlocks)));
 
             //creazione gruppi di blocchi
-            //(!) genera 1-10/11-20 p 1-10/10-20? è giusto il secondo 
             //1-10 scarica i blocchi dall'1 compreso al 10 non compreso(1-2-3-4-5-6-7-8-9)
             module = totalBlocks % rangeDim;
-            if (rangeInitialIndex < finalIndex)
-            {
-                while (rangeInitialIndex < finalIndex - module)
-                {
-                    queueRange.Enqueue(new CRange(rangeInitialIndex, rangeInitialIndex + rangeDim));
-                    rangeInitialIndex += rangeDim;
-                }
-                queueRange.Enqueue(new CRange(rangeInitialIndex, rangeInitialIndex + module));
-            }
+            queueRange.Enqueue(new CRange(finalIndex - module, finalIndex));
+            finalIndex -= module;
+            while (rangeInitialIndex < finalIndex)
+                queueRange.Enqueue(new CRange(rangeInitialIndex, rangeInitialIndex += rangeDim));
+
             //creazione ed avvio thread
             foreach (CPeer p in Peers)
             {
-                if(p!=null)
+                if (p != null)
                 {
-                    threadQueue.Peek().Start(new object[] { p, queueRange ,ris, initialIndex});
+                    threadQueue.Peek().Start(new object[] { p, queueRange, ris, initialIndex });
                     threadQueue.Enqueue(threadQueue.Dequeue());
                 }
             }
 
-            while(threadQueue.Count>0)
+            while (threadQueue.Count > 0)
             {
                 threadQueue.Dequeue().Join();
             }
@@ -463,8 +458,8 @@ namespace BlockChain
             ulong module = 0, rangeDim = 10, totalHeaders = finalIndex - initialIndex;
             Queue<Thread> threadQueue = new Queue<Thread>();
             Queue<CRange> queueRange = new Queue<CRange>();
+            ulong rangeInitialIndex = initialIndex;
             CHeader[] ris = new CHeader[totalHeaders];
-
             foreach (CPeer p in Peers)
                 if (p != null)
                     threadQueue.Enqueue(new Thread(new ParameterizedThreadStart(DownloadHeaders)));
@@ -473,13 +468,10 @@ namespace BlockChain
             //(!) genera 1-10/11-20 p 1-10/10-20? è giusto il secondo 
             //1-10 scarica i blocchi dall'1 compreso al 10 non compreso(1-2-3-4-5-6-7-8-9)
             module = totalHeaders % rangeDim;
-            while (initialIndex <= finalIndex - module)
-            {
-                queueRange.Enqueue(new CRange(initialIndex, initialIndex + rangeDim));
-                initialIndex += rangeDim;
-            }
-            initialIndex -= rangeDim;
-            queueRange.Enqueue(new CRange(initialIndex, initialIndex + module));
+            queueRange.Enqueue(new CRange(finalIndex - module, finalIndex));
+            finalIndex -= module;
+            while (rangeInitialIndex < finalIndex)
+                queueRange.Enqueue(new CRange(rangeInitialIndex, rangeInitialIndex += rangeDim));
 
             //creazione ed avvio thread
             //(!) si blocca se qualcuno si disconnette mentre fa il ciclo credo(perchè un thread non farà mai finire il join)
@@ -487,7 +479,7 @@ namespace BlockChain
             {
                 if (p != null)
                 {
-                    threadQueue.Peek().Start(new object[] { p, queueRange, ris });
+                    threadQueue.Peek().Start(new object[] { p, queueRange, ris, initialIndex });
                     threadQueue.Enqueue(threadQueue.Dequeue());
                 }
             }
@@ -506,10 +498,10 @@ namespace BlockChain
             CPeer peer = args[0] as CPeer;
             Queue<CRange> rangeAvailable = args[1] as Queue<CRange>;
             CHeader[] ris = args[2] as CHeader[];
-
-            int c = 0, ID=0;
+            ulong offset = Convert.ToUInt64(args[3]);
+            int c = 0, ID = 0;
             CRange rangeInDownload;
-            string msg;
+            CHeader[] msg;
             while (rangeAvailable.Count > 0)
             {
                 c = 0;
@@ -519,12 +511,13 @@ namespace BlockChain
                         break;
                     rangeInDownload = rangeAvailable.Dequeue();
                 }
-                ID = peer.SendRequest(new CMessage(EMessageType.Request, ERequestType.DownloadHeaders, EDataType.ULongList, Convert.ToString(rangeInDownload.Start) + ";" + Convert.ToString(rangeInDownload.End)));
-                msg = peer.ReceiveData(ID, 5000).Data;
 
-                foreach (string header in msg.Split('/'))
+                ID = peer.SendRequest(new CMessage(EMessageType.Request, ERequestType.DownloadHeaders, EDataType.ULongList, Convert.ToString(rangeInDownload.Start) + ";" + Convert.ToString(rangeInDownload.End)));
+                msg = JsonConvert.DeserializeObject<CHeader[]>(peer.ReceiveData(ID, 5000).Data);
+
+                foreach (CHeader header in msg)
                 {
-                    ris[rangeInDownload.Start + (ulong)c++] = JsonConvert.DeserializeObject<CHeader>(header);
+                    ris[rangeInDownload.Start -offset + (ulong)c++] = header;
                 }
             }
         }

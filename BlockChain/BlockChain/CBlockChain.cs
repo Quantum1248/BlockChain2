@@ -160,10 +160,11 @@ namespace BlockChain
                
                 if (b == null)
                     break;
-                if (Miner.Verify(b))
+                if (CValidator.ValidateBlock(b,false))
                 {
                     mLastValidBlock = b as CBlock;
-                    File.AppendAllText(filepath, (b as CBlock).Serialize() + '\n');
+                    //File.AppendAllText(filepath, (b as CBlock).Serialize() + '\n');
+                    int togliilcommentoeilfalsesopra;
                 }
                 else
                     break;
@@ -176,7 +177,7 @@ namespace BlockChain
             //TODO sceglie in base alla difficoltà
             CParallelChain res=new CParallelChain();
             foreach (CParallelChain hc in HeaderChains)
-                if (hc.Length > res.Length)
+                if (hc.Length >= res.Length)
                     res = hc;
             return res;
         }
