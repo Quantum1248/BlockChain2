@@ -46,6 +46,19 @@ namespace BlockChain
             instance = this;
         }
 
+        public CPeer[] Peers
+        {
+            get
+            {
+                int c = 0;
+                CPeer[] res = new CPeer[NumConnection()];
+                foreach (CPeer p in mPeers)
+                    if(p!=null)
+                        res[c++] = p;
+                return res;
+            }
+        }
+
         public int NumConnection()
         {
             int n = 0;
@@ -59,21 +72,24 @@ namespace BlockChain
 
         public void ValidPeers(CPeer[] Peers)
         {
-            bool valid = false;
+            bool valid;
             for (int i = 0; i < mPeers.Length; i++)
             {
-                valid = false;
-                foreach (CPeer VldP in Peers)
+                if (mPeers[i] != null)
                 {
-                    if (mPeers[i]?.IP == VldP.IP)
+                    valid = false;
+                    foreach (CPeer VldP in Peers)
                     {
-                        valid = true;
+                        if (mPeers[i]?.IP == VldP.IP)
+                        {
+                            valid = true;
+                        }
                     }
-                }
-                if(!valid)
-                {
-                    mPeers[i].Disconnect();
-                    mPeers[i] = null;
+                    if (!valid)
+                    {
+                        mPeers[i].Disconnect();
+                        mPeers[i] = null;
+                    }
                 }
             }
         }
@@ -106,11 +122,6 @@ namespace BlockChain
                 case ERequest.UpdatePeers:
                     {
                         UpdatePeers();
-                        break;
-                    }
-                case ERequest.SendPeersList:
-                    {
-                        SendPeersList(Arg as CPeer);
                         break;
                     }
                 case ERequest.LastValidBlock:
@@ -148,28 +159,29 @@ namespace BlockChain
 
         private void UpdatePeers()
         {
-            string ris = "";
-            string msg="";
             int id;
             string[] listsPeer;
             string[] peers;
+            string msg = "";
+            string ris = "";
             CPeer receivedPeer;
             for (int i = 0; i < mPeers.Length; i++)
                 if (mPeers[i] != null)
                 {
                     //blocca il peer e manda una richiesta di lock per bloccarlo anche dal nel suo client, così che non avvengano interferenze nella comunicazione
-                        try
-                        {
-                            id=mPeers[i].SendRequest(new CMessage(EMessageType.Request, ERequestType.UpdPeers));
-                            msg = mPeers[i].ReceiveData(id, 2000).Data;
-                            ris += msg + "/";
-                        }
-                        catch (SocketException)
-                        {
-                            if (Program.DEBUG)
-                                CIO.DebugOut("Nessuna risposta da " + mPeers[i].IP + " durante la richiesta dei peer.");
-                        }
+                    try
+                    {
+                        id = mPeers[i].SendRequest(new CMessage(EMessageType.Request, ERequestType.UpdPeers));
+                        msg = mPeers[i].ReceiveData(id, 5000).Data;
+                        ris += msg + "/";
+                    }
+                    catch (SocketException)
+                    {
+                        if (Program.DEBUG)
+                            CIO.DebugOut("Nessuna risposta da " + mPeers[i].IP + " durante la richiesta dei peer.");
+                    }
                 }
+
             ris = ris.TrimEnd('/');
 
             if (ris != "")
@@ -312,7 +324,7 @@ namespace BlockChain
             }
         }
 
-        private void SendPeersList(CPeer Peer)
+        public string PeersList()
         {
             string PeersList = "";
             for (int i = 0; i < mPeers.Length; i++)
@@ -322,7 +334,7 @@ namespace BlockChain
             }
             //non deve in viare il peer richiedente
             PeersList = PeersList.TrimEnd(';');
-            Peer.SendRequest(new CMessage(EMessageType.Data,ERequestType.NULL,EDataType.PeersList, PeersList));
+            return PeersList;
         }
 
         private CTemporaryBlock RequestLastValidBlock()

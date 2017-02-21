@@ -9,7 +9,6 @@ namespace BlockChain
     enum ERequest
     {
         UpdatePeers,
-        SendPeersList,
         LastValidBlock,
         DownloadMissingBlock,
         BroadcastMinedBlock,

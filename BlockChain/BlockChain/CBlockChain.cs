@@ -160,11 +160,11 @@ namespace BlockChain
                
                 if (b == null)
                     break;
-                if (CValidator.ValidateBlock(b,false))
+                if (CValidator.ValidateBlock(b))
                 {
                     mLastValidBlock = b as CBlock;
-                    //File.AppendAllText(filepath, (b as CBlock).Serialize() + '\n');
-                    int togliilcommentoeilfalsesopra;
+                    File.AppendAllText(filepath, (b as CBlock).Serialize() + '\n');
+                    //int togliilcommentoeilfalsesopra;
                 }
                 else
                     break;

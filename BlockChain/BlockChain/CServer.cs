@@ -46,25 +46,25 @@ namespace BlockChain
 
             //TODO: testare la verifica e la creazione delle transazioni con le nuove funzioni e modifiche implementate in Transaction.cs e UTXOManager.cs
             //TODO: testare nuovi metodi di encoding in RSA.cs, non vogliamo che si fottano tutte le firme digitali e annesse verifiche, o no?
-            /*Output[] outputs;
-            
-            Transaction tx; ;
-            UTXOManager.Instance.SpendUTXO("314f04b30f62e0056bd059354a5536fb2e302107eed143b5fa2aa0bbba07f608", @"8yeeMidRStH4QvdNAr6fzwaaJ92hlSpcplki/KRSjy8=", 0);
-
-            for (int i = 0; i < 1000000; i += 3)
             {
-                outputs = new Output[3];
-                for(int k  = 0; k < outputs.Length; k++)
-                {
-                    outputs[k] = new Output(1.4242, Utilities.ByteArrayToString(SHA256Managed.Create().ComputeHash(Encoding.ASCII.GetBytes(((i + k).ToString())))));
-                }
-                tx = new Transaction(outputs, RSA.ExportPubKey(rsaKeyPair), rsaKeyPair);
-            }*/
-            
-            
-            
-            
+                /*
+                Output[] outputs;
 
+                Transaction tx; ;
+                UTXOManager.Instance.SpendUTXO("314f04b30f62e0056bd059354a5536fb2e302107eed143b5fa2aa0bbba07f608", @"8yeeMidRStH4QvdNAr6fzwaaJ92hlSpcplki/KRSjy8=", 0);
+
+                for (int i = 0; i < 1000000; i += 3)
+                {
+                    outputs = new Output[3];
+                    for(int k  = 0; k < outputs.Length; k++)
+                    {
+                        outputs[k] = new Output(1.4242, Utilities.ByteArrayToString(SHA256Managed.Create().ComputeHash(Encoding.ASCII.GetBytes(((i + k).ToString())))));
+                    }
+                    tx = new Transaction(outputs, RSA.ExportPubKey(rsaKeyPair), rsaKeyPair);
+                }
+                */
+            }
+            
             if (Program.DEBUG)
                 CIO.DebugOut("Last block number: " + CBlockChain.Instance.LastValidBlock.Header.BlockNumber +".");
 
@@ -102,7 +102,7 @@ namespace BlockChain
             if (Program.DEBUG)
                 CIO.DebugOut("Begin to enstablish connections to other peers...");
             mThreadPeers = new Thread(new ThreadStart(UpdatePeersList));
-            //mThreadPeers.Start();
+            mThreadPeers.Start();
             
             if (Program.DEBUG)
                 CIO.DebugOut("Start listening...");
@@ -112,7 +112,7 @@ namespace BlockChain
             if (Program.DEBUG)
                 CIO.DebugOut("Start update blockchain...");
             mUpdateBlockChainThread = new Thread(new ThreadStart(UpdateBlockchain));
-            mUpdateBlockChainThread.Start();
+            //mUpdateBlockChainThread.Start();
             
         }
 
@@ -124,7 +124,7 @@ namespace BlockChain
                 if (numPeers < NOT_RESERVED_CONNECTION && numPeers>0)
                     mPeers.DoRequest(ERequest.UpdatePeers);
                 //inserire qui il controllo per verificare che i peer presenti siano ancora online?
-                Thread.Sleep(60000);
+                Thread.Sleep(3000);
             }
         }
 
@@ -147,7 +147,7 @@ namespace BlockChain
             SocketAsyncEventArgs asyncConnection;
             bool IncomingConnection = false;
             if (Program.DEBUG)
-                Console.WriteLine("Attending connection...");
+                CIO.DebugOut("Attending connection...");
             while (!IsStopped)
             {
                 if (ConnectedPeers < MAX_PEERS)
@@ -224,6 +224,8 @@ namespace BlockChain
                     }
                 }
             }
+            if (Program.DEBUG)
+                CIO.DebugOut("Sincronizzazione Blockchain terminata!");
             //(!) da cambiare
 /*
             while (true)
@@ -250,6 +252,8 @@ namespace BlockChain
 
         static public void SendData(Socket Dispatcher, byte[] data)
         {
+            if (data.Length < 1)
+                throw new Exception();
             Dispatcher.Send(BitConverter.GetBytes(data.Length));
             Dispatcher.Send(data);
         }

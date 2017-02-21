@@ -87,6 +87,7 @@ namespace BlockChain
         {
             get { return mSocket; }
         }
+        
 
         public bool IsConnected
         {
@@ -144,6 +145,7 @@ namespace BlockChain
         /// </summary>
         private void Listen()
         {
+            string tmp;
             CMessage msg;
             while (mIsConnected)    //bisogna bloccarlo in qualche modo all'uscita del programma credo
             {
@@ -151,7 +153,8 @@ namespace BlockChain
                 mSocket.ReceiveTimeout = 1000;
                 try
                 {
-                    msg = JsonConvert.DeserializeObject<CMessage>(ReceiveString());
+                    tmp = ReceiveString();
+                    msg = JsonConvert.DeserializeObject<CMessage>(tmp);
                     if (CValidator.ValidateMessage(msg))
                     {
                         msg.TimeOfReceipt = DateTime.Now;
@@ -174,7 +177,10 @@ namespace BlockChain
                 {
                 }
                 catch (JsonSerializationException)
-                { Disconnect(); }
+                {
+                    throw new Exception();
+                    Disconnect();
+                }
                 //il timer viene reinpostato a defoult per non causare problemi con altre comunicazioni che potrebbero avvenire in altre parti del codice.
                 mSocket.ReceiveTimeout = 0;
                 Thread.Sleep(1000);
@@ -199,7 +205,8 @@ namespace BlockChain
                                     if (Program.DEBUG)
                                         CIO.DebugOut("UpdPeers received by " + mIp);
                                     //(!) è meglio farsi ritornare la lista e poi usare json?
-                                    CPeers.Instance.DoRequest(ERequest.SendPeersList, this);
+                                    SendRequest(new CMessage(EMessageType.Data, ERequestType.NULL, EDataType.PeersList,
+                                        CPeers.Instance.PeersList(),rqs.ID));
                                     break;
                                 }
                             case ERequestType.NewBlockMined:
