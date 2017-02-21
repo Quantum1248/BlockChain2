@@ -112,7 +112,7 @@ namespace BlockChain
             if (Program.DEBUG)
                 CIO.DebugOut("Start update blockchain...");
             mUpdateBlockChainThread = new Thread(new ThreadStart(UpdateBlockchain));
-            //mUpdateBlockChainThread.Start();
+            mUpdateBlockChainThread.Start();
             
         }
 
@@ -124,7 +124,7 @@ namespace BlockChain
                 if (numPeers < NOT_RESERVED_CONNECTION && numPeers>0)
                     mPeers.DoRequest(ERequest.UpdatePeers);
                 //inserire qui il controllo per verificare che i peer presenti siano ancora online?
-                Thread.Sleep(3000);
+                Thread.Sleep(300);
             }
         }
 
