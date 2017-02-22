@@ -7,10 +7,14 @@ using System.Threading.Tasks;
 
 namespace BlockChain
 {
-    //nella classe MemPool vanno inserite le transazioni non confermate. SOLO un client che sta minando inserirà le transazioni nella MemPool
+
+    /// <summary>
+    /// nella classe MemPool vanno inserite le transazioni non confermate. SOLO un client che sta minando inserirà le transazioni nella MemPool.
+    /// Va inizializzata all' inizio del mining, ogni transazione confermata va inserita qui
+    /// </summary>
     class MemPool
     {
-        public Hashtable HashTable;
+        public Queue<Transaction> TxQueue;
 
         private static MemPool instance;
 
@@ -28,22 +32,80 @@ namespace BlockChain
 
         private MemPool()
         {
-            this.HashTable = new Hashtable();
+            this.TxQueue = new Queue<Transaction>();
         }
 
+        /// <summary>
+        /// Aggiunge una transazione alla mempool
+        /// </summary>
+        /// <param name="utx">La transazione da inserire</param>
         public void AddUTX(Transaction utx)
         {
-            this.HashTable.Add(utx.Hash, utx);
+            this.TxQueue.Enqueue(utx);
         }
 
+        /// <summary>
+        /// Ritorna una transazione dato il suo hash
+        /// </summary>
+        /// <param name="utxHash">L'hash della transazione da ritornare</param>
+        /// <returns></returns>
         public Transaction GetUTX(string utxHash)
         {
-            return (Transaction)this.HashTable[utxHash];
+            foreach(Transaction tx in this.TxQueue)
+            {
+                if(utxHash == tx.Hash)
+                {
+                    this.TxQueue.Dequeue();
+                    return tx;
+                }
+            }
+            return null;
+            
         }
-
+        /// <summary>
+        /// Rimuove una transazione dalla mempool
+        /// </summary>
+        /// <param name="utxHash">L'hash della transazione da rimuovere</param>
         public void RemoveUTX(string utxHash)
         {
-            this.HashTable.Remove(utxHash);
+            foreach (Transaction tx in this.TxQueue)
+            {
+                if (utxHash == tx.Hash)
+                {
+                    this.TxQueue.Dequeue();
+                    return;
+                }
+            }
+            
+        }
+        /// <summary>
+        /// Inserisce le transazioni di un dato blocco nella mempool
+        /// </summary>
+        /// <param name="block">Il blocco da inserire</param>
+        public void DumpBlock(CBlock block)
+        {
+            foreach(Transaction tx in block.Transactions)
+            {
+                if(!(tx.inputs.Count == 0))
+                {
+                    this.AddUTX(tx);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Ritorna una lista di transazioni
+        /// </summary>
+        /// <param name="utxLimit">Il limite di transazioni da ritornare</param>
+        /// <returns></returns>
+        public List<Transaction> GetUTX(int utxLimit)
+        {
+            List<Transaction> utxList = new List<Transaction>();
+            for(int i = 0; i < utxLimit; i++)
+            {
+                utxList.Add(this.TxQueue.Dequeue());
+            }
+            return utxList;
         }
     }
 }

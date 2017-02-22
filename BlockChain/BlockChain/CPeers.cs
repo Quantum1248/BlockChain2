@@ -457,9 +457,7 @@ namespace BlockChain
                 ID = peer.SendRequest(new CMessage(EMessageType.Request, ERequestType.DownloadBlocks, EDataType.ULongList, Convert.ToString(rangeInDownload.Start) + ";" + Convert.ToString(rangeInDownload.End)));
                 msg =JsonConvert.DeserializeObject<CBlock[]>(peer.ReceiveData(ID, 5000).Data);
                 foreach (CBlock block in msg)
-                {
                     ris[rangeInDownload.Start - offset + (ulong)c++] = new CTemporaryBlock(block, peer);
-                }
             }
         }
 

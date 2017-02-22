@@ -10,7 +10,36 @@ namespace BlockChain
 {
     class Miner
     {
-        public static void Scrypt(CBlock block) //TODO: implementare evento per l'uscita in caso sia stato trovato un blocco parallelo
+
+        private Miner instance;
+
+        public Miner Instance
+        {
+            get
+            {
+                if (instance == null)
+                {
+                    instance = new Miner();
+                }
+                return instance;
+            }
+        }
+
+        public void Start(int txLimit)
+        {
+            CBlock block;
+            while (true)
+            {
+                block = new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Difficulty, txLimit);
+                Scrypt(block);
+            }
+            //TODO: deve ritornare qualcosa questa funzione? Il blocco minato va spedito da qua o dall'esterno?
+        }
+        /// <summary>
+        /// Calcola il proof of work
+        /// </summary>
+        /// <param name="block">Blocco su cui calcolare il proof of work</param>
+        public static void Scrypt(CBlock block) //TODO: implementare evento per l'uscita in caso sia stato trovato un blocco parallelo. Implementare multithreading
         {
             string toHash;
             string hash;
@@ -52,6 +81,11 @@ namespace BlockChain
 
         }
 
+        /// <summary>
+        /// Calcola l'hash di un blocco e lo confronta al proof of work fornito per verificarne la validità
+        /// </summary>
+        /// <param name="block">Il blocco da confermare</param>
+        /// <returns></returns>
         public static bool Verify(CBlock block)
         {
             if (block.Header.PreviousBlockHash == CBlockChain.Instance.RetriveBlock(block.Header.BlockNumber - 1).Header.Hash)

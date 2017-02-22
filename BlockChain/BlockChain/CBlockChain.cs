@@ -160,6 +160,7 @@ namespace BlockChain
                
                 if (b == null)
                     break;
+              
                 if (CValidator.ValidateBlock(b))
                 {
                     mLastValidBlock = b as CBlock;

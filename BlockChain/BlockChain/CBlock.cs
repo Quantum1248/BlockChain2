@@ -12,7 +12,6 @@ namespace BlockChain
     {
 
         public CHeader Header;
-        public string Transiction;
         public List<Transaction> Transactions;
         public string MerkleRoot;
         public DateTime Timestamp; //TODO!: enorme problema di sicurezza
@@ -24,10 +23,11 @@ namespace BlockChain
         public CBlock()
         { }
 
-        public CBlock(ulong NumBlock, string Hash, string PreviusBlockHash, string Transiction, ulong Nonce, DateTime Timestamp, ushort Difficulty)
+        //public CBlock(ulong NumBlock, string Hash, string PreviusBlockHash, string Transiction, ulong Nonce, DateTime Timestamp, ushort Difficulty)
+        public CBlock(ulong NumBlock,string Hash,string PreviusBlockHash, int txLimit, ulong Nonce, DateTime Timestamp, ushort Difficulty)
         {
             Header = new CHeader(NumBlock, Hash, PreviusBlockHash);
-            this.Transiction = Transiction;
+            this.Transactions = MemPool.Instance.GetUTX(txLimit);
             this.Nonce = Nonce;
             this.Timestamp = Timestamp;
             this.Difficulty = Difficulty;
@@ -52,10 +52,11 @@ namespace BlockChain
         //TODO: E' da implementare il caricamento asincrono di transazioni parallelo al mining
         public CBlock(ulong NumBlock, ushort Difficulty, int txLimit = 5)
         {
-            this.Header.BlockNumber = NumBlock;
+            //this.Header.BlockNumber = NumBlock;
+            this.Header = new CHeader(NumBlock, CBlockChain.Instance.LastBlock.Header.Hash);
             this.Nonce = 0;
             this.Difficulty = Difficulty;
-            this.Transactions = GetTxFromMemPool(txLimit);
+            this.Transactions = MemPool.Instance.GetUTX(txLimit);
             List<string> strList = new List<string>();
             foreach(Transaction tx in Transactions)
             {
@@ -64,13 +65,6 @@ namespace BlockChain
             this.Timestamp = DateTime.Now;
             GenerateMerkleRoot(strList);
             //TODO: implementare funzione per rpendere last block hash
-        }
-
-        private List<Transaction> GetTxFromMemPool(int txLimit)
-        {
-            //Si assume che le transazioni in MemPool siano già state validate.
-            return new List<Transaction>();            
-
         }
 
         public string Serialize()
@@ -119,13 +113,16 @@ namespace BlockChain
                 {
                     hashSum += hashSum;
                 }
-                //hashSum = Convert.ToBase64String(Encoding.ASCII.GetBytes(hashSum)); //dopo essere stati concatenati, gli hash delle transazioni sono passati attraverso una funzione hash
                 
-                hashList.Add(Utilities.ByteArrayToString(SHA256Managed.Create().ComputeHash(Utilities.StringToByteArray(hashSum))));
+                hashList.Add(Utilities.SHA2Hash(hashSum));
             }
             if(hashList.Count == 1) //quando si arriva all'hash del nodo root ci si ferma
             {
                 return hashList.First<string>();
+            }
+            else if (hashList.Count == 0)
+            {
+                return "noTxs";
             }
             return GenerateMerkleHashes(hashList);
         }
