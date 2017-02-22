@@ -9,22 +9,16 @@
         public CHeader()
         { }
 
-        public CHeader(ulong BlockNumber, string PreviusBlockHash)//costruttore legittimo
+        public CHeader(ulong BlockNumber, string PreviusBlockHash)
         {
             this.BlockNumber = BlockNumber;
-            this.PreviusBlockHash = PreviusBlockHash;
+            this.PreviousBlockHash = PreviusBlockHash;
         }
 
         public CHeader(ulong BlockNumber, string Hash, string PreviusBlockHash)
         {
             this.BlockNumber = BlockNumber;
             this.Hash = Hash;
-            this.PreviousBlockHash = PreviusBlockHash;
-        }
-
-        public CHeader(ulong BlockNumber, string PreviusBlockHash)
-        {
-            this.BlockNumber = BlockNumber;
             this.PreviousBlockHash = PreviusBlockHash;
         }
 

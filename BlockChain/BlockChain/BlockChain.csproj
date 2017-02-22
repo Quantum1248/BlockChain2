@@ -53,12 +53,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CBlock.cs" />
-    <Compile Include="CBlockChain.cs" />
-    <Compile Include="CHeader.cs" />
-    <Compile Include="CGenesisBlock.cs" />
+    <Compile Include="BlockChain\Block\CBlock.cs" />
+    <Compile Include="BlockChain\CBlockChain.cs" />
+    <Compile Include="BlockChain\Block\CHeader.cs" />
+    <Compile Include="BlockChain\Block\CGenesisBlock.cs" />
     <Compile Include="CMessage.cs" />
-    <Compile Include="CParallelChain.cs" />
+    <Compile Include="BlockChain\CParallelChain.cs" />
     <Compile Include="CIO.cs" />
     <Compile Include="CoinbaseTransaction.cs" />
     <Compile Include="CPeer.cs" />
@@ -77,7 +77,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RSA.cs" />
     <Compile Include="Transaction.cs" />
-    <Compile Include="CTree.cs" />
+    <Compile Include="BlockChain\CTree.cs" />
     <Compile Include="Utilities.cs" />
     <Compile Include="UTXO.cs" />
     <Compile Include="UTXOManager.cs" />

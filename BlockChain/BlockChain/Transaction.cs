@@ -17,8 +17,11 @@ namespace BlockChain
         public string Signature;
         public string PubKey;
 
+        //Costruttore per classi ereditanti
         public Transaction()
-        { }
+        {
+
+        }
 
         public Transaction(double amount, string hashReceiver, RSACryptoServiceProvider csp) //costruttore legittimo
         {
@@ -30,12 +33,6 @@ namespace BlockChain
             RSA.HashSignTransaction(this, csp); //firmo la transazione fino a questo punto
 
             //CPeers.Instance.DoRequest(ERequest.SendTransaction, this); TODO : implementa richiesta di invio transazione
-        }
-
-        //Costruttore per classi ereditanti
-        public Transaction()
-        {
-
         }
 
         public Transaction(double amount, string hashReceiver, RSACryptoServiceProvider csp, bool testing) //costruttore per testing

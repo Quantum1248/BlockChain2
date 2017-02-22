@@ -32,14 +32,14 @@ namespace BlockChain
         private CServer(List<CPeer> Peers)
         {
             rsaKeyPair = RSA.GenRSAKey();// crea oggetto CSP per generare o caricare il keypair
-            
+
             if (File.Exists(RSA.PATH + "\\keystore.xml"))// Se il file di keystore esiste viene caricato in memoria
-            {   
+            {
                 string xmlString = File.ReadAllText(RSA.PATH + "\\keystore.xml");
                 rsaKeyPair.FromXmlString(xmlString);
             }
             else//se il file non esiste ne viene generato uno
-            {                
+            {
                 string xmlString = rsaKeyPair.ToXmlString(true);
                 File.WriteAllText(RSA.PATH + "\\keystore.xml", xmlString);
             }
@@ -59,17 +59,18 @@ namespace BlockChain
                 }
                 tx = new Transaction(outputs, RSA.ExportPubKey(rsaKeyPair), rsaKeyPair);
             }*/
-            
-            if (Program.DEBUG)
-                CIO.DebugOut("Last block number: " + CBlockChain.Instance.LastValidBlock.Header.BlockNumber +".");
 
-            if (Program.DEBUG)
-                CIO.DebugOut("Initialize mPeers...");
-            mPeers = new CPeers(MAX_PEERS, RESERVED_CONNECTION);
+                if (Program.DEBUG)
+                    CIO.DebugOut("Last block number: " + CBlockChain.Instance.LastValidBlock.Header.BlockNumber + ".");
 
-            if (Program.DEBUG)
-                CIO.DebugOut("Finish initializing!");
-            Start(Peers);
+                if (Program.DEBUG)
+                    CIO.DebugOut("Initialize mPeers...");
+                mPeers = new CPeers(MAX_PEERS, RESERVED_CONNECTION);
+
+                if (Program.DEBUG)
+                    CIO.DebugOut("Finish initializing!");
+                Start(Peers);
+            }
         }
 
         public static CServer StartNewServer(List<CPeer> Peers)

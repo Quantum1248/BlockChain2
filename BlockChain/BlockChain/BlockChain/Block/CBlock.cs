@@ -33,10 +33,10 @@ namespace BlockChain
             this.Difficulty = Difficulty;
         }
 
-        public CBlock(CHeader Header, string Transiction, ulong Nonce, DateTime Timestamp, ushort Difficulty)
+        public CBlock(CHeader Header, Transaction Transaction, ulong Nonce, DateTime Timestamp, ushort Difficulty)
         {
             this.Header = Header;
-            this.Transiction = Transiction;
+            this.Transactions.Add(Transaction);
             this.Nonce = Nonce;
             this.Timestamp = Timestamp;
             this.Difficulty = Difficulty;
