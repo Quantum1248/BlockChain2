@@ -9,14 +9,17 @@ namespace BlockChain
     {
         private CBlock mLastBlock=null; //ultimo blocco ricevuto
         private CBlock mLastValidBlock = null;  //ultimo blocco sicuramente valido
+        private CSideChainTree mSideChain = null;
 
         const string FILENAME = "blockchain.txt";
+
         #region Singleton
         private static CBlockChain instance;
 
         private CBlockChain()
         {
             Load();
+            mSideChain = new CSideChainTree(null, 5);
         }
 
         public static CBlockChain Instance
@@ -34,7 +37,13 @@ namespace BlockChain
 
         public CBlock LastBlock
         {
-            get { return mLastBlock; }
+            get
+            {
+                mLastBlock = mSideChain.GetLastBlock();
+                if (mLastBlock!=null)
+                    return mLastBlock;
+                return mLastValidBlock;
+            }
         }
 
         public CBlock LastValidBlock
@@ -63,74 +72,78 @@ namespace BlockChain
         private void Load()
         {
             string filepath = PATH + "\\" + FILENAME;
+            string block="";
             mLastValidBlock = new CGenesisBlock();
             if (File.Exists(filepath))
             {
                 StreamReader streamReader = new StreamReader(filepath);
-                using (JsonTextReader reader = new JsonTextReader(streamReader))
+                while ((block = streamReader.ReadLine()) != null)
                 {
-                    while (reader.Read())
-                    {
-                        if (reader.TokenType == JsonToken.StartObject)
-                        {
-                            // Load each object from the stream and do something with it
-
-                            JObject obj = JObject.Load(reader);
-
-                            JsonSerializer serializer = new JsonSerializer();
-                            CBlock b = (CBlock)serializer.Deserialize(new JTokenReader(obj), typeof(CBlock));
-                            if (b.Header.BlockNumber > mLastValidBlock.Header.BlockNumber)
-                                mLastValidBlock = b;
-                        }
-                    }
-
+                    CBlock b = JsonConvert.DeserializeObject<CBlock>(block);
+                    if (b.Header.BlockNumber > mLastValidBlock.Header.BlockNumber)
+                        mLastValidBlock = b;
                 }
+                streamReader.Close();
             }
             else
             {
-                File.WriteAllText(filepath, new CGenesisBlock().Serialize());
+                File.WriteAllText(filepath, new CGenesisBlock().Serialize() + '\n');
                 mLastValidBlock = new CGenesisBlock();
             }
+            
         }
 
         public CBlock RetriveBlock(ulong Index)
         {
             string filepath = PATH + "\\" + FILENAME;
+            string block = "";
             StreamReader streamReader = new StreamReader(filepath);
-            using (JsonTextReader reader = new JsonTextReader(streamReader))
+
+            while ((block = streamReader.ReadLine()) != null)
             {
-                while (reader.Read())
+                // Load each object from the stream and do something with it
+                CBlock b = JsonConvert.DeserializeObject<CBlock>(block);
+                if (b.Header.BlockNumber == Index)
                 {
-                    if (reader.TokenType == JsonToken.StartObject)
-                    {
-                        // Load each object from the stream and do something with it
-
-                        JObject obj = JObject.Load(reader);
-
-                        JsonSerializer serializer = new JsonSerializer();
-                        CBlock b = (CBlock)serializer.Deserialize(new JTokenReader(obj), typeof(CBlock));
-                        if (b.Header.BlockNumber == Index)
-                            return b;
-                    }
+                    streamReader.Close();
+                    return b;
                 }
-
             }
+
+            streamReader.Close();
             return null;
         }
-            
 
-        public static bool ValidateHeaders(CHeaderChain HeaderChain)
+        public CBlock[] RetriveBlocks(ulong initialIndex, ulong finalIndex)
         {
-            for(ulong i=0;i<HeaderChain.Length;i++)
-                if (HeaderChain[i].Hash != HeaderChain[i + 1].PreviusBlockHash && HeaderChain[i].BlockNumber != HeaderChain[i + 1].BlockNumber+1)//(!) il controllu sul numero serve?
-                    return false;
-            return true;
+            CBlock[] ris = new CBlock[finalIndex - initialIndex];
+            int c = 0;
+            while (initialIndex < finalIndex)
+            {
+                ris[c++] = RetriveBlock(initialIndex);
+                initialIndex++;
+            }
+            return ris;
         }
 
-        public static bool Validate(CBlock b)
+        public CHeader[] RetriveHeaders(ulong initialIndex, ulong finalIndex)
         {
-            return Miner.Verify(b);
+            CHeader[] ris = new CHeader[finalIndex - initialIndex];
+            int c = 0;
+            while (initialIndex < finalIndex)
+            {
+                ris[c++] = RetriveBlock(initialIndex).Header;
+                initialIndex++;
+            }
+            return ris;
+        }
 
+        public static bool ValidateHeaders(CParallelChain HeaderChain)
+        {
+            for(ulong i=0;i<HeaderChain.Length;i++)
+                if (HeaderChain[i].Hash != HeaderChain[i + 1].PreviousBlockHash && HeaderChain[i].BlockNumber != HeaderChain[i + 1].BlockNumber+1)//(!) il controllu sul numero serve?
+                    return false;
+            return true;
         }
 
         /// <summary>
@@ -140,39 +153,39 @@ namespace BlockChain
         /// <returns></returns>
         public ulong Add(CTemporaryBlock[] Blocks)
         {
-            ulong lastValidIndex = 0;
             string filepath = PATH + "\\" + FILENAME;
             //(!) e se scarico tutta la blockchain e da un certo punto in poi sbagliata?
             foreach (CTemporaryBlock b in Blocks)
             {
+               
                 if (b == null)
                     break;
-                if (Miner.Verify(b))
+              
+                if (CValidator.ValidateBlock(b))
                 {
-                    File.AppendAllText(filepath, (b as CBlock).Serialize());
+                    mLastValidBlock = b as CBlock;
+                    File.AppendAllText(filepath, (b as CBlock).Serialize() + '\n');
+                    //int togliilcommentoeilfalsesopra;
                 }
                 else
-                {
-                    lastValidIndex =Convert.ToUInt64(CPeers.Instance.DoRequest(ERequest.FindLastCommonIndex));
-                    return LastValidBlock.Header.BlockNumber;
-                }
+                    break;
             }
             return LastValidBlock.Header.BlockNumber;
         }
 
-        public CHeaderChain BestChain(CHeaderChain[] HeaderChains)
+        public CParallelChain BestChain(CParallelChain[] HeaderChains)
         {
             //TODO sceglie in base alla difficoltà
-            CHeaderChain res=new CHeaderChain();
-            foreach (CHeaderChain hc in HeaderChains)
-                if (hc.Length > res.Length)
+            CParallelChain res=new CParallelChain();
+            foreach (CParallelChain hc in HeaderChains)
+                if (hc.Length >= res.Length)
                     res = hc;
             return res;
         }
 
         internal void Add(CTemporaryBlock newBlock)
         {
-            throw new NotImplementedException();
+            mSideChain.Add(newBlock);
         }
 
         

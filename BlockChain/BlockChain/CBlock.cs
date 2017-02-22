@@ -23,6 +23,7 @@ namespace BlockChain
         public CBlock()
         { }
 
+        //public CBlock(ulong NumBlock, string Hash, string PreviusBlockHash, string Transiction, ulong Nonce, DateTime Timestamp, ushort Difficulty)
         public CBlock(ulong NumBlock,string Hash,string PreviusBlockHash, int txLimit, ulong Nonce, DateTime Timestamp, ushort Difficulty)
         {
             Header = new CHeader(NumBlock, Hash, PreviusBlockHash);
@@ -31,10 +32,27 @@ namespace BlockChain
             this.Timestamp = Timestamp;
             this.Difficulty = Difficulty;
         }
+
+        public CBlock(CHeader Header, string Transiction, ulong Nonce, DateTime Timestamp, ushort Difficulty)
+        {
+            this.Header = Header;
+            this.Transiction = Transiction;
+            this.Nonce = Nonce;
+            this.Timestamp = Timestamp;
+            this.Difficulty = Difficulty;
+        }
+
+        public CBlock(ulong NumBlock, string PreviusBlockHash, ushort Difficulty)
+        {
+            Header = new CHeader(NumBlock, PreviusBlockHash);
+            this.Difficulty = Difficulty;
+        }
+
         //Ogni blocco viene inizializzato con le transazioni al momento contenute nella MemPool.
         //TODO: E' da implementare il caricamento asincrono di transazioni parallelo al mining
         public CBlock(ulong NumBlock, ushort Difficulty, int txLimit = 5)
         {
+            //this.Header.BlockNumber = NumBlock;
             this.Header = new CHeader(NumBlock, CBlockChain.Instance.LastBlock.Header.Hash);
             this.Nonce = 0;
             this.Difficulty = Difficulty;

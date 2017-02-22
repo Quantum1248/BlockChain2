@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace BlockChain
 {
@@ -15,11 +18,12 @@ namespace BlockChain
 
             //List<CPeer> lp = GenPeersList();
             List<CPeer> lp = new List<CPeer>();
-            lp.Add(CPeer.CreatePeer("100.100.100.100", 1));
-            
-            CServer s = CServer.StartNewServer(lp);
 
+            lp.Add(CPeer.CreatePeer("192.168.1.103",2000));
+
+            CServer s = CServer.StartNewServer(lp);
 
         }
     }
+
 }

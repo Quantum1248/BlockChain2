@@ -22,8 +22,7 @@ namespace BlockChain
 
         public static void DebugOut(string s)
         {
-            WriteLine(s);
-            WriteLine("");
+            WriteLine(s+'\n');
         }
 
         public static string ReadLine()

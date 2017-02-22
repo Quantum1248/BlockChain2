@@ -22,10 +22,10 @@ namespace BlockChain
         private static int MAX_PEERS = 30;//deve essere pari
         private static int RESERVED_CONNECTION = MAX_PEERS / 2;//connessioni usate per chi vuole collegarsi con me
         private static int NOT_RESERVED_CONNECTION = MAX_PEERS - RESERVED_CONNECTION;//connessioni che utilizzo io per collegarmi agli altri
-
+        private static string mPublicIp = "";
         private Thread mThreadListener, mThreadPeers;
         private Socket mListener;
-        private static int DEFOULT_PORT = 100;
+        private static int DEFOULT_PORT = 2000;
 
         private bool IsStopped = false; //set true per spegnere il server
 
@@ -46,39 +46,29 @@ namespace BlockChain
 
             //TODO: testare la verifica e la creazione delle transazioni con le nuove funzioni e modifiche implementate in Transaction.cs e UTXOManager.cs
             //TODO: testare nuovi metodi di encoding in RSA.cs, non vogliamo che si fottano tutte le firme digitali e annesse verifiche, o no?
-            /*Output[] outputs;
-            
-            Transaction tx; ;
-            UTXOManager.Instance.SpendUTXO("314f04b30f62e0056bd059354a5536fb2e302107eed143b5fa2aa0bbba07f608", @"8yeeMidRStH4QvdNAr6fzwaaJ92hlSpcplki/KRSjy8=", 0);
-
-            for (int i = 0; i < 1000000; i += 3)
             {
-                outputs = new Output[3];
-                for(int k  = 0; k < outputs.Length; k++)
+                /*
+                Output[] outputs;
+
+                Transaction tx; ;
+                UTXOManager.Instance.SpendUTXO("314f04b30f62e0056bd059354a5536fb2e302107eed143b5fa2aa0bbba07f608", @"8yeeMidRStH4QvdNAr6fzwaaJ92hlSpcplki/KRSjy8=", 0);
+
+                for (int i = 0; i < 1000000; i += 3)
                 {
                     outputs[k] = new Output(1.4242, Utilities.ByteArrayToHexString(SHA256Managed.Create().ComputeHash(Encoding.ASCII.GetBytes(((i + k).ToString())))));
                 }
                 tx = new Transaction(outputs, RSA.ExportPubKey(rsaKeyPair), rsaKeyPair);
             }*/
             
-
             if (Program.DEBUG)
                 CIO.DebugOut("Last block number: " + CBlockChain.Instance.LastValidBlock.Header.BlockNumber +".");
 
             if (Program.DEBUG)
-                CIO.DebugOut("Inizialize mPeers...");
+                CIO.DebugOut("Initialize mPeers...");
             mPeers = new CPeers(MAX_PEERS, RESERVED_CONNECTION);
 
             if (Program.DEBUG)
-                CIO.DebugOut("Inizialie the Listener...");
-            //crea un socket che attende connessioni in ingresso di peer che vogliono collegarsi, in ascolto sulla porta DEFOULT_PORT
-            IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, DEFOULT_PORT);
-            mListener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            mListener.Bind(localEndPoint);
-            mListener.Listen(DEFOULT_PORT);
-
-            if (Program.DEBUG)
-                CIO.DebugOut("Finish inizializing!");
+                CIO.DebugOut("Finish initializing!");
             Start(Peers);
         }
 
@@ -100,10 +90,10 @@ namespace BlockChain
                 CIO.DebugOut("Begin to enstablish connections to initial peers...");
             //si collega ai peer inseriti nella lista iniziale.
             foreach (CPeer p in Peers)
-                if (p.Connect())
+                if (p.Connect(500))
                     if (!mPeers.Insert(p))
                         break;
-
+            
             if (Program.DEBUG)
                 CIO.DebugOut("Begin to enstablish connections to other peers...");
             mThreadPeers = new Thread(new ThreadStart(UpdatePeersList));
@@ -125,24 +115,34 @@ namespace BlockChain
         {
             while (!IsStopped)
             {
-                if (mPeers.NumConnection() < NOT_RESERVED_CONNECTION)
+                int numPeers = mPeers.NumConnection();
+                if (numPeers < NOT_RESERVED_CONNECTION && numPeers>0)
                     mPeers.DoRequest(ERequest.UpdatePeers);
-                Thread.Sleep(10000);
+                //inserire qui il controllo per verificare che i peer presenti siano ancora online?
+                Thread.Sleep(300);
             }
         }
 
         //attende il collegamento di nuovi peer
         private void StartAcceptUsersConnection()
         {
+            if (Program.DEBUG)
+                CIO.DebugOut("Initialize the Listener...");
+            //crea un socket che attende connessioni in ingresso di peer che vogliono collegarsi, in ascolto sulla porta DEFOULT_PORT
+            IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, DEFOULT_PORT);
+            mListener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            mListener.Bind(localEndPoint);
+            mListener.Listen(DEFOULT_PORT);
+
             //crea un eventargs per una richiesta di connessione asincrona, se la lista dei peers non è ancora piena inizia ad attendere fino a quando non riceve
             //una richiesta di connessione o il segnale d'arresto. Se viene ricevuta una richiesta di connessione viene chiamata la funzione InsertNewPeer che
             //inserisce il nuovo peer nella lista dei peer mPeers
-            
+
             //è asincrono perchè altrimenti al segnale di spegnimento non si fermerebbe  
             SocketAsyncEventArgs asyncConnection;
             bool IncomingConnection = false;
             if (Program.DEBUG)
-                Console.WriteLine("Attending connection...");
+                CIO.DebugOut("Attending connection...");
             while (!IsStopped)
             {
                 if (ConnectedPeers < MAX_PEERS)
@@ -158,21 +158,16 @@ namespace BlockChain
                     if (IncomingConnection)
                     {
                         if (Program.DEBUG)
-                            CIO.DebugOut("Established connection!");
+                            CIO.DebugOut("Established connection with "+ ((IPEndPoint)asyncConnection.AcceptSocket.RemoteEndPoint).Address+" !");
                         InsertNewPeer(asyncConnection.AcceptSocket);
                     }
                     asyncConnection.Dispose();
-
                 }
                 else
                 {
                     Thread.Sleep(10000);
                 }
             }
-            //TODO
-            //CloseAllConnection();
-            if (Program.DEBUG)
-                CIO.WriteLine("Chiuse tutte le connessioni con gli users");
         }
 
         private void UpdateBlockchain()
@@ -180,9 +175,9 @@ namespace BlockChain
             bool isSynced = false;
             ulong addedBlocks = 0;
             CTemporaryBlock[] newBlocks;
-            CHeaderChain[] forkChain;
-            CHeaderChain bestChain;
-            CTemporaryBlock lastCommonBlock= mPeers.DoRequest(ERequest.LastCommonValidBlock) as CTemporaryBlock;
+            CParallelChain[] forkChains;
+            CParallelChain bestChain;
+            CBlock lastCommonBlock= mPeers.DoRequest(ERequest.LastCommonValidBlock) as CBlock;
             CTemporaryBlock otherLastValidBlock = mPeers.DoRequest(ERequest.LastValidBlock) as CTemporaryBlock;
             if (Program.DEBUG)
                 if (otherLastValidBlock != null)
@@ -197,23 +192,22 @@ namespace BlockChain
             //TODO potrebbero dover essere scaricati un numero maggiore di MAXINT blocchi
             while (!isSynced)
             {
-                newBlocks = mPeers.DoRequest(ERequest.DownloadMissingBlock, new object[] { CBlockChain.Instance.LastValidBlock.Header.BlockNumber, lastCommonBlock.Header.BlockNumber }) as CTemporaryBlock[];
+                newBlocks = mPeers.DoRequest(ERequest.DownloadMissingBlock, new object[] { CBlockChain.Instance.LastValidBlock.Header.BlockNumber+1, lastCommonBlock.Header.BlockNumber +1 }) as CTemporaryBlock[];
                 CBlockChain.Instance.Add(newBlocks);
-                forkChain = mPeers.DoRequest(ERequest.FindForkChain, lastCommonBlock) as CHeaderChain[];
-                if (forkChain.Length > 0)
+                forkChains = mPeers.DoRequest(ERequest.FindParallelChain, lastCommonBlock) as CParallelChain[];
+                if (forkChains.Length > 0)
                 {
-                    foreach (CHeaderChain hc in forkChain)
+                    foreach (CParallelChain hc in forkChains)
                         hc.DownloadHeaders();
-                    bestChain = CBlockChain.Instance.BestChain(forkChain);
-                    bestChain.DownloadBlocks();
+                    bestChain = CBlockChain.Instance.BestChain(forkChains);
                     if (CBlockChain.ValidateHeaders(bestChain))
                     {
+                        bestChain.DownloadBlocks();
                         mPeers.ValidPeers(bestChain.Peers);
                         addedBlocks = CBlockChain.Instance.Add(bestChain.Blocks);
                         if (addedBlocks >= bestChain.Length)    //solo se scarica tutti i blocchi
                         {
                             isSynced = true;
-                            //Miner.Instance.Start();        //(!) da cambiare a seconda di come verrà fattp il miner
                             mPeers.CanReceiveBlock = true;
                         }
                     }
@@ -225,8 +219,14 @@ namespace BlockChain
                     }
                 }
             }
+            if (Program.DEBUG)
+                CIO.DebugOut("Sincronizzazione Blockchain terminata!");
+            //(!) da cambiare
+/*
+            while (true)
+                Miner.Scrypt(new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash,2));        //(!) da cambiare a seconda di come verrà fattp il miner
+                */
 
-            
         }
 
         private void InsertNewPeer(Socket NewConnection)
@@ -247,8 +247,30 @@ namespace BlockChain
 
         static public void SendData(Socket Dispatcher, byte[] data)
         {
+            if (data.Length < 1)
+                throw new Exception();
             Dispatcher.Send(BitConverter.GetBytes(data.Length));
             Dispatcher.Send(data);
+        }
+
+        public static string GetLocalIPAddress()
+        {
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    return ip.ToString();
+                }
+            }
+            throw new Exception("Local IP Address Not Found!");
+        }
+
+        public static string GetPublicIPAddress()
+        {
+            if(mPublicIp=="")
+                mPublicIp= new WebClient().DownloadString("http://icanhazip.com");
+            return mPublicIp;
         }
     }
 }

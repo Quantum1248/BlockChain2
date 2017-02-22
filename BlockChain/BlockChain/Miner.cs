@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CryptSharp.Utility;
+using System.Threading;
+
 namespace BlockChain
 {
     class Miner
@@ -39,7 +41,6 @@ namespace BlockChain
         /// <param name="block">Blocco su cui calcolare il proof of work</param>
         public static void Scrypt(CBlock block) //TODO: implementare evento per l'uscita in caso sia stato trovato un blocco parallelo. Implementare multithreading
         {
-
             string toHash;
             string hash;
             bool found = false;
@@ -47,14 +48,18 @@ namespace BlockChain
 
             while (!found)
             {
-                toHash = block.Header.PreviusBlockHash + block.Nonce + block.Timestamp + block.MerkleRoot; //si concatenano vari parametri del blocco TODO: usare i parmetri giusti, quelli usati qua sono solo per dimostrazione e placeholder
-                hash = Utilities.ByteArrayToHexString(SCrypt.ComputeDerivedKey(Encoding.ASCII.GetBytes(toHash), Encoding.ASCII.GetBytes(toHash), 1024, 1, 1, 1, 32)); //calcola l'hash secondo il template di scrypt usato da litecoin
+                block.Timestamp = DateTime.Now;
+                toHash = block.Header.PreviousBlockHash + block.Nonce + block.Timestamp + block.MerkleRoot; //si concatenano vari parametri del blocco TODO: usare i parmetri giusti, quelli usati qua sono solo per dimostrazione e placeholder
+                hash = Hash(block); //calcola l'hash secondo il template di scrypt usato da litecoin
+                if (Program.DEBUG)
+                    CIO.DebugOut("Hash corrente blocco " + block.Header.BlockNumber + ": " + hash);
                 for (int i = 0; i <= block.Difficulty; i++)
                 {
                     if (i == block.Difficulty) //se il numero di zeri davanti la stringa è pari alla difficoltà del blocco, viene settato l'hash e si esce
                     {
                         block.Header.Hash = hash;
-                        //CPeers.Instance.DoRequest(ERequest.SendNewBlock, block); TODO : implementa richiesta di invio blocco
+                        CBlockChain.Instance.Add(new CTemporaryBlock(block,null));
+                        CPeers.Instance.DoRequest(ERequest.BroadcastMinedBlock, block);
                         return;
                     }
                     if (!(hash[i] == '0'))
@@ -83,15 +88,24 @@ namespace BlockChain
         /// <returns></returns>
         public static bool Verify(CBlock block)
         {
-            string toHash = block.Header.PreviusBlockHash + block.Nonce + block.Timestamp + block.MerkleRoot;
-            if (block.Header.Hash == Utilities.ByteArrayToHexString(SCrypt.ComputeDerivedKey(Encoding.ASCII.GetBytes(toHash), Encoding.ASCII.GetBytes(toHash), 1024, 1, 1, 1, 32)))
+            if (block.Header.PreviousBlockHash == CBlockChain.Instance.RetriveBlock(block.Header.BlockNumber - 1).Header.Hash)
             {
-                return true;
+                string toHash = block.Header.PreviousBlockHash + block.Nonce + block.Timestamp + block.MerkleRoot;
+                if (block.Header.Hash == Utilities.ByteArrayToString(SCrypt.ComputeDerivedKey(Encoding.ASCII.GetBytes(toHash), Encoding.ASCII.GetBytes(toHash), 1024, 1, 1, 1, 32)))
+                {
+                    return true;
+                }
             }
-            else
-            {
-                return false;
-            }
+            return false;
+        }
+
+        public static string Hash(CBlock b)
+        {
+            string toHash = b.Header.PreviousBlockHash + b.Nonce + b.Timestamp + b.MerkleRoot; //si concatenano vari parametri del blocco TODO: usare i parmetri giusti, quelli usati qua sono solo per dimostrazione e placeholder
+            return Utilities.ByteArrayToString(
+                SCrypt.ComputeDerivedKey(
+                    Encoding.ASCII.GetBytes(toHash), Encoding.ASCII.GetBytes(toHash), 1024, 1, 1, 1, 32)
+                    ); //calcola l'hash secondo il template di scrypt usato da litecoin
         }
     }
 }

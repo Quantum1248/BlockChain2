@@ -1,17 +1,19 @@
-﻿namespace BlockChain
+﻿using System.Collections.Generic;
+
+namespace BlockChain
 {
-    class CHeaderChain
+    class CParallelChain
     {
         private ulong mLength;
-        private CPeer[] mPeers;
+        private List<CPeer> mPeers;
         private CHeader[] mHeaders;
         private CTemporaryBlock[] mBlocks;
         public ulong InitialIndex, FinalIndex;
 
-        public CHeaderChain()
+        public CParallelChain()
         {
             mLength = 0;
-            mPeers = null;
+            mPeers = new List<CPeer>();
             mHeaders = new CHeader[0];
         }
 
@@ -22,8 +24,7 @@
 
         public CPeer[] Peers
         {
-            get { return mPeers; }
-            set { mPeers = value; }
+            get { return mPeers.ToArray(); }
         }
 
         public ulong Length
@@ -36,15 +37,22 @@
             get { return mBlocks; }
         }
 
+        public void AddPeer(CPeer p)
+        {
+            mPeers.Add(p);
+        }
+
         public void DownloadHeaders()
         {
-            mHeaders = CPeers.Instance.DistribuiteDownloadHeaders(InitialIndex, FinalIndex, mPeers);
+            InitialIndex = CBlockChain.Instance.LastValidBlock.Header.BlockNumber;
+            mHeaders = CPeers.Instance.DistribuiteDownloadHeaders(InitialIndex, FinalIndex, mPeers.ToArray());
             mLength =(ulong) mHeaders.Length;
         }
 
         public void DownloadBlocks()
         {
-            mBlocks = CPeers.Instance.DistribuiteDownloadBlocks(InitialIndex, FinalIndex, mPeers);
+            InitialIndex = CBlockChain.Instance.LastValidBlock.Header.BlockNumber;
+            mBlocks = CPeers.Instance.DistribuiteDownloadBlocks(InitialIndex, FinalIndex, mPeers.ToArray());
             mLength = (ulong)mBlocks.Length;
         }
     }

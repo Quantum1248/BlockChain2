@@ -17,6 +17,9 @@ namespace BlockChain
         public string Signature;
         public string PubKey;
 
+        public Transaction()
+        { }
+
         public Transaction(double amount, string hashReceiver, RSACryptoServiceProvider csp) //costruttore legittimo
         {
 
