@@ -14,7 +14,7 @@ namespace BlockChain
         {
 
             //devo tenere conto della difficoltà?
-            if (b.Header.Hash == Miner.Hash(b))
+            if (b.Header.Hash == Miner.HashBlock(b))
             {
                 if (!CheckPreviusHash)
                     return true;
