@@ -91,7 +91,7 @@ namespace BlockChain
             if (block.Header.PreviousBlockHash == CBlockChain.Instance.RetriveBlock(block.Header.BlockNumber - 1).Header.Hash)
             {
                 string toHash = block.Header.PreviousBlockHash + block.Nonce + block.Timestamp + block.MerkleRoot;
-                if (block.Header.Hash == Utilities.ByteArrayToString(SCrypt.ComputeDerivedKey(Encoding.ASCII.GetBytes(toHash), Encoding.ASCII.GetBytes(toHash), 1024, 1, 1, 1, 32)))
+                if (block.Header.Hash == Utilities.ByteArrayToHexString(SCrypt.ComputeDerivedKey(Encoding.ASCII.GetBytes(toHash), Encoding.ASCII.GetBytes(toHash), 1024, 1, 1, 1, 32)))
                 {
                     return true;
                 }
@@ -102,7 +102,7 @@ namespace BlockChain
         public static string Hash(CBlock b)
         {
             string toHash = b.Header.PreviousBlockHash + b.Nonce + b.Timestamp + b.MerkleRoot; //si concatenano vari parametri del blocco TODO: usare i parmetri giusti, quelli usati qua sono solo per dimostrazione e placeholder
-            return Utilities.ByteArrayToString(
+            return Utilities.ByteArrayToHexString(
                 SCrypt.ComputeDerivedKey(
                     Encoding.ASCII.GetBytes(toHash), Encoding.ASCII.GetBytes(toHash), 1024, 1, 1, 1, 32)
                     ); //calcola l'hash secondo il template di scrypt usato da litecoin
