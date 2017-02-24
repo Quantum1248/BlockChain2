@@ -30,16 +30,20 @@ namespace BlockChain
             CBlock block;
             while (true)
             {
-                block = new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Difficulty, txLimit);
-                Scrypt(block);
+                block = GenerateNextBlock(); 
+                AddProof(block);
+                CBlockChain.Instance.Add(new CTemporaryBlock(block, null));
+                CPeers.Instance.DoRequest(ERequest.BroadcastMinedBlock, block);
             }
+
+
             //TODO: deve ritornare qualcosa questa funzione? Il blocco minato va spedito da qua o dall'esterno?
         }
         /// <summary>
-        /// Calcola il proof of work
+        /// Aggiunge il proof of work(l'hash) al blocco.
         /// </summary>
-        /// <param name="Block">Blocco su cui calcolare il proof of work</param>
-        public static void Scrypt(CBlock Block) //TODO: implementare evento per l'uscita in caso sia stato trovato un blocco parallelo. Implementare multithreading
+        /// <param name="Block">Blocco su cui calcolare il proof of work.</param>
+        public static void AddProof(CBlock Block) //TODO: implementare evento per l'uscita in caso sia stato trovato un blocco parallelo. Implementare multithreading
         {
             string hash="";
             bool found = false;
@@ -63,6 +67,7 @@ namespace BlockChain
             Block.Header.Hash = hash;
         }
 
+        
         /// <summary>
         /// Calcola l'hash di un blocco e lo confronta al proof of work fornito per verificarne la validità
         /// </summary>
@@ -88,6 +93,12 @@ namespace BlockChain
                 SCrypt.ComputeDerivedKey(
                     Encoding.ASCII.GetBytes(toHash), Encoding.ASCII.GetBytes(toHash), 1024, 1, 1, 1, 32)
                     ); //calcola l'hash secondo il template di scrypt usato da litecoin
+        }
+
+        private CBlock GenerateNextBlock()
+        {
+            CBlock res = new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash, CBlockChain.Instance.LastBlock.Difficulty);
+            return res;
         }
     }
 }

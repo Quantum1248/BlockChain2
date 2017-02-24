@@ -138,9 +138,8 @@ namespace BlockChain
                 case ERequest.BroadcastMinedBlock:
                     {
                         CBlock b = Arg as CBlock;
-                        foreach (CPeer p in mPeers)
-                            if (p != null)
-                                    p.SendRequest(new CMessage(EMessageType.Request, ERequestType.NewBlockMined, EDataType.Block, b.Serialize()));
+                        foreach (CPeer p in Peers)
+                            p.SendRequest(new CMessage(EMessageType.Request, ERequestType.NewBlockMined, EDataType.Block, b.Serialize()));
                         break;
                     }
                 case ERequest.LastCommonValidBlock:
