@@ -248,10 +248,7 @@ namespace BlockChain
 
         static public void SendData(Socket Dispatcher, byte[] data)
         {
-            if (data.Length < 1)
-                throw new Exception();
-            Dispatcher.Send(BitConverter.GetBytes(data.Length));
-            Dispatcher.Send(data);
+            Dispatcher.Send(BitConverter.GetBytes(data.Length).Concat(data).ToArray());
         }
 
         public static string GetLocalIPAddress()

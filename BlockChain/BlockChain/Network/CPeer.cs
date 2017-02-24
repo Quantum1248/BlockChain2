@@ -116,6 +116,8 @@ namespace BlockChain
             {
                 if (Program.DEBUG)
                     CIO.DebugOut("Connection with " + mIp + ":" + mPort + " failed!");
+                mSocket.Close();
+                mSocket.Dispose();
                 asyncConnection.Dispose();
                 return false;
             }
