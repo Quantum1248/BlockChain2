@@ -107,5 +107,10 @@ namespace BlockChain
             }
             return utxList;
         }
+        
+        public bool CheckDouble(Transaction transaction)
+        {
+               throw new Exception();
+        }
     }
 }
