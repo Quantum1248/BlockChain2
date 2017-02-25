@@ -287,6 +287,15 @@ namespace BlockChain
                                         JsonConvert.SerializeObject(CBlockChain.Instance.RetriveBlock(Convert.ToUInt64(rqs.Data)).Header), rqs.ID));
                                     break;
                                 }
+                            case ERequestType.NewTransaction:
+                                {
+                                    Transaction t=JsonConvert.Deserialize<Transaction>(rqs.data);
+                                    if(t.Verify())
+                                    {
+                                        MemPool.Instance.AddUTX(t);
+                                    }
+                                    break;   
+                                }
                             /*
                                 case ECommand.GETLASTVALID:
                                 
