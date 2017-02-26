@@ -120,7 +120,7 @@ namespace BlockChain
                 if (numPeers < NOT_RESERVED_CONNECTION && numPeers>0)
                     mPeers.DoRequest(ERequest.UpdatePeers);
                 //inserire qui il controllo per verificare che i peer presenti siano ancora online?
-                Thread.Sleep(300);
+                Thread.Sleep(60000);
             }
         }
 

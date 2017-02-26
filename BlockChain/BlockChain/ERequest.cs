@@ -13,6 +13,7 @@ namespace BlockChain
         DownloadMissingBlock,
         BroadcastMinedBlock,
         LastCommonValidBlock,
-        FindParallelChain
+        FindParallelChain,
+        BroadcastNewTransaction
     }
 }

@@ -25,7 +25,7 @@ namespace BlockChain
             }
         }
 
-        public void Start(int txLimit)
+        public static void Start(int txLimit)
         {
             CBlock block;
             while (true)
@@ -95,7 +95,7 @@ namespace BlockChain
                     ); //calcola l'hash secondo il template di scrypt usato da litecoin
         }
 
-        private CBlock GenerateNextBlock()
+        private static CBlock GenerateNextBlock()
         {
             CBlock res = new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash, CBlockChain.Instance.LastBlock.Difficulty);
             return res;

@@ -185,7 +185,6 @@ namespace BlockChain
                 }
                 //il timer viene reinpostato a defoult per non causare problemi con altre comunicazioni che potrebbero avvenire in altre parti del codice.
                 mSocket.ReceiveTimeout = 0;
-                Thread.Sleep(1000);
             }
         }
 
@@ -194,7 +193,7 @@ namespace BlockChain
             CMessage rqs;
             while (mIsConnected)
             {
-                Thread.Sleep(500);
+                Thread.Sleep(100);
                 lock (RequestQueue)
                 {
                     if (RequestQueue.Count > 0)
@@ -289,29 +288,13 @@ namespace BlockChain
                                 }
                             case ERequestType.NewTransaction:
                                 {
-                                    Transaction t=JsonConvert.Deserialize<Transaction>(rqs.data);
+                                    Transaction t=JsonConvert.DeserializeObject<Transaction>(rqs.Data);
                                     if(t.Verify())
                                     {
                                         MemPool.Instance.AddUTX(t);
                                     }
                                     break;   
                                 }
-                            /*
-                                case ECommand.GETLASTVALID:
-                                
-                                case ECommand.DOWNLOADBLOCK:
-                                
-                                case ECommand.DOWNLOADBLOCKS:
-
-                                case ECommand.GETHEADER:
-                                if (Program.DEBUG)
-                                CIO.DebugOut("GETHEADER received by " + mIp);
-                                index = ReceiveULong();
-                                SendHeader(CBlockChain.Instance.RetriveBlock(index).Header);
-                                break;
-                                case ECommand.CHAINLENGTH:
-                                
-                                */
                             default:
                                 if (Program.DEBUG)
                                     CIO.DebugOut("Ricevuto comando sconosciuto: " + rqs.RqsType + " da " + IP);
@@ -418,7 +401,5 @@ namespace BlockChain
             LastCommunication = DateTime.Now;
             return res;
         }
-
-
     }
 }

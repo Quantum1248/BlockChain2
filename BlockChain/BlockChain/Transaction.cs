@@ -31,8 +31,9 @@ namespace BlockChain
             this.inputs = this.GetEnoughInputs(); //forse vanno anche controllate le firme ma non penso           
             this.Hash = Utilities.SHA2Hash(JsonConvert.SerializeObject(this)); //Calcolo l'hash di questa transazione inizializzata fino a questo punto, esso farà da txId
             RSA.HashSignTransaction(this, csp); //firmo la transazione fino a questo punto
-            
-            CPeers.Instance.SendRequest(new CMessage(EMessageType.Request, ERequestType.NewTransaction, EDataType.Transaction, JsonConvert.SerializeObject(this))); //TODO : implementa richiesta di invio transazione
+
+            CPeers.Instance.DoRequest(ERequest.BroadcastNewTransaction, this);
+           
         }
 
         public Transaction(double amount, string hashReceiver, RSACryptoServiceProvider csp, bool testing) //costruttore per testing

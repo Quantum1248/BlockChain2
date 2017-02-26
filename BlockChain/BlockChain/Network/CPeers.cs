@@ -150,6 +150,12 @@ namespace BlockChain
                     {
                         return FindParallelChains(Arg as CBlock);
                     }
+                case ERequest.BroadcastNewTransaction:
+                    {
+                        foreach(CPeer p in Peers)
+                            p.SendRequest(new CMessage(EMessageType.Request, ERequestType.NewTransaction, EDataType.Transaction, JsonConvert.SerializeObject(this))); //TODO : implementa richiesta di invio transazione
+                        break;
+                    }
                 default:
                     throw new ArgumentException("Invalid request: " + Rqs);
             }
