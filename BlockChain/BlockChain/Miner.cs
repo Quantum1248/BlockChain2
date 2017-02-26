@@ -86,9 +86,9 @@ namespace BlockChain
             return false;
         }
 
-        public static string HashBlock(CBlock b)
+        public static string HashBlock(CBlock block)
         {
-            string toHash = b.Header.PreviousBlockHash + b.Nonce + b.Timestamp + b.MerkleRoot; //si concatenano vari parametri del blocco TODO: usare i parmetri giusti, quelli usati qua sono solo per dimostrazione e placeholder
+            string toHash = block.Header.PreviousBlockHash + block.Nonce + block.Timestamp + block.MerkleRoot; //si concatenano vari parametri del blocco TODO: usare i parmetri giusti, quelli usati qua sono solo per dimostrazione e placeholder
             return Utilities.ByteArrayToHexString(
                 SCrypt.ComputeDerivedKey(
                     Encoding.ASCII.GetBytes(toHash), Encoding.ASCII.GetBytes(toHash), 1024, 1, 1, 1, 32)
@@ -97,7 +97,20 @@ namespace BlockChain
 
         private static CBlock GenerateNextBlock()
         {
-            CBlock res = new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash, CBlockChain.Instance.LastBlock.Difficulty);
+            CBlock lastBlock = CBlockChain.Instance.LastBlock;
+            CBlock b = CBlockChain.Instance.RetriveBlock(lastBlock.Header.BlockNumber);
+            ushort newBlockDifficulty =0;
+            uint highAverangeTimeLimit = 70, lowAverangeTimeLimit = 50;
+            uint averangeBlockTime=CBlockChain.Instance.AverangeBlockTime(lastBlock.Header.BlockNumber - 60, lastBlock.Header.BlockNumber); //in minuti
+
+            if (averangeBlockTime > highAverangeTimeLimit)
+                newBlockDifficulty = (ushort)(lastBlock.Difficulty + 1);
+            else if (averangeBlockTime < lowAverangeTimeLimit)
+                newBlockDifficulty = (ushort)(lastBlock.Difficulty - 1);
+            else
+                newBlockDifficulty = lastBlock.Difficulty;
+
+            CBlock res = new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash, newBlockDifficulty);
             return res;
         }
     }
