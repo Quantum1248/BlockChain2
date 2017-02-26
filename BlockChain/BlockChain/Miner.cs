@@ -32,7 +32,7 @@ namespace BlockChain
             {
                 block = GenerateNextBlock(); 
                 AddProof(block);
-                CBlockChain.Instance.Add(new CTemporaryBlock(block, null));
+                CBlockChain.Instance.AddNewMinedBlock(new CTemporaryBlock(block, null));
                 CPeers.Instance.DoRequest(ERequest.BroadcastMinedBlock, block);
             }
 

@@ -223,7 +223,7 @@ namespace BlockChain
                                             break;
                                         }
                                         //TODO scaricare i blocchi mancanti se ne mancano(sono al blocco 10 e mi arriva il blocco 50)
-                                        CBlockChain.Instance.Add(newBlock);
+                                        CBlockChain.Instance.AddNewMinedBlock(newBlock);
                                     }
                                     break;
                                 }

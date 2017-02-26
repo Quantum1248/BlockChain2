@@ -201,7 +201,7 @@ namespace BlockChain
                     foreach (CParallelChain hc in forkChains)
                         hc.DownloadHeaders();
                     bestChain = CBlockChain.Instance.BestChain(forkChains);
-                    if (CBlockChain.ValidateHeaders(bestChain))
+                    if (CValidator.ValidateHeaderChain(bestChain))
                     {
                         bestChain.DownloadBlocks();
                         mPeers.ValidPeers(bestChain.Peers);

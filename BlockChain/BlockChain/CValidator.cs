@@ -12,7 +12,6 @@ namespace BlockChain
 
         public static bool ValidateBlock(CBlock b, bool CheckPreviusHash = false)
         {
-
             //devo tenere conto della difficoltà?
             if (b.Header.Hash == Miner.HashBlock(b))
             {
@@ -25,6 +24,14 @@ namespace BlockChain
                         return false;
             }
             return false;
+        }
+
+        public static bool ValidateHeaderChain(CParallelChain HeaderChain)
+        {
+            for (ulong i = 0; i < HeaderChain.Length; i++)
+                if (HeaderChain[i].Hash != HeaderChain[i + 1].PreviousBlockHash && HeaderChain[i].BlockNumber != HeaderChain[i + 1].BlockNumber + 1)//(!) il controllu sul numero serve?
+                    return false;
+            return true;
         }
 
         public static bool ValidateMessage(CMessage Msg)
