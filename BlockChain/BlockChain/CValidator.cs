@@ -148,15 +148,16 @@ namespace BlockChain
                         }
                         return false;
                     }
-                case ERequestType.NewTransiction:
+                case ERequestType.NewTransaction:
                      {
-                        if (Msg.DataType == EDataType.Transiction && Msg.Data != null)
+                        if (Msg.DataType == EDataType.Transaction && Msg.Data != null)
                         {
                             try
                             {
-                                Transaction t= JsonConvert.Deserialize<Transaction>(Msg.Data);
-                                if (MemPool.Intance.CheckDouble(t))
+                                Transaction t= JsonConvert.DeserializeObject<Transaction>(Msg.Data);
+                                if (MemPool.Instance.CheckDouble(t))
                                     return false;
+                                MemPool.Instance.AddUTX(t);
                                 return true;
                             }
                             catch { return false; }

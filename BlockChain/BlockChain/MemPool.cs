@@ -107,10 +107,32 @@ namespace BlockChain
             }
             return utxList;
         }
-        
+        /// <summary>
+        /// Controlla l'esistenza nella mempool di una transazione data
+        /// </summary>
+        /// <param name="transaction">La transazione da cercare nella mempool</param>
+        /// <returns>Ritorna true se la transazione è presente nella mempool</returns>
         public bool CheckDouble(Transaction transaction)
         {
-               throw new Exception();
+            if (this.TxQueue.Contains(transaction))
+            {
+                return true;
+            }
+            return false;
+        }
+        /// <summary>
+        /// Rimuove dalla mempool tutte le transazioni contenute in un blocco dato
+        /// </summary>
+        /// <param name="block"></param>
+        public void RemoveBlock(CBlock block)
+        {
+            foreach(Transaction tx in block.Transactions)
+            {
+                if (this.CheckDouble(tx))
+                {
+                    this.RemoveUTX(tx.Hash);
+                }
+            }
         }
     }
 }

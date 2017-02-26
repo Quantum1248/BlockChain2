@@ -23,6 +23,16 @@ namespace BlockChain
 
             CServer s = CServer.StartNewServer(lp);
 
+            while (true)
+            {
+                string command = Console.ReadLine();
+                if(command == "transaction")
+                {
+                    string hashReceiver = Console.ReadLine();
+                    double amount = Convert.ToDouble(Console.ReadLine());
+                    Transaction tx = new Transaction(amount, hashReceiver, CServer.rsaKeyPair);
+                }
+            }
         }
     }
 
