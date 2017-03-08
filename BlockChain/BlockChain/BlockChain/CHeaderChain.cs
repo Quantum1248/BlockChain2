@@ -14,6 +14,7 @@ namespace BlockChain
             mLength = 0;
             mPeers = new List<CPeer>();
             mHeaders = new CHeader[0];
+            InitialIndex = CBlockChain.Instance.LastValidBlock.Header.BlockNumber;
         }
 
         public CHeader this[ulong i]
@@ -38,7 +39,6 @@ namespace BlockChain
 
         public void DownloadHeaders()
         {
-            InitialIndex = CBlockChain.Instance.LastValidBlock.Header.BlockNumber;
             mHeaders = CPeers.Instance.DistribuiteDownloadHeaders(InitialIndex, FinalIndex, mPeers.ToArray());
             mLength =(ulong) mHeaders.Length;
         }

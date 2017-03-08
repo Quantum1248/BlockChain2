@@ -184,11 +184,13 @@ namespace BlockChain
 
             lastCommonBlock= mPeers.DoRequest(ERequest.LastCommonValidBlock) as CBlock;
             otherLastValidBlock = mPeers.DoRequest(ERequest.LastValidBlock) as CTemporaryBlock;
+
             if (Program.DEBUG)
                 if (otherLastValidBlock != null)
                     CIO.DebugOut("Il numero di blocco di otherLastValidBlock è " + otherLastValidBlock.Header.BlockNumber + ".");
                 else
                     CIO.DebugOut("Nessun otherLastValidBlock ricevuto.");
+
             if (CBlockChain.Instance.LastValidBlock.Header.BlockNumber < otherLastValidBlock?.Header.BlockNumber)
                 isSynced = false;
             else
@@ -244,6 +246,7 @@ namespace BlockChain
         {
             byte[] data = new byte[4];
             Receiving.Receive(data);
+            Thread.Sleep(100);
             data = new byte[BitConverter.ToInt32(data, 0)];
             Receiving.Receive(data);
             return data;

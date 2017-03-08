@@ -151,7 +151,7 @@ namespace BlockChain
                 if (b == null)
                     break;
               
-                if (CValidator.ValidateBlock(b))
+                if (CValidator.ValidateBlock(b,true))
                 {
                     mLastValidBlock = b as CBlock;
                     File.AppendAllText(filepath, (b as CBlock).Serialize() + '\n');
