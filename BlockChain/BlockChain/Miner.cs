@@ -56,13 +56,11 @@ namespace BlockChain
                 if (Program.DEBUG)
                     CIO.DebugOut("Hash corrente blocco " + Block.Header.BlockNumber + ": " + hash);
 
-                if (hash[0] == '0')
-                {
-                    found = true;
-                    for (int i = 0; i < Block.Difficulty-1 && found; i++)
-                        if (hash[i] != hash[i + 1])
-                            found = false;
-                }
+                found = true;
+                for (int i = 0; i < Block.Difficulty && found; i++)
+                    if (hash[i] != 0)
+                        found = false;
+
             }
             Block.Header.Hash = hash;
         }
@@ -101,7 +99,7 @@ namespace BlockChain
             CBlock b = CBlockChain.Instance.RetriveBlock(lastBlock.Header.BlockNumber);
             ushort newBlockDifficulty =0;
             uint highAverangeTimeLimit = 70, lowAverangeTimeLimit = 50;
-            uint averangeBlockTime=CBlockChain.Instance.AverangeBlockTime(lastBlock.Header.BlockNumber - 60, lastBlock.Header.BlockNumber); //in minuti
+            uint averangeBlockTime = 0;//CBlockChain.Instance.AverageBlockTime(lastBlock.Header.BlockNumber - 60, lastBlock.Header.BlockNumber); //in minuti
 
             if (averangeBlockTime > highAverangeTimeLimit)
                 newBlockDifficulty = (ushort)(lastBlock.Difficulty + 1);

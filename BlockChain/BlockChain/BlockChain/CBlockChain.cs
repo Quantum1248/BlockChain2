@@ -169,11 +169,11 @@ namespace BlockChain
             mSideChain.Add(newBlock);
         }
 
-        public CParallelChain BestChain(CParallelChain[] HeaderChains)
+        public CHeaderChain BestChain(CHeaderChain[] HeaderChains)
         {
             //TODO sceglie in base alla difficoltà
-            CParallelChain res=new CParallelChain();
-            foreach (CParallelChain hc in HeaderChains)
+            CHeaderChain res=new CHeaderChain();
+            foreach (CHeaderChain hc in HeaderChains)
                 if (hc.Length >= res.Length)
                     res = hc;
             return res;

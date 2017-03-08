@@ -2,15 +2,14 @@
 
 namespace BlockChain
 {
-    class CParallelChain
+    class CHeaderChain
     {
         private ulong mLength;
         private List<CPeer> mPeers;
         private CHeader[] mHeaders;
-        private CTemporaryBlock[] mBlocks;
         public ulong InitialIndex, FinalIndex;
 
-        public CParallelChain()
+        public CHeaderChain()
         {
             mLength = 0;
             mPeers = new List<CPeer>();
@@ -32,11 +31,6 @@ namespace BlockChain
             get { return mLength; }
         }
 
-        public CTemporaryBlock[] Blocks
-        {
-            get { return mBlocks; }
-        }
-
         public void AddPeer(CPeer p)
         {
             mPeers.Add(p);
@@ -47,13 +41,6 @@ namespace BlockChain
             InitialIndex = CBlockChain.Instance.LastValidBlock.Header.BlockNumber;
             mHeaders = CPeers.Instance.DistribuiteDownloadHeaders(InitialIndex, FinalIndex, mPeers.ToArray());
             mLength =(ulong) mHeaders.Length;
-        }
-
-        public void DownloadBlocks()
-        {
-            InitialIndex = CBlockChain.Instance.LastValidBlock.Header.BlockNumber;
-            mBlocks = CPeers.Instance.DistribuiteDownloadBlocks(InitialIndex, FinalIndex, mPeers.ToArray());
-            mLength = (ulong)mBlocks.Length;
         }
     }
 }

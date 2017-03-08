@@ -175,11 +175,15 @@ namespace BlockChain
         {
             bool isSynced = false;
             ulong addedBlocks = 0;
+            CTemporaryBlock[] DownloadedBlock;
             CTemporaryBlock[] newBlocks;
-            CParallelChain[] forkChains;
-            CParallelChain bestChain;
-            CBlock lastCommonBlock= mPeers.DoRequest(ERequest.LastCommonValidBlock) as CBlock;
-            CTemporaryBlock otherLastValidBlock = mPeers.DoRequest(ERequest.LastValidBlock) as CTemporaryBlock;
+            CHeaderChain[] forkChains;
+            CHeaderChain bestChain;
+            CBlock lastCommonBlock;
+            CTemporaryBlock otherLastValidBlock;
+
+            lastCommonBlock= mPeers.DoRequest(ERequest.LastCommonValidBlock) as CBlock;
+            otherLastValidBlock = mPeers.DoRequest(ERequest.LastValidBlock) as CTemporaryBlock;
             if (Program.DEBUG)
                 if (otherLastValidBlock != null)
                     CIO.DebugOut("Il numero di blocco di otherLastValidBlock è " + otherLastValidBlock.Header.BlockNumber + ".");
@@ -193,19 +197,19 @@ namespace BlockChain
             //TODO potrebbero dover essere scaricati un numero maggiore di MAXINT blocchi
             while (!isSynced)
             {
-                newBlocks = mPeers.DoRequest(ERequest.DownloadMissingBlock, new object[] { CBlockChain.Instance.LastValidBlock.Header.BlockNumber+1, lastCommonBlock.Header.BlockNumber +1 }) as CTemporaryBlock[];
+                newBlocks = mPeers.DoRequest(ERequest.DownloadMissingBlock, new object[] { CBlockChain.Instance.LastValidBlock.Header.BlockNumber + 1, lastCommonBlock.Header.BlockNumber + 1 }) as CTemporaryBlock[];
                 CBlockChain.Instance.Add(newBlocks);
-                forkChains = mPeers.DoRequest(ERequest.FindParallelChain, lastCommonBlock) as CParallelChain[];
+                forkChains = mPeers.DoRequest(ERequest.FindParallelChain, lastCommonBlock) as CHeaderChain[];
                 if (forkChains.Length > 0)
                 {
-                    foreach (CParallelChain hc in forkChains)
+                    foreach (CHeaderChain hc in forkChains)
                         hc.DownloadHeaders();
                     bestChain = CBlockChain.Instance.BestChain(forkChains);
                     if (CValidator.ValidateHeaderChain(bestChain))
                     {
-                        bestChain.DownloadBlocks();
+                        DownloadedBlock=CPeers.Instance.DistribuiteDownloadBlocks(bestChain.InitialIndex,bestChain.FinalIndex);
                         mPeers.ValidPeers(bestChain.Peers);
-                        addedBlocks = CBlockChain.Instance.Add(bestChain.Blocks);
+                        addedBlocks = CBlockChain.Instance.Add(DownloadedBlock);
                         if (addedBlocks >= bestChain.Length)    //solo se scarica tutti i blocchi
                         {
                             isSynced = true;
@@ -225,7 +229,7 @@ namespace BlockChain
             //(!) da cambiare
 
             while (true)
-                Miner.AddProof(new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash,2));        //(!) da cambiare a seconda di come verrà fattp il miner
+                Miner.AddProof(new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash, 2));        //(!) da cambiare a seconda di come verrà fattp il miner
 
 
         }

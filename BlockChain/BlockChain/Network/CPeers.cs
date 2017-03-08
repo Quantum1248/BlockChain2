@@ -153,7 +153,7 @@ namespace BlockChain
                 case ERequest.BroadcastNewTransaction:
                     {
                         foreach(CPeer p in Peers)
-                            p.SendRequest(new CMessage(EMessageType.Request, ERequestType.NewTransaction, EDataType.Transaction, JsonConvert.SerializeObject(this))); //TODO : implementa richiesta di invio transazione
+                            p.SendRequest(new CMessage(EMessageType.Request, ERequestType.NewTransaction, EDataType.Transaction, JsonConvert.SerializeObject(Arg as Transaction))); //TODO : implementa richiesta di invio transazione
                         break;
                     }
                 default:
@@ -367,10 +367,10 @@ namespace BlockChain
 
         }
 
-        private CParallelChain[] FindParallelChains(CBlock startBlock)
+        private CHeaderChain[] FindParallelChains(CBlock startBlock)
         {
             CHeader tmp1, tmp2;
-            Stack<CParallelChain> res = new Stack<CParallelChain>();
+            Stack<CHeaderChain> res = new Stack<CHeaderChain>();
             CPeer[] peersPool = new CPeer[NumConnection()];
             int c=0, ID=0;
             foreach (CPeer p in mPeers)
@@ -382,7 +382,7 @@ namespace BlockChain
                 {
                     ID=peersPool[i].SendRequest(new CMessage(EMessageType.Request, ERequestType.GetLastHeader));
                     tmp1 = peersPool[i].ReceiveHeader(ID, 5000);
-                    res.Push(new CParallelChain());
+                    res.Push(new CHeaderChain());
                     res.Peek().AddPeer(peersPool[i]);
                     res.Peek().FinalIndex = tmp1.BlockNumber;
                     peersPool[i] = null;
