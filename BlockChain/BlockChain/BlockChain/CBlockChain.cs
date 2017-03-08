@@ -108,7 +108,6 @@ namespace BlockChain
                     return block;
                 }
             }
-
             streamReader.Close();
             return null;
         }
@@ -177,6 +176,25 @@ namespace BlockChain
                 if (hc.Length >= res.Length)
                     res = hc;
             return res;
+        }
+
+        public ulong AverageBlockTime(ulong startIndex, ulong finalIndex)
+        {
+            CBlock start = RetriveBlock(startIndex);
+            CBlock final = RetriveBlock(finalIndex);
+            
+            TimeSpan timespan = final.Timestamp.Subtract(start.Timestamp);
+            ulong seconds =(ulong) timespan.TotalSeconds;
+            ulong nblock = final.Header.BlockNumber - start.Header.BlockNumber;
+            try
+            {
+                return seconds / nblock;
+            }
+            catch
+            {
+                return 60;
+            }
+
         }
     }
 }

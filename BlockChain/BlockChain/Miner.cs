@@ -96,19 +96,50 @@ namespace BlockChain
         private static CBlock GenerateNextBlock()
         {
             CBlock lastBlock = CBlockChain.Instance.LastBlock;
-            CBlock b = CBlockChain.Instance.RetriveBlock(lastBlock.Header.BlockNumber);
-            ushort newBlockDifficulty =0;
-            uint highAverangeTimeLimit = 70, lowAverangeTimeLimit = 50;
-            uint averangeBlockTime = 0;//CBlockChain.Instance.AverageBlockTime(lastBlock.Header.BlockNumber - 60, lastBlock.Header.BlockNumber); //in minuti
+            CBlock lastValidBlock = CBlockChain.Instance.LastValidBlock;
+            short newBlockDifficulty = 0;
+            ulong highAverangeTimeLimit = 70, lowAverangeTimeLimit = 50;
+            ulong averangeBlockTime = 0;
+            /*
+            if (lastValidBlock.Header.BlockNumber <60)
+                averangeBlockTime = CBlockChain.Instance.AverageBlockTime(0, lastValidBlock.Header.BlockNumber); //in secondi
+            else
+                averangeBlockTime = CBlockChain.Instance.AverageBlockTime(CBlockChain.Instance.LastValidBlock.Header.BlockNumber-60, lastValidBlock.Header.BlockNumber); //in secondi
+
 
             if (averangeBlockTime > highAverangeTimeLimit)
-                newBlockDifficulty = (ushort)(lastBlock.Difficulty + 1);
+            {
+                newBlockDifficulty = (short)(lastBlock.Difficulty -1);
+                if (newBlockDifficulty <= 0)
+                    newBlockDifficulty = 1;
+                if (Program.DEBUG)
+                {
+                    CIO.DebugOut("La nuova difficoltà è: " + newBlockDifficulty);
+                    Thread.Sleep(1000);
+                }
+            }
             else if (averangeBlockTime < lowAverangeTimeLimit)
-                newBlockDifficulty = (ushort)(lastBlock.Difficulty - 1);
+            {
+                newBlockDifficulty = (short)(lastBlock.Difficulty + 1);
+                if (Program.DEBUG)
+                {
+                    CIO.DebugOut("La nuova difficoltà è: " + newBlockDifficulty);
+                    Thread.Sleep(1000);
+                }
+            }
             else
-                newBlockDifficulty = lastBlock.Difficulty;
+            {
+                newBlockDifficulty = (short)lastBlock.Difficulty;
+                if (Program.DEBUG)
+                {
+                    CIO.DebugOut("La nuova difficoltà è: " + newBlockDifficulty);
+                    Thread.Sleep(1000);
+                }
+            }*/
 
-            CBlock res = new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash, newBlockDifficulty);
+            newBlockDifficulty = 2;
+
+            CBlock res = new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash, (ushort)newBlockDifficulty);
             return res;
         }
     }
