@@ -17,13 +17,12 @@ namespace BlockChain
         public static RSACryptoServiceProvider rsaKeyPair;
 
 
-        private Thread mUpdateBlockChainThread;
+        private Thread mUpdateBlockChainThread, mThreadListener, mThreadPeers, mMinerThread;
         private CPeers mPeers;
         private static int MAX_PEERS = 30;//deve essere pari
         private static int RESERVED_CONNECTION = MAX_PEERS / 2;//connessioni usate per chi vuole collegarsi con me
         private static int NOT_RESERVED_CONNECTION = MAX_PEERS - RESERVED_CONNECTION;//connessioni che utilizzo io per collegarmi agli altri
         private static string mPublicIp = "";
-        private Thread mThreadListener, mThreadPeers;
         private Socket mListener;
         private static int DEFOULT_PORT = 2000;
 
@@ -104,12 +103,17 @@ namespace BlockChain
                 CIO.DebugOut("Start listening...");
             mThreadListener = new Thread(new ThreadStart(StartAcceptUsersConnection));
             mThreadListener.Start();
-            
+
             if (Program.DEBUG)
                 CIO.DebugOut("Start update blockchain...");
             mUpdateBlockChainThread = new Thread(new ThreadStart(UpdateBlockchain));
             mUpdateBlockChainThread.Start();
-            
+
+            if (Program.DEBUG)
+                CIO.DebugOut("Start Miner...");
+            mMinerThread = new Thread(new ThreadStart(StartMiner));
+            mMinerThread.Start();
+
         }
 
         private void UpdatePeersList()
@@ -228,11 +232,14 @@ namespace BlockChain
             }
             if (Program.DEBUG)
                 CIO.DebugOut("Sincronizzazione Blockchain terminata!");
-            //(!) da cambiare
 
+        }
+
+        private void StartMiner()
+        {
+            mUpdateBlockChainThread.Join();
             while (true)
-                Miner.Start(0);        //(!) da cambiare a seconda di come verrà fattp il miner
-
+                Miner.Start(0);
         }
 
         private void InsertNewPeer(Socket NewConnection)
