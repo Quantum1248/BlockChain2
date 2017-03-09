@@ -95,12 +95,19 @@ namespace BlockChain
 
         private static CBlock GenerateNextBlock()
         {
-            CBlock lastBlock = CBlockChain.Instance.LastBlock;
-            CBlock lastValidBlock = CBlockChain.Instance.LastValidBlock;
             short newBlockDifficulty = 0;
+            /*
+            int numberOfBlocks = 6;
+            CBlock lastBlock = CBlockChain.Instance.LastBlock;
+            CBlock previousBlock = CBlockChain.Instance.RetriveBlock(lastBlock.Header.BlockNumber-numberOfBlocks, true);
+
+
+            
+            CBlock lastValidBlock = CBlockChain.Instance.LastValidBlock;
+            
             ulong highAverangeTimeLimit = 70, lowAverangeTimeLimit = 50;
             ulong averangeBlockTime = 0;
-            /*
+            
             if (lastValidBlock.Header.BlockNumber <60)
                 averangeBlockTime = CBlockChain.Instance.AverageBlockTime(0, lastValidBlock.Header.BlockNumber); //in secondi
             else
@@ -135,10 +142,10 @@ namespace BlockChain
                     CIO.DebugOut("La nuova difficoltà è: " + newBlockDifficulty);
                     Thread.Sleep(1000);
                 }
-            }*/
+            }
 
             newBlockDifficulty = 2;
-
+            */
             CBlock res = new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash, (ushort)newBlockDifficulty);
             return res;
         }

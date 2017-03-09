@@ -35,19 +35,19 @@ namespace BlockChain
         }
         public List<T> GetNodeByLevel(int Level)
         {
-            List<T> res=new List<T>();
-            if(Level>0)
-                foreach(CTree<T> t in mChildren)
+            List<T> res = new List<T>();
+            if (Level > 0)
+                foreach (CTree<T> t in mChildren)
                     res.AddRange(t.GetNodeByLevel(Level - 1));
-            else if(Level==0)
+            else if (Level == 0)
                 res.Add(mRoot);
             return res;
         }
     }
 
-    class CSideChainTree:CTree<CTemporaryBlock>
+    class CSideChainTree : CTree<CTemporaryBlock>
     {
-        public int ChildDepth=0,MaxDepth = 0;
+        public int RelativeDepth = 0, MaxDepth = 0; //MaxDepth è la profondità massima dell'albero(una volta raggiunta si effettua lo switch), RelativeDepth è la profondità relativa a questo nodo
 
         public CSideChainTree()
         {
@@ -69,7 +69,21 @@ namespace BlockChain
             {
                 CSideChainTree deepest = new CSideChainTree();
                 foreach (CSideChainTree sc in mChildren)
-                    if (sc.ChildDepth >= deepest.ChildDepth)
+                    if (sc.RelativeDepth >= deepest.RelativeDepth)
+                        deepest = sc;
+                return deepest.GetLastBlock();
+            }
+        }
+
+        public CTemporaryBlock RetriveBlock(int index)
+        {
+            if (mChildren.Count <= 0)
+                return mRoot;
+            else
+            {
+                CSideChainTree deepest = new CSideChainTree();
+                foreach (CSideChainTree sc in mChildren)
+                    if (sc.RelativeDepth >= deepest.RelativeDepth)
                         deepest = sc;
                 return deepest.GetLastBlock();
             }
@@ -82,12 +96,16 @@ namespace BlockChain
         /// <returns></returns>
         public bool Add(CTemporaryBlock b)
         {
+            /*
+            Se non c'è nulla nell'albero mette il blocco nella root, altrimenti esegue mAdd e se la nuova profondità dell'albero è
+            maggiore alla massima consentita esegue lo switch tra le chain, aggiungendo la root ai blocchi sicuri.
+            */
             if (mRoot == null)
                 mRoot = b;
-            if (mAdd(b,1)>=MaxDepth)
+            else if ((RelativeDepth = mAdd(b, 1)) >= MaxDepth)
             {
                 foreach (CSideChainTree t in mChildren)
-                    if (t.ChildDepth >= this.MaxDepth - 1)
+                    if (t.RelativeDepth >= this.MaxDepth - 1)
                     {
                         CBlockChain.Instance.Add(new CTemporaryBlock[] { mRoot });
                         this.Root = t.Root;
@@ -95,29 +113,34 @@ namespace BlockChain
                     }
                 return true;
             }
-            else
-                return false;
+            return false;
         }
 
-        private int mAdd(CTemporaryBlock b,int Level)
+        private int mAdd(CTemporaryBlock newBlock, int depth)
         {
-            int tmp;
-            if (b.Header.PreviousBlockHash == Root.Header.Hash)
+            /*
+            Se l'hash del blocco precedente di newBlock è uguale all'hash della root, aggiunge newBlock in una nuova sidechain
+            figlia di questo nodo e se è il primo figlio del nodo setta la profondità relativa a questo nodo a 1.
+            Altrimenti prova ad aggiungere newBlock ad ogni sidechain figlia di questo nodo e se trova quella giusta setta la 
+            nuova profondità relativa al valore corretto.
+            */
+            int newDepth;
+            if (newBlock.Header.PreviousBlockHash == Root.Header.Hash)
             {
-                mChildren.Add(new CSideChainTree(b, MaxDepth));
-                if (ChildDepth < 1)
-                    ChildDepth = 1;
-                return Level;
+                mChildren.Add(new CSideChainTree(newBlock, MaxDepth));
+                if (RelativeDepth < 1)
+                    RelativeDepth = 1;
+                return depth;
             }
             else
                 foreach (CSideChainTree t in mChildren)
                 {
-                    tmp = t.mAdd(b, Level + 1);
-                    if (tmp > 0)
+                    newDepth = t.mAdd(newBlock, depth + 1);
+                    if (newDepth > 0)
                     {
-                        if ((tmp-Level)+1 > ChildDepth)
-                            ChildDepth = tmp - Level;
-                        return tmp;
+                        if ((newDepth - depth) + 1 > RelativeDepth)
+                            RelativeDepth = newDepth - depth + 1;
+                        return newDepth;
                     }
                 }
             return -1;
