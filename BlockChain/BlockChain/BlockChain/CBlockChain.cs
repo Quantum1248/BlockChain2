@@ -184,11 +184,8 @@ namespace BlockChain
             return res;
         }
 
-        public ulong AverageBlockTime(ulong startIndex, ulong finalIndex)
-        {
-            CBlock start = RetriveBlock(startIndex);
-            CBlock final = RetriveBlock(finalIndex);
-            
+        public ulong AverageBlockTime(CBlock start, CBlock final)
+        { 
             TimeSpan timespan = final.Timestamp.Subtract(start.Timestamp);
             ulong seconds =(ulong) timespan.TotalSeconds;
             ulong nblock = final.Header.BlockNumber - start.Header.BlockNumber;
