@@ -93,7 +93,7 @@ namespace BlockChain
             
         }
 
-        public CBlock RetriveBlock(ulong Index)
+        public CBlock RetriveBlock(ulong index, bool searchInSidechain=false)
         {
             string filepath = PATH + "\\" + FILENAME;
             string blockJson = "";
@@ -102,13 +102,19 @@ namespace BlockChain
             while ((blockJson = streamReader.ReadLine()) != null)
             {
                 CBlock block = JsonConvert.DeserializeObject<CBlock>(blockJson);
-                if (block.Header.BlockNumber == Index)
+                if (block.Header.BlockNumber == index)
                 {
                     streamReader.Close();
                     return block;
                 }
             }
             streamReader.Close();
+
+            if(searchInSidechain)
+                lock(mSideChain)
+                    if (LastBlock.Header.BlockNumber >= index)
+                        return mSideChain.RetriveBlock(index);
+
             return null;
         }
 
@@ -178,11 +184,8 @@ namespace BlockChain
             return res;
         }
 
-        public ulong AverageBlockTime(ulong startIndex, ulong finalIndex)
-        {
-            CBlock start = RetriveBlock(startIndex);
-            CBlock final = RetriveBlock(finalIndex);
-            
+        public ulong AverageBlockTime(CBlock start, CBlock final)
+        { 
             TimeSpan timespan = final.Timestamp.Subtract(start.Timestamp);
             ulong seconds =(ulong) timespan.TotalSeconds;
             ulong nblock = final.Header.BlockNumber - start.Header.BlockNumber;
@@ -194,7 +197,6 @@ namespace BlockChain
             {
                 return 60;
             }
-
         }
     }
 }

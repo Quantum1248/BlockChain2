@@ -55,10 +55,9 @@ namespace BlockChain
                 hash = HashBlock(Block); //calcola l'hash secondo il template di scrypt usato da litecoin
                 if (Program.DEBUG)
                     CIO.DebugOut("Hash corrente blocco " + Block.Header.BlockNumber + ": " + hash);
-
                 found = true;
                 for (int i = 0; i < Block.Difficulty && found; i++)
-                    if (hash[i] != 0)
+                    if (hash[i] != '0')
                         found = false;
 
             }
@@ -95,16 +94,24 @@ namespace BlockChain
 
         private static CBlock GenerateNextBlock()
         {
+            //cosa succede quando si genera il blocco 1?
+            int numberOfBlocks = 60;
+
             CBlock lastBlock = CBlockChain.Instance.LastBlock;
-            CBlock lastValidBlock = CBlockChain.Instance.LastValidBlock;
+            CBlock previousBlock;
             short newBlockDifficulty = 0;
             ulong highAverangeTimeLimit = 70, lowAverangeTimeLimit = 50;
             ulong averangeBlockTime = 0;
-            /*
-            if (lastValidBlock.Header.BlockNumber <60)
-                averangeBlockTime = CBlockChain.Instance.AverageBlockTime(0, lastValidBlock.Header.BlockNumber); //in secondi
+
+            if (lastBlock.Header.BlockNumber > (ulong)numberOfBlocks)
+                previousBlock = CBlockChain.Instance.RetriveBlock(lastBlock.Header.BlockNumber - (ulong)numberOfBlocks, true);
             else
-                averangeBlockTime = CBlockChain.Instance.AverageBlockTime(CBlockChain.Instance.LastValidBlock.Header.BlockNumber-60, lastValidBlock.Header.BlockNumber); //in secondi
+                previousBlock = CBlockChain.Instance.RetriveBlock(1, true);
+
+            if (previousBlock != null)
+                averangeBlockTime = CBlockChain.Instance.AverageBlockTime(previousBlock, lastBlock); //in secondi
+            else
+                averangeBlockTime = 60;
 
 
             if (averangeBlockTime > highAverangeTimeLimit)
@@ -135,10 +142,8 @@ namespace BlockChain
                     CIO.DebugOut("La nuova difficoltà è: " + newBlockDifficulty);
                     Thread.Sleep(1000);
                 }
-            }*/
-
-            newBlockDifficulty = 2;
-
+            }
+            
             CBlock res = new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash, (ushort)newBlockDifficulty);
             return res;
         }
