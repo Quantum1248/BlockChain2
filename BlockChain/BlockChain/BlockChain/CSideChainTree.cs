@@ -63,20 +63,7 @@ namespace BlockChain
 
         public CTemporaryBlock GetLastBlock()
         {
-            if (mChildren.Count <= 0)
-                return mRoot;
-            else
-            {
-                CSideChainTree deepest = new CSideChainTree();
-                foreach (CSideChainTree sc in mChildren)
-                    if (sc.RelativeDepth >= deepest.RelativeDepth)
-                        deepest = sc;
-                return deepest.GetLastBlock();
-            }
-        }
-
-        public CTemporaryBlock RetriveBlock(int index)
-        {
+            //(!) Gestire i casi in cui le sidechain hanno la stessa lunghezza
             if (mChildren.Count <= 0)
                 return mRoot;
             else
@@ -116,6 +103,16 @@ namespace BlockChain
             return false;
         }
 
+        public CTemporaryBlock RetriveBlock(ulong blockNumber)
+        {
+            CTemporaryBlock last = GetLastBlock();
+            List<CTemporaryBlock> validChain = GetChainFor(last);
+            foreach (CTemporaryBlock b in validChain)
+                if (b.Header.BlockNumber == blockNumber)
+                    return b;
+            return null;
+        }
+
         private int mAdd(CTemporaryBlock newBlock, int depth)
         {
             /*
@@ -144,6 +141,25 @@ namespace BlockChain
                     }
                 }
             return -1;
+        }
+
+        private List<CTemporaryBlock> GetChainFor(CTemporaryBlock lastBlock)
+        {
+            List<CTemporaryBlock> res = new List<CTemporaryBlock>(), tmp;
+            res.Add(mRoot);
+            if (mRoot.Header.Hash == lastBlock.Header.Hash)
+                return res;
+            else
+                foreach(CSideChainTree sc in mChildren)
+                {
+                    tmp = sc.GetChainFor(lastBlock);
+                    if (tmp != null)
+                    {
+                        res.AddRange(tmp);
+                        return res;
+                    }
+                }
+            return null;
         }
     }
 }

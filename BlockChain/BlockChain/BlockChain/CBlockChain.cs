@@ -109,12 +109,12 @@ namespace BlockChain
                 }
             }
             streamReader.Close();
-            /*
+
             if(searchInSidechain)
                 lock(mSideChain)
                     if (LastBlock.Header.BlockNumber >= index)
                         return mSideChain.RetriveBlock(index);
-            */
+
             return null;
         }
 
