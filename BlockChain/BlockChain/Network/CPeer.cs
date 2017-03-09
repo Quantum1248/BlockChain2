@@ -116,6 +116,8 @@ namespace BlockChain
             {
                 if (Program.DEBUG)
                     CIO.DebugOut("Connection with " + mIp + ":" + mPort + " failed!");
+                mSocket.Close();
+                mSocket.Dispose();
                 asyncConnection.Dispose();
                 return false;
             }
@@ -183,7 +185,6 @@ namespace BlockChain
                 }
                 //il timer viene reinpostato a defoult per non causare problemi con altre comunicazioni che potrebbero avvenire in altre parti del codice.
                 mSocket.ReceiveTimeout = 0;
-                Thread.Sleep(1000);
             }
         }
 
@@ -192,7 +193,7 @@ namespace BlockChain
             CMessage rqs;
             while (mIsConnected)
             {
-                Thread.Sleep(500);
+                Thread.Sleep(100);
                 lock (RequestQueue)
                 {
                     if (RequestQueue.Count > 0)
@@ -222,7 +223,7 @@ namespace BlockChain
                                             break;
                                         }
                                         //TODO scaricare i blocchi mancanti se ne mancano(sono al blocco 10 e mi arriva il blocco 50)
-                                        CBlockChain.Instance.Add(newBlock);
+                                        CBlockChain.Instance.AddNewMinedBlock(newBlock);
                                     }
                                     break;
                                 }
@@ -285,22 +286,15 @@ namespace BlockChain
                                         JsonConvert.SerializeObject(CBlockChain.Instance.RetriveBlock(Convert.ToUInt64(rqs.Data)).Header), rqs.ID));
                                     break;
                                 }
-                            /*
-                                case ECommand.GETLASTVALID:
-                                
-                                case ECommand.DOWNLOADBLOCK:
-                                
-                                case ECommand.DOWNLOADBLOCKS:
-
-                                case ECommand.GETHEADER:
-                                if (Program.DEBUG)
-                                CIO.DebugOut("GETHEADER received by " + mIp);
-                                index = ReceiveULong();
-                                SendHeader(CBlockChain.Instance.RetriveBlock(index).Header);
-                                break;
-                                case ECommand.CHAINLENGTH:
-                                
-                                */
+                            case ERequestType.NewTransaction:
+                                {
+                                    Transaction t=JsonConvert.DeserializeObject<Transaction>(rqs.Data);
+                                    if(t.Verify())
+                                    {
+                                        MemPool.Instance.AddUTX(t);
+                                    }
+                                    break;   
+                                }
                             default:
                                 if (Program.DEBUG)
                                     CIO.DebugOut("Ricevuto comando sconosciuto: " + rqs.RqsType + " da " + IP);
@@ -407,7 +401,5 @@ namespace BlockChain
             LastCommunication = DateTime.Now;
             return res;
         }
-
-
     }
 }

@@ -89,7 +89,8 @@ namespace BlockChain
         DownloadHeaders,
         GetHeader,
         DownloadBlocks,
-        DownloadBlock
+        DownloadBlock,
+        NewTransaction
     }
 
     public enum EDataType
@@ -102,5 +103,6 @@ namespace BlockChain
         Header,
         BlockList,
         HeaderList,
+        Transaction
     }
 }

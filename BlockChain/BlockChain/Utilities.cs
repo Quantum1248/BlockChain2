@@ -52,5 +52,6 @@ namespace BlockChain
         {
             return Convert.FromBase64String(base64String);
         }
+
     }
 }
