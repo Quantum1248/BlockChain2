@@ -10,7 +10,6 @@ namespace BlockChain
 {
     class Miner
     {
-
         private Miner instance;
 
         public Miner Instance
@@ -94,7 +93,6 @@ namespace BlockChain
 
         private static CBlock GenerateNextBlock()
         {
-            //cosa succede quando si genera il blocco 1?
             int numberOfBlocks = 60;
 
             CBlock lastBlock = CBlockChain.Instance.LastBlock;

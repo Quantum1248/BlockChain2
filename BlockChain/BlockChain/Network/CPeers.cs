@@ -112,12 +112,12 @@ namespace BlockChain
         /// <summary>
         /// Esegue una richiesta ai peer collegati.
         /// </summary>
-        /// <param name="Rqs">Richiesta da effettuare.</param>
-        /// <param name="Arg">Parametro usato per passare un valore e/o ritornare un risultato quando necessario.</param>
+        /// <param name="rqs">Richiesta da effettuare.</param>
+        /// <param name="arg">Parametro usato per passare un valore e/o ritornare un risultato quando necessario.</param>
         /// <returns></returns>
-        public object DoRequest(ERequest Rqs, object Arg = null)  //(!) rivedere i metodi di input/output del metodo
+        public object DoRequest(ERequest rqs, object arg = null)  //(!) rivedere i metodi di input/output del metodo
         {
-            switch (Rqs)
+            switch (rqs)
             {
                 case ERequest.UpdatePeers:
                     {
@@ -130,14 +130,14 @@ namespace BlockChain
                     }
                 case ERequest.DownloadMissingBlock:
                     {
-                        object[] args = Arg as object[];
+                        object[] args = arg as object[];
                         ulong startingIndex = Convert.ToUInt64(args[0]);
                         ulong finalIndex = Convert.ToUInt64(args[1]);
                         return DistribuiteDownloadBlocks(startingIndex, finalIndex);
                     }
                 case ERequest.BroadcastMinedBlock:
                     {
-                        CBlock b = Arg as CBlock;
+                        CBlock b = arg as CBlock;
                         foreach (CPeer p in Peers)
                             p.SendRequest(new CMessage(EMessageType.Request, ERequestType.NewBlockMined, EDataType.Block, b.Serialize()));
                         break;
@@ -148,16 +148,16 @@ namespace BlockChain
                     }
                 case ERequest.FindParallelChain:
                     {
-                        return FindParallelChains(Arg as CBlock);
+                        return FindParallelChains(arg as CBlock);
                     }
                 case ERequest.BroadcastNewTransaction:
                     {
                         foreach(CPeer p in Peers)
-                            p.SendRequest(new CMessage(EMessageType.Request, ERequestType.NewTransaction, EDataType.Transaction, JsonConvert.SerializeObject(Arg as Transaction))); //TODO : implementa richiesta di invio transazione
+                            p.SendRequest(new CMessage(EMessageType.Request, ERequestType.NewTransaction, EDataType.Transaction, JsonConvert.SerializeObject(arg as Transaction))); //TODO : implementa richiesta di invio transazione
                         break;
                     }
                 default:
-                    throw new ArgumentException("Invalid request: " + Rqs);
+                    throw new ArgumentException("Invalid request: " + rqs);
             }
             return null;
         }

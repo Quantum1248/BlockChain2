@@ -217,13 +217,34 @@ namespace BlockChain
                                     if (CPeers.Instance.CanReceiveBlock)
                                     {
                                         CTemporaryBlock newBlock = new CTemporaryBlock(CBlock.Deserialize(rqs.Data), this);
-                                        if (!CValidator.ValidateBlock(newBlock))
+                                        if (!CValidator.ValidateBlock(newBlock) && newBlock.Header.BlockNumber<CBlockChain.Instance.LastValidBlock.Header.BlockNumber)
                                         {
                                             Disconnect();
                                             break;
                                         }
                                         //TODO scaricare i blocchi mancanti se ne mancano(sono al blocco 10 e mi arriva il blocco 50)
-                                        CBlockChain.Instance.AddNewMinedBlock(newBlock);
+                                        if(!CBlockChain.Instance.AddNewMinedBlock(newBlock))
+                                        {
+                                            Stack<CTemporaryBlock> blocks = new Stack<CTemporaryBlock>();
+                                            int ID=0;
+                                            blocks.Push(newBlock);
+                                            for (ulong i = newBlock.Header.BlockNumber-1; i > CBlockChain.Instance.LastValidBlock.Header.BlockNumber; i--)
+                                            {
+                                                ID=SendRequest(new CMessage(EMessageType.Request, ERequestType.DownloadBlock, EDataType.ULong, Convert.ToString(i)));
+                                                blocks.Push(new CTemporaryBlock(JsonConvert.DeserializeObject<CBlock>(ReceiveData(ID, 5000).Data),this));
+                                                if (!CValidator.ValidateBlock(blocks.Peek()) && blocks.Peek().Header.BlockNumber < CBlockChain.Instance.LastValidBlock.Header.BlockNumber)
+                                                {
+                                                    Disconnect();
+                                                    break;
+                                                }
+                                                if (CBlockChain.Instance.AddNewMinedBlock(blocks.Peek()))
+                                                {
+                                                    blocks.Pop();
+                                                    for (int j = blocks.Count; j > 0; j--)
+                                                        CBlockChain.Instance.AddNewMinedBlock(blocks.Pop());
+                                                }
+                                            }
+                                        }
                                     }
                                     break;
                                 }
@@ -257,7 +278,7 @@ namespace BlockChain
                                         CIO.DebugOut("DownloadBlocks received by " + mIp);
 
                                     SendRequest(new CMessage(EMessageType.Data, ERequestType.NULL, EDataType.Block,
-                                        JsonConvert.SerializeObject(CBlockChain.Instance.RetriveBlock(Convert.ToUInt64(rqs.Data))), rqs.ID));
+                                        JsonConvert.SerializeObject(CBlockChain.Instance.RetriveBlock(Convert.ToUInt64(rqs.Data),true)), rqs.ID));
                                     break;
                                 }
                             case ERequestType.DownloadBlocks:

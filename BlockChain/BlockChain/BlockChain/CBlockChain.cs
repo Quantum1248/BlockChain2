@@ -169,9 +169,10 @@ namespace BlockChain
             return LastValidBlock.Header.BlockNumber;
         }
 
-        public void AddNewMinedBlock(CTemporaryBlock newBlock)
+        public bool AddNewMinedBlock(CTemporaryBlock newBlock)
         {
-            mSideChain.Add(newBlock);
+            lock (mSideChain)
+                return mSideChain.Add(newBlock);
         }
 
         public CHeaderChain BestChain(CHeaderChain[] HeaderChains)
