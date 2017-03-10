@@ -140,7 +140,7 @@ namespace BlockChain
                     Thread.Sleep(1000);
                 }
             }
-            newBlockDifficulty = 2;
+
             CBlock res = new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash, (ushort)newBlockDifficulty);
             return res;
         }

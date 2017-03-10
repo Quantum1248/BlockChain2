@@ -464,6 +464,8 @@ namespace BlockChain
 
         public CHeader[] DistribuiteDownloadHeaders(ulong initialIndex, ulong finalIndex, CPeer[] Peers = null)
         {
+            if (finalIndex < initialIndex)
+                return new CHeader[0];
             if (Peers == null)
                 Peers = mPeers;
             ulong module = 0, rangeDim = 10, totalHeaders = finalIndex - initialIndex;

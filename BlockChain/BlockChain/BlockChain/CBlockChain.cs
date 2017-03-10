@@ -39,7 +39,8 @@ namespace BlockChain
         {
             get
             {
-                mLastBlock = mSideChain.GetLastBlock();
+                lock(mSideChain)
+                    mLastBlock = mSideChain.GetLastBlock();
                 if (mLastBlock!=null)
                     return mLastBlock;
                 return mLastValidBlock;

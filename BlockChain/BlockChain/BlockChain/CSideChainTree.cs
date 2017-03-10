@@ -79,21 +79,23 @@ namespace BlockChain
         /// <summary>
         /// Aggiunge il blocco alla sidechain corretta ed effettua lo switch alla sidechain più lunga se necessario.
         /// </summary>
-        /// <param name="b">Blocco da aggiungere.</param>
+        /// <param name="newBlock">Blocco da aggiungere.</param>
         /// <returns></returns>
-        public bool Add(CTemporaryBlock b)
+        public bool Add(CTemporaryBlock newBlock)
         {
             /*
             Se non c'è nulla nell'albero mette il blocco nella root, altrimenti esegue mAdd e se la nuova profondità dell'albero è
             maggiore alla massima consentita esegue lo switch tra le chain, aggiungendo la root ai blocchi sicuri.
             */
 
-
             if (mRoot == null)
             {
                 mRoot = new CTemporaryBlock(CBlockChain.Instance.LastValidBlock,null);
             }
-            if ((RelativeDepth = mAdd(b, 1)) >= MaxDepth)
+            int newDepth = mAdd(newBlock, 1);
+            if (RelativeDepth < newDepth)
+                RelativeDepth = newDepth;
+            if (newDepth >= MaxDepth)
             {
                 foreach (CSideChainTree t in mChildren)
                     if (t.RelativeDepth >= this.MaxDepth - 1)
@@ -102,9 +104,12 @@ namespace BlockChain
                         this.Root = t.Root;
                         this.Children = t.Children;
                     }
-                return true;
+
             }
-            return false;
+            if (newDepth > -1)
+                return true;
+            else
+                return false;
         }
 
         public CTemporaryBlock RetriveBlock(ulong blockNumber)
@@ -129,7 +134,7 @@ namespace BlockChain
             if (newBlock.Header.PreviousBlockHash == Root.Header.Hash)
             {
                 foreach (CSideChainTree cs in mChildren)
-                    if (cs.mRoot.Header.Hash == newBlock.Header.Hash)
+                    if (cs.Root.Header.Hash == newBlock.Header.Hash)
                         return depth;
                 mChildren.Add(new CSideChainTree(newBlock, MaxDepth));
                 if (RelativeDepth < 1)

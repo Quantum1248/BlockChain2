@@ -213,10 +213,10 @@ namespace BlockChain
                                 {
                                     if (CPeers.Instance.CanReceiveBlock)
                                     {
-                                        /*
+                                        
                                         if (Program.DEBUG)
                                             CIO.DebugOut("NewBlockMined received by " + mIp);
-                                            */
+                                        
                                         CTemporaryBlock newBlock = new CTemporaryBlock(CBlock.Deserialize(rqs.Data), this);
                                         if (!CValidator.ValidateBlock(newBlock) && newBlock.Header.BlockNumber<CBlockChain.Instance.LastValidBlock.Header.BlockNumber)
                                         {
@@ -232,7 +232,7 @@ namespace BlockChain
                                             for (ulong i = newBlock.Header.BlockNumber-1; i > CBlockChain.Instance.LastValidBlock.Header.BlockNumber; i--)
                                             {
                                                 ID=SendRequest(new CMessage(EMessageType.Request, ERequestType.DownloadBlock, EDataType.ULong, Convert.ToString(i)));
-                                                blocks.Push(new CTemporaryBlock(JsonConvert.DeserializeObject<CBlock>(ReceiveData(ID, 50000).Data),this));
+                                                blocks.Push(new CTemporaryBlock(JsonConvert.DeserializeObject<CBlock>(ReceiveData(ID, 5000).Data),this));
                                                 if (!CValidator.ValidateBlock(blocks.Peek()) && blocks.Peek().Header.BlockNumber < CBlockChain.Instance.LastValidBlock.Header.BlockNumber)
                                                 {
                                                     Disconnect();
@@ -309,7 +309,7 @@ namespace BlockChain
                                     break;
                                 }
                             case ERequestType.NewTransaction:
-                                {
+                            { 
                                     Transaction t=JsonConvert.DeserializeObject<Transaction>(rqs.Data);
                                     if(t.Verify())
                                     {
@@ -399,15 +399,15 @@ namespace BlockChain
         private void SendString(string Msg)
         {
             SendData(ASCIIEncoding.ASCII.GetBytes(Msg));
-            if (Program.DEBUG)
-                CIO.DebugOut("Sent string " + Msg + ".");
+            /*if (Program.DEBUG)
+                CIO.DebugOut("Sent string " + Msg + ".");*/
         }
 
         private string ReceiveString()
         {
             string msg = ASCIIEncoding.ASCII.GetString(Receive());
-            if (Program.DEBUG)
-                CIO.DebugOut("Received string " + msg + ".");
+           /* if (Program.DEBUG)
+                CIO.DebugOut("Received string " + msg + ".");*/
             return msg;
         }
 

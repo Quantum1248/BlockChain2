@@ -97,7 +97,7 @@ namespace BlockChain
             if (Program.DEBUG)
                 CIO.DebugOut("Begin to enstablish connections to other peers...");
             mThreadPeers = new Thread(new ThreadStart(UpdatePeersList));
-            //mThreadPeers.Start();
+            mThreadPeers.Start();
             
             if (Program.DEBUG)
                 CIO.DebugOut("Start listening...");
