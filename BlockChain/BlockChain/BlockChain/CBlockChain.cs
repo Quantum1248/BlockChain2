@@ -150,6 +150,7 @@ namespace BlockChain
         /// <returns></returns>
         public ulong Add(CTemporaryBlock[] Blocks)
         {
+            ulong counter = 0;
             string filepath = PATH + "\\" + FILENAME;
             //(!) e se scarico tutta la blockchain e da un certo punto in poi sbagliata?
             foreach (CTemporaryBlock b in Blocks)
@@ -161,6 +162,7 @@ namespace BlockChain
                 if (CValidator.ValidateBlock(b,true))
                 {
                     mLastValidBlock = b as CBlock;
+                    counter++;
                     lock (Instance)
                     {
                         File.AppendAllText(filepath, (b as CBlock).Serialize() + '\n');
@@ -170,7 +172,7 @@ namespace BlockChain
                 else
                     break;
             }
-            return LastValidBlock.Header.BlockNumber;
+            return counter;
         }
 
         public bool AddNewMinedBlock(CTemporaryBlock newBlock)

@@ -87,8 +87,15 @@ namespace BlockChain
             Se non c'è nulla nell'albero mette il blocco nella root, altrimenti esegue mAdd e se la nuova profondità dell'albero è
             maggiore alla massima consentita esegue lo switch tra le chain, aggiungendo la root ai blocchi sicuri.
             */
+
+
             if (mRoot == null)
+            {
+                if (b.Header.PreviousBlockHash != CBlockChain.Instance.LastValidBlock.Header.Hash)
+                    return false;
                 mRoot = b;
+                return true;
+            }
             else if ((RelativeDepth = mAdd(b, 1)) >= MaxDepth)
             {
                 foreach (CSideChainTree t in mChildren)
@@ -124,6 +131,9 @@ namespace BlockChain
             int newDepth;
             if (newBlock.Header.PreviousBlockHash == Root.Header.Hash)
             {
+                foreach (CSideChainTree cs in mChildren)
+                    if (cs.mRoot.Header.Hash == newBlock.Header.Hash)
+                        return depth;
                 mChildren.Add(new CSideChainTree(newBlock, MaxDepth));
                 if (RelativeDepth < 1)
                     RelativeDepth = 1;
