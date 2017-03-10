@@ -39,7 +39,7 @@ namespace BlockChain
 
         public void DownloadHeaders()
         {
-            mHeaders = CPeers.Instance.DistribuiteDownloadHeaders(InitialIndex, FinalIndex, mPeers.ToArray());
+            mHeaders = CPeers.Instance.DistribuiteDownloadHeaders(InitialIndex+1, FinalIndex, mPeers.ToArray());
             mLength =(ulong) mHeaders.Length;
         }
     }

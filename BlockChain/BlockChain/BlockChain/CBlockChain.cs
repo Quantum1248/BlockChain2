@@ -19,7 +19,7 @@ namespace BlockChain
         private CBlockChain()
         {
             Load();
-            mSideChain = new CSideChainTree(null, 5);
+            mSideChain = new CSideChainTree(null, 20);
         }
 
         public static CBlockChain Instance
@@ -39,7 +39,8 @@ namespace BlockChain
         {
             get
             {
-                mLastBlock = mSideChain.GetLastBlock();
+                lock(mSideChain)
+                    mLastBlock = mSideChain.GetLastBlock();
                 if (mLastBlock!=null)
                     return mLastBlock;
                 return mLastValidBlock;
@@ -97,19 +98,20 @@ namespace BlockChain
         {
             string filepath = PATH + "\\" + FILENAME;
             string blockJson = "";
-            StreamReader streamReader = new StreamReader(filepath);
-
-            while ((blockJson = streamReader.ReadLine()) != null)
+            lock (Instance)
             {
-                CBlock block = JsonConvert.DeserializeObject<CBlock>(blockJson);
-                if (block.Header.BlockNumber == index)
+                StreamReader streamReader = new StreamReader(filepath);
+                while ((blockJson = streamReader.ReadLine()) != null)
                 {
-                    streamReader.Close();
-                    return block;
+                    CBlock block = JsonConvert.DeserializeObject<CBlock>(blockJson);
+                    if (block.Header.BlockNumber == index)
+                    {
+                        streamReader.Close();
+                        return block;
+                    }
                 }
+                streamReader.Close();
             }
-            streamReader.Close();
-
             if(searchInSidechain)
                 lock(mSideChain)
                     if (LastBlock.Header.BlockNumber >= index)
@@ -149,6 +151,7 @@ namespace BlockChain
         /// <returns></returns>
         public ulong Add(CTemporaryBlock[] Blocks)
         {
+            ulong counter = 0;
             string filepath = PATH + "\\" + FILENAME;
             //(!) e se scarico tutta la blockchain e da un certo punto in poi sbagliata?
             foreach (CTemporaryBlock b in Blocks)
@@ -159,19 +162,26 @@ namespace BlockChain
               
                 if (CValidator.ValidateBlock(b,true))
                 {
+                    if (b.Header.BlockNumber == LastValidBlock.Header.BlockNumber)
+                        break;
                     mLastValidBlock = b as CBlock;
-                    File.AppendAllText(filepath, (b as CBlock).Serialize() + '\n');
+                    counter++;
+                    lock (Instance)
+                    {
+                        File.AppendAllText(filepath, (b as CBlock).Serialize() + '\n');
+                    }
                     //int togliilcommentoeilfalsesopra;
                 }
                 else
                     break;
             }
-            return LastValidBlock.Header.BlockNumber;
+            return counter;
         }
 
-        public void AddNewMinedBlock(CTemporaryBlock newBlock)
+        public bool AddNewMinedBlock(CTemporaryBlock newBlock)
         {
-            mSideChain.Add(newBlock);
+            lock (mSideChain)
+                return mSideChain.Add(newBlock);
         }
 
         public CHeaderChain BestChain(CHeaderChain[] HeaderChains)

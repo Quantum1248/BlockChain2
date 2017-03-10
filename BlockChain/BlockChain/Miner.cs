@@ -10,7 +10,6 @@ namespace BlockChain
 {
     class Miner
     {
-
         private Miner instance;
 
         public Miner Instance
@@ -53,14 +52,13 @@ namespace BlockChain
                 Block.Timestamp = DateTime.Now;
                 Block.Nonce++; //incremento della nonce per cambiare hash
                 hash = HashBlock(Block); //calcola l'hash secondo il template di scrypt usato da litecoin
-                if (Program.DEBUG)
-                    CIO.DebugOut("Hash corrente blocco " + Block.Header.BlockNumber + ": " + hash);
                 found = true;
                 for (int i = 0; i < Block.Difficulty && found; i++)
                     if (hash[i] != '0')
                         found = false;
-
             }
+            if (Program.DEBUG)
+                CIO.DebugOut("Found hash for block " + Block.Header.BlockNumber + ": " + hash);
             Block.Header.Hash = hash;
         }
 
@@ -94,13 +92,12 @@ namespace BlockChain
 
         private static CBlock GenerateNextBlock()
         {
-            //cosa succede quando si genera il blocco 1?
             int numberOfBlocks = 60;
 
             CBlock lastBlock = CBlockChain.Instance.LastBlock;
             CBlock previousBlock;
             short newBlockDifficulty = 0;
-            ulong highAverangeTimeLimit = 70, lowAverangeTimeLimit = 50;
+            ulong highAverangeTimeLimit = 70, lowAverangeTimeLimit = 30;
             ulong averangeBlockTime = 0;
 
             if (lastBlock.Header.BlockNumber > (ulong)numberOfBlocks)
@@ -143,7 +140,7 @@ namespace BlockChain
                     Thread.Sleep(1000);
                 }
             }
-            
+
             CBlock res = new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash, (ushort)newBlockDifficulty);
             return res;
         }

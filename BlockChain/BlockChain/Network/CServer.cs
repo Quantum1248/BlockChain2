@@ -213,14 +213,11 @@ namespace BlockChain
                     bestChain = CBlockChain.Instance.BestChain(forkChains);
                     if (CValidator.ValidateHeaderChain(bestChain))
                     {
-                        DownloadedBlock=CPeers.Instance.DistribuiteDownloadBlocks(bestChain.InitialIndex,bestChain.FinalIndex);
+                        DownloadedBlock=CPeers.Instance.DistribuiteDownloadBlocks(bestChain.InitialIndex+1,bestChain.FinalIndex);
                         mPeers.ValidPeers(bestChain.Peers);
                         addedBlocks = CBlockChain.Instance.Add(DownloadedBlock);
                         if (addedBlocks >= bestChain.Length)    //solo se scarica tutti i blocchi
-                        {
                             isSynced = true;
-                            mPeers.CanReceiveBlock = true;
-                        }
                     }
                     else
                     {
@@ -232,7 +229,7 @@ namespace BlockChain
             }
             if (Program.DEBUG)
                 CIO.DebugOut("Sincronizzazione Blockchain terminata!");
-
+            mPeers.CanReceiveBlock = true;
         }
 
         private void StartMiner()
