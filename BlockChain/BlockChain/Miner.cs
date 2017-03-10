@@ -52,14 +52,13 @@ namespace BlockChain
                 Block.Timestamp = DateTime.Now;
                 Block.Nonce++; //incremento della nonce per cambiare hash
                 hash = HashBlock(Block); //calcola l'hash secondo il template di scrypt usato da litecoin
-                if (Program.DEBUG)
-                    CIO.DebugOut("Hash corrente blocco " + Block.Header.BlockNumber + ": " + hash);
                 found = true;
                 for (int i = 0; i < Block.Difficulty && found; i++)
                     if (hash[i] != '0')
                         found = false;
-
             }
+            if (Program.DEBUG)
+                CIO.DebugOut("Found hash for block " + Block.Header.BlockNumber + ": " + hash);
             Block.Header.Hash = hash;
         }
 
@@ -98,7 +97,7 @@ namespace BlockChain
             CBlock lastBlock = CBlockChain.Instance.LastBlock;
             CBlock previousBlock;
             short newBlockDifficulty = 0;
-            ulong highAverangeTimeLimit = 70, lowAverangeTimeLimit = 50;
+            ulong highAverangeTimeLimit = 70, lowAverangeTimeLimit = 30;
             ulong averangeBlockTime = 0;
 
             if (lastBlock.Header.BlockNumber > (ulong)numberOfBlocks)

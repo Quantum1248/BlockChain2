@@ -28,7 +28,7 @@ namespace BlockChain
 
         public static bool ValidateHeaderChain(CHeaderChain HeaderChain)
         {
-            for (ulong i = 0; i < HeaderChain.Length; i++)
+            for (ulong i = 0; i < HeaderChain.Length-1; i++)
                 if (HeaderChain[i].Hash != HeaderChain[i + 1].PreviousBlockHash && HeaderChain[i].BlockNumber != HeaderChain[i + 1].BlockNumber + 1)//(!) il controllu sul numero serve?
                     return false;
             return true;

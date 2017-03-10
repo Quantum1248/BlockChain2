@@ -194,8 +194,7 @@ namespace BlockChain
             while (mIsConnected)
             {
                 Thread.Sleep(100);
-                lock (RequestQueue)
-                {
+
                     if (RequestQueue.Count > 0)
                     {
                         rqs = RequestQueue.Dequeue();
@@ -212,10 +211,12 @@ namespace BlockChain
                                 }
                             case ERequestType.NewBlockMined:
                                 {
-                                    if (Program.DEBUG)
-                                        CIO.DebugOut("NewBlockMined received by " + mIp);
                                     if (CPeers.Instance.CanReceiveBlock)
                                     {
+                                        /*
+                                        if (Program.DEBUG)
+                                            CIO.DebugOut("NewBlockMined received by " + mIp);
+                                            */
                                         CTemporaryBlock newBlock = new CTemporaryBlock(CBlock.Deserialize(rqs.Data), this);
                                         if (!CValidator.ValidateBlock(newBlock) && newBlock.Header.BlockNumber<CBlockChain.Instance.LastValidBlock.Header.BlockNumber)
                                         {
@@ -231,7 +232,7 @@ namespace BlockChain
                                             for (ulong i = newBlock.Header.BlockNumber-1; i > CBlockChain.Instance.LastValidBlock.Header.BlockNumber; i--)
                                             {
                                                 ID=SendRequest(new CMessage(EMessageType.Request, ERequestType.DownloadBlock, EDataType.ULong, Convert.ToString(i)));
-                                                blocks.Push(new CTemporaryBlock(JsonConvert.DeserializeObject<CBlock>(ReceiveData(ID, 5000).Data),this));
+                                                blocks.Push(new CTemporaryBlock(JsonConvert.DeserializeObject<CBlock>(ReceiveData(ID, 50000).Data),this));
                                                 if (!CValidator.ValidateBlock(blocks.Peek()) && blocks.Peek().Header.BlockNumber < CBlockChain.Instance.LastValidBlock.Header.BlockNumber)
                                                 {
                                                     Disconnect();
@@ -261,7 +262,7 @@ namespace BlockChain
                                     if (Program.DEBUG)
                                         CIO.DebugOut("ChainLength received by " + mIp);
                                     SendRequest(new CMessage(EMessageType.Data,ERequestType.NULL,EDataType.ULong,
-                                        Convert.ToString(CBlockChain.Instance.LastBlock.Header.BlockNumber),rqs.ID));
+                                        Convert.ToString(CBlockChain.Instance.LastValidBlock.Header.BlockNumber),rqs.ID));
                                     break;
                                 }
                             case ERequestType.GetLastValid:
@@ -275,7 +276,7 @@ namespace BlockChain
                             case ERequestType.DownloadBlock:
                                 {
                                     if (Program.DEBUG)
-                                        CIO.DebugOut("DownloadBlocks received by " + mIp);
+                                        CIO.DebugOut("DownloadBlock received by " + mIp);
 
                                     SendRequest(new CMessage(EMessageType.Data, ERequestType.NULL, EDataType.Block,
                                         JsonConvert.SerializeObject(CBlockChain.Instance.RetriveBlock(Convert.ToUInt64(rqs.Data),true)), rqs.ID));
@@ -322,7 +323,7 @@ namespace BlockChain
                                 break;
                         }
                     }
-                }
+                
             }
         }
 

@@ -97,19 +97,20 @@ namespace BlockChain
         {
             string filepath = PATH + "\\" + FILENAME;
             string blockJson = "";
-            StreamReader streamReader = new StreamReader(filepath);
-
-            while ((blockJson = streamReader.ReadLine()) != null)
+            lock (Instance)
             {
-                CBlock block = JsonConvert.DeserializeObject<CBlock>(blockJson);
-                if (block.Header.BlockNumber == index)
+                StreamReader streamReader = new StreamReader(filepath);
+                while ((blockJson = streamReader.ReadLine()) != null)
                 {
-                    streamReader.Close();
-                    return block;
+                    CBlock block = JsonConvert.DeserializeObject<CBlock>(blockJson);
+                    if (block.Header.BlockNumber == index)
+                    {
+                        streamReader.Close();
+                        return block;
+                    }
                 }
+                streamReader.Close();
             }
-            streamReader.Close();
-
             if(searchInSidechain)
                 lock(mSideChain)
                     if (LastBlock.Header.BlockNumber >= index)
@@ -160,7 +161,10 @@ namespace BlockChain
                 if (CValidator.ValidateBlock(b,true))
                 {
                     mLastValidBlock = b as CBlock;
-                    File.AppendAllText(filepath, (b as CBlock).Serialize() + '\n');
+                    lock (Instance)
+                    {
+                        File.AppendAllText(filepath, (b as CBlock).Serialize() + '\n');
+                    }
                     //int togliilcommentoeilfalsesopra;
                 }
                 else
