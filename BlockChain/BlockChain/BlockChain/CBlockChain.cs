@@ -161,6 +161,8 @@ namespace BlockChain
               
                 if (CValidator.ValidateBlock(b,true))
                 {
+                    if (b.Header.BlockNumber == LastValidBlock.Header.BlockNumber)
+                        break;
                     mLastValidBlock = b as CBlock;
                     counter++;
                     lock (Instance)

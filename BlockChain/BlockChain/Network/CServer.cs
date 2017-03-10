@@ -112,7 +112,7 @@ namespace BlockChain
             if (Program.DEBUG)
                 CIO.DebugOut("Start Miner...");
             mMinerThread = new Thread(new ThreadStart(StartMiner));
-            //mMinerThread.Start();
+            mMinerThread.Start();
 
         }
 
@@ -213,7 +213,7 @@ namespace BlockChain
                     bestChain = CBlockChain.Instance.BestChain(forkChains);
                     if (CValidator.ValidateHeaderChain(bestChain))
                     {
-                        DownloadedBlock=CPeers.Instance.DistribuiteDownloadBlocks(bestChain.InitialIndex,bestChain.FinalIndex);
+                        DownloadedBlock=CPeers.Instance.DistribuiteDownloadBlocks(bestChain.InitialIndex+1,bestChain.FinalIndex);
                         mPeers.ValidPeers(bestChain.Peers);
                         addedBlocks = CBlockChain.Instance.Add(DownloadedBlock);
                         if (addedBlocks >= bestChain.Length)    //solo se scarica tutti i blocchi
