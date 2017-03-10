@@ -91,17 +91,14 @@ namespace BlockChain
 
             if (mRoot == null)
             {
-                if (b.Header.PreviousBlockHash != CBlockChain.Instance.LastValidBlock.Header.Hash)
-                    return false;
-                mRoot = b;
-                return true;
+                mRoot = new CTemporaryBlock(CBlockChain.Instance.LastValidBlock,null);
             }
-            else if ((RelativeDepth = mAdd(b, 1)) >= MaxDepth)
+            if ((RelativeDepth = mAdd(b, 1)) >= MaxDepth)
             {
                 foreach (CSideChainTree t in mChildren)
                     if (t.RelativeDepth >= this.MaxDepth - 1)
                     {
-                        CBlockChain.Instance.Add(new CTemporaryBlock[] { mRoot });
+                        CBlockChain.Instance.Add(new CTemporaryBlock[] { t.Root });
                         this.Root = t.Root;
                         this.Children = t.Children;
                     }
