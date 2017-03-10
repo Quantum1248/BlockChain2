@@ -19,7 +19,7 @@ namespace BlockChain
         private CBlockChain()
         {
             Load();
-            mSideChain = new CSideChainTree(null, 5);
+            mSideChain = new CSideChainTree(null, 20);
         }
 
         public static CBlockChain Instance
@@ -39,7 +39,8 @@ namespace BlockChain
         {
             get
             {
-                mLastBlock = mSideChain.GetLastBlock();
+                lock(mSideChain)
+                    mLastBlock = mSideChain.GetLastBlock();
                 if (mLastBlock!=null)
                     return mLastBlock;
                 return mLastValidBlock;
@@ -93,24 +94,29 @@ namespace BlockChain
             
         }
 
-        public CBlock RetriveBlock(ulong Index)
+        public CBlock RetriveBlock(ulong index, bool searchInSidechain=false)
         {
             string filepath = PATH + "\\" + FILENAME;
-            string block = "";
-            StreamReader streamReader = new StreamReader(filepath);
-
-            while ((block = streamReader.ReadLine()) != null)
+            string blockJson = "";
+            lock (Instance)
             {
-                // Load each object from the stream and do something with it
-                CBlock b = JsonConvert.DeserializeObject<CBlock>(block);
-                if (b.Header.BlockNumber == Index)
+                StreamReader streamReader = new StreamReader(filepath);
+                while ((blockJson = streamReader.ReadLine()) != null)
                 {
-                    streamReader.Close();
-                    return b;
+                    CBlock block = JsonConvert.DeserializeObject<CBlock>(blockJson);
+                    if (block.Header.BlockNumber == index)
+                    {
+                        streamReader.Close();
+                        return block;
+                    }
                 }
+                streamReader.Close();
             }
+            if(searchInSidechain)
+                lock(mSideChain)
+                    if (LastBlock.Header.BlockNumber >= index)
+                        return mSideChain.RetriveBlock(index);
 
-            streamReader.Close();
             return null;
         }
 
@@ -138,14 +144,6 @@ namespace BlockChain
             return ris;
         }
 
-        public static bool ValidateHeaders(CParallelChain HeaderChain)
-        {
-            for(ulong i=0;i<HeaderChain.Length;i++)
-                if (HeaderChain[i].Hash != HeaderChain[i + 1].PreviousBlockHash && HeaderChain[i].BlockNumber != HeaderChain[i + 1].BlockNumber+1)//(!) il controllu sul numero serve?
-                    return false;
-            return true;
-        }
-
         /// <summary>
         /// Aggiunge i blocchi presenti nel vettore e ritorna l'indice dell'ultimo blocco aggiunto.
         /// </summary>
@@ -153,6 +151,7 @@ namespace BlockChain
         /// <returns></returns>
         public ulong Add(CTemporaryBlock[] Blocks)
         {
+            ulong counter = 0;
             string filepath = PATH + "\\" + FILENAME;
             //(!) e se scarico tutta la blockchain e da un certo punto in poi sbagliata?
             foreach (CTemporaryBlock b in Blocks)
@@ -161,33 +160,53 @@ namespace BlockChain
                 if (b == null)
                     break;
               
-                if (CValidator.ValidateBlock(b))
+                if (CValidator.ValidateBlock(b,true))
                 {
+                    if (b.Header.BlockNumber == LastValidBlock.Header.BlockNumber)
+                        break;
                     mLastValidBlock = b as CBlock;
-                    File.AppendAllText(filepath, (b as CBlock).Serialize() + '\n');
+                    counter++;
+                    lock (Instance)
+                    {
+                        File.AppendAllText(filepath, (b as CBlock).Serialize() + '\n');
+                    }
                     //int togliilcommentoeilfalsesopra;
                 }
                 else
                     break;
             }
-            return LastValidBlock.Header.BlockNumber;
+            return counter;
         }
 
-        public CParallelChain BestChain(CParallelChain[] HeaderChains)
+        public bool AddNewMinedBlock(CTemporaryBlock newBlock)
+        {
+            lock (mSideChain)
+                return mSideChain.Add(newBlock);
+        }
+
+        public CHeaderChain BestChain(CHeaderChain[] HeaderChains)
         {
             //TODO sceglie in base alla difficoltà
-            CParallelChain res=new CParallelChain();
-            foreach (CParallelChain hc in HeaderChains)
+            CHeaderChain res=new CHeaderChain();
+            foreach (CHeaderChain hc in HeaderChains)
                 if (hc.Length >= res.Length)
                     res = hc;
             return res;
         }
 
-        internal void Add(CTemporaryBlock newBlock)
-        {
-            mSideChain.Add(newBlock);
+        public ulong AverageBlockTime(CBlock start, CBlock final)
+        { 
+            TimeSpan timespan = final.Timestamp.Subtract(start.Timestamp);
+            ulong seconds =(ulong) timespan.TotalSeconds;
+            ulong nblock = final.Header.BlockNumber - start.Header.BlockNumber;
+            try
+            {
+                return seconds / nblock;
+            }
+            catch
+            {
+                return 60;
+            }
         }
-
-        
     }
 }

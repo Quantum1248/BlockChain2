@@ -12,9 +12,8 @@ namespace BlockChain
 
         public static bool ValidateBlock(CBlock b, bool CheckPreviusHash = false)
         {
-
             //devo tenere conto della difficoltà?
-            if (b.Header.Hash == Miner.Hash(b))
+            if (b.Header.Hash == Miner.HashBlock(b))
             {
                 if (!CheckPreviusHash)
                     return true;
@@ -25,6 +24,14 @@ namespace BlockChain
                         return false;
             }
             return false;
+        }
+
+        public static bool ValidateHeaderChain(CHeaderChain HeaderChain)
+        {
+            for (ulong i = 0; HeaderChain.Length > 0 && i < HeaderChain.Length-1; i++)
+                if (HeaderChain[i].Hash != HeaderChain[i + 1].PreviousBlockHash && HeaderChain[i].BlockNumber != HeaderChain[i + 1].BlockNumber + 1)//(!) il controllu sul numero serve?
+                    return false;
+            return true;
         }
 
         public static bool ValidateMessage(CMessage Msg)
@@ -142,6 +149,22 @@ namespace BlockChain
                                     return false;
                                 foreach (string s in stringToConvert)
                                     Convert.ToUInt64(s);
+                                return true;
+                            }
+                            catch { return false; }
+                        }
+                        return false;
+                    }
+                case ERequestType.NewTransaction:
+                     {
+                        if (Msg.DataType == EDataType.Transaction && Msg.Data != null)
+                        {
+                            try
+                            {
+                                Transaction t= JsonConvert.DeserializeObject<Transaction>(Msg.Data);
+                                if (MemPool.Instance.CheckDouble(t))
+                                    return false;
+                                MemPool.Instance.AddUTX(t);
                                 return true;
                             }
                             catch { return false; }

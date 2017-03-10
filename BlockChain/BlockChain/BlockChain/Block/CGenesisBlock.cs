@@ -14,7 +14,7 @@ namespace BlockChain
             Header = new CHeader(0, "GENESISBLOCK", "");
             this.Transactions = new List<Transaction>();
             this.Nonce = 0;
-            this.Timestamp = new DateTime(0,0,0);
+            this.Timestamp = new DateTime(1,1,1);
         }
     }
 }

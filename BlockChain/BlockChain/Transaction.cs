@@ -17,8 +17,11 @@ namespace BlockChain
         public string Signature;
         public string PubKey;
 
+        //Costruttore per classi ereditanti
         public Transaction()
-        { }
+        {
+
+        }
 
         public Transaction(double amount, string hashReceiver, RSACryptoServiceProvider csp) //costruttore legittimo
         {
@@ -29,13 +32,8 @@ namespace BlockChain
             this.Hash = Utilities.SHA2Hash(JsonConvert.SerializeObject(this)); //Calcolo l'hash di questa transazione inizializzata fino a questo punto, esso farà da txId
             RSA.HashSignTransaction(this, csp); //firmo la transazione fino a questo punto
 
-            //CPeers.Instance.DoRequest(ERequest.SendTransaction, this); TODO : implementa richiesta di invio transazione
-        }
-
-        //Costruttore per classi ereditanti
-        public Transaction()
-        {
-
+            CPeers.Instance.DoRequest(ERequest.BroadcastNewTransaction, this);
+           
         }
 
         public Transaction(double amount, string hashReceiver, RSACryptoServiceProvider csp, bool testing) //costruttore per testing

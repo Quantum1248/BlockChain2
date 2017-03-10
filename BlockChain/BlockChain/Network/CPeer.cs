@@ -116,6 +116,8 @@ namespace BlockChain
             {
                 if (Program.DEBUG)
                     CIO.DebugOut("Connection with " + mIp + ":" + mPort + " failed!");
+                mSocket.Close();
+                mSocket.Dispose();
                 asyncConnection.Dispose();
                 return false;
             }
@@ -183,7 +185,6 @@ namespace BlockChain
                 }
                 //il timer viene reinpostato a defoult per non causare problemi con altre comunicazioni che potrebbero avvenire in altre parti del codice.
                 mSocket.ReceiveTimeout = 0;
-                Thread.Sleep(1000);
             }
         }
 
@@ -192,9 +193,8 @@ namespace BlockChain
             CMessage rqs;
             while (mIsConnected)
             {
-                Thread.Sleep(500);
-                lock (RequestQueue)
-                {
+                Thread.Sleep(100);
+
                     if (RequestQueue.Count > 0)
                     {
                         rqs = RequestQueue.Dequeue();
@@ -211,18 +211,41 @@ namespace BlockChain
                                 }
                             case ERequestType.NewBlockMined:
                                 {
-                                    if (Program.DEBUG)
-                                        CIO.DebugOut("NewBlockMined received by " + mIp);
                                     if (CPeers.Instance.CanReceiveBlock)
                                     {
+                                        
+                                        if (Program.DEBUG)
+                                            CIO.DebugOut("NewBlockMined received by " + mIp);
+                                        
                                         CTemporaryBlock newBlock = new CTemporaryBlock(CBlock.Deserialize(rqs.Data), this);
-                                        if (!CValidator.ValidateBlock(newBlock))
+                                        if (!CValidator.ValidateBlock(newBlock) && newBlock.Header.BlockNumber<CBlockChain.Instance.LastValidBlock.Header.BlockNumber)
                                         {
                                             Disconnect();
                                             break;
                                         }
                                         //TODO scaricare i blocchi mancanti se ne mancano(sono al blocco 10 e mi arriva il blocco 50)
-                                        CBlockChain.Instance.Add(newBlock);
+                                        if(!CBlockChain.Instance.AddNewMinedBlock(newBlock))
+                                        {
+                                            Stack<CTemporaryBlock> blocks = new Stack<CTemporaryBlock>();
+                                            int ID=0;
+                                            blocks.Push(newBlock);
+                                            for (ulong i = newBlock.Header.BlockNumber-1; i > CBlockChain.Instance.LastValidBlock.Header.BlockNumber; i--)
+                                            {
+                                                ID=SendRequest(new CMessage(EMessageType.Request, ERequestType.DownloadBlock, EDataType.ULong, Convert.ToString(i)));
+                                                blocks.Push(new CTemporaryBlock(JsonConvert.DeserializeObject<CBlock>(ReceiveData(ID, 5000).Data),this));
+                                                if (!CValidator.ValidateBlock(blocks.Peek()) && blocks.Peek().Header.BlockNumber < CBlockChain.Instance.LastValidBlock.Header.BlockNumber)
+                                                {
+                                                    Disconnect();
+                                                    break;
+                                                }
+                                                if (CBlockChain.Instance.AddNewMinedBlock(blocks.Peek()))
+                                                {
+                                                    blocks.Pop();
+                                                    for (int j = blocks.Count; j > 0; j--)
+                                                        CBlockChain.Instance.AddNewMinedBlock(blocks.Pop());
+                                                }
+                                            }
+                                        }
                                     }
                                     break;
                                 }
@@ -239,7 +262,7 @@ namespace BlockChain
                                     if (Program.DEBUG)
                                         CIO.DebugOut("ChainLength received by " + mIp);
                                     SendRequest(new CMessage(EMessageType.Data,ERequestType.NULL,EDataType.ULong,
-                                        Convert.ToString(CBlockChain.Instance.LastBlock.Header.BlockNumber),rqs.ID));
+                                        Convert.ToString(CBlockChain.Instance.LastValidBlock.Header.BlockNumber),rqs.ID));
                                     break;
                                 }
                             case ERequestType.GetLastValid:
@@ -253,10 +276,10 @@ namespace BlockChain
                             case ERequestType.DownloadBlock:
                                 {
                                     if (Program.DEBUG)
-                                        CIO.DebugOut("DownloadBlocks received by " + mIp);
+                                        CIO.DebugOut("DownloadBlock received by " + mIp);
 
                                     SendRequest(new CMessage(EMessageType.Data, ERequestType.NULL, EDataType.Block,
-                                        JsonConvert.SerializeObject(CBlockChain.Instance.RetriveBlock(Convert.ToUInt64(rqs.Data))), rqs.ID));
+                                        JsonConvert.SerializeObject(CBlockChain.Instance.RetriveBlock(Convert.ToUInt64(rqs.Data),true)), rqs.ID));
                                     break;
                                 }
                             case ERequestType.DownloadBlocks:
@@ -285,29 +308,22 @@ namespace BlockChain
                                         JsonConvert.SerializeObject(CBlockChain.Instance.RetriveBlock(Convert.ToUInt64(rqs.Data)).Header), rqs.ID));
                                     break;
                                 }
-                            /*
-                                case ECommand.GETLASTVALID:
-                                
-                                case ECommand.DOWNLOADBLOCK:
-                                
-                                case ECommand.DOWNLOADBLOCKS:
-
-                                case ECommand.GETHEADER:
-                                if (Program.DEBUG)
-                                CIO.DebugOut("GETHEADER received by " + mIp);
-                                index = ReceiveULong();
-                                SendHeader(CBlockChain.Instance.RetriveBlock(index).Header);
-                                break;
-                                case ECommand.CHAINLENGTH:
-                                
-                                */
+                            case ERequestType.NewTransaction:
+                            { 
+                                    Transaction t=JsonConvert.DeserializeObject<Transaction>(rqs.Data);
+                                    if(t.Verify())
+                                    {
+                                        MemPool.Instance.AddUTX(t);
+                                    }
+                                    break;   
+                                }
                             default:
                                 if (Program.DEBUG)
                                     CIO.DebugOut("Ricevuto comando sconosciuto: " + rqs.RqsType + " da " + IP);
                                 break;
                         }
                     }
-                }
+                
             }
         }
 
@@ -383,15 +399,15 @@ namespace BlockChain
         private void SendString(string Msg)
         {
             SendData(ASCIIEncoding.ASCII.GetBytes(Msg));
-            if (Program.DEBUG)
-                CIO.DebugOut("Sent string " + Msg + ".");
+            /*if (Program.DEBUG)
+                CIO.DebugOut("Sent string " + Msg + ".");*/
         }
 
         private string ReceiveString()
         {
             string msg = ASCIIEncoding.ASCII.GetString(Receive());
-            if (Program.DEBUG)
-                CIO.DebugOut("Received string " + msg + ".");
+           /* if (Program.DEBUG)
+                CIO.DebugOut("Received string " + msg + ".");*/
             return msg;
         }
 
@@ -407,7 +423,5 @@ namespace BlockChain
             LastCommunication = DateTime.Now;
             return res;
         }
-
-
     }
 }

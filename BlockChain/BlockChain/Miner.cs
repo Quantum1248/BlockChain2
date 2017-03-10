@@ -10,7 +10,6 @@ namespace BlockChain
 {
     class Miner
     {
-
         private Miner instance;
 
         public Miner Instance
@@ -25,62 +24,45 @@ namespace BlockChain
             }
         }
 
-        public void Start(int txLimit)
+        public static void Start(int txLimit)
         {
             CBlock block;
             while (true)
             {
-                block = new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Difficulty, txLimit);
-                Scrypt(block);
+                block = GenerateNextBlock(); 
+                AddProof(block);
+                CBlockChain.Instance.AddNewMinedBlock(new CTemporaryBlock(block, null));
+                CPeers.Instance.DoRequest(ERequest.BroadcastMinedBlock, block);
             }
+
+
             //TODO: deve ritornare qualcosa questa funzione? Il blocco minato va spedito da qua o dall'esterno?
         }
         /// <summary>
-        /// Calcola il proof of work
+        /// Aggiunge il proof of work(l'hash) al blocco.
         /// </summary>
-        /// <param name="block">Blocco su cui calcolare il proof of work</param>
-        public static void Scrypt(CBlock block) //TODO: implementare evento per l'uscita in caso sia stato trovato un blocco parallelo. Implementare multithreading
+        /// <param name="Block">Blocco su cui calcolare il proof of work.</param>
+        public static void AddProof(CBlock Block) //TODO: implementare evento per l'uscita in caso sia stato trovato un blocco parallelo. Implementare multithreading
         {
-            string toHash;
-            string hash;
+            string hash="";
             bool found = false;
-            int higher = 0, current = 0;
 
             while (!found)
             {
-                block.Timestamp = DateTime.Now;
-                toHash = block.Header.PreviousBlockHash + block.Nonce + block.Timestamp + block.MerkleRoot; //si concatenano vari parametri del blocco TODO: usare i parmetri giusti, quelli usati qua sono solo per dimostrazione e placeholder
-                hash = Hash(block); //calcola l'hash secondo il template di scrypt usato da litecoin
-                if (Program.DEBUG)
-                    CIO.DebugOut("Hash corrente blocco " + block.Header.BlockNumber + ": " + hash);
-                for (int i = 0; i <= block.Difficulty; i++)
-                {
-                    if (i == block.Difficulty) //se il numero di zeri davanti la stringa è pari alla difficoltà del blocco, viene settato l'hash e si esce
-                    {
-                        block.Header.Hash = hash;
-                        CBlockChain.Instance.Add(new CTemporaryBlock(block,null));
-                        CPeers.Instance.DoRequest(ERequest.BroadcastMinedBlock, block);
-                        return;
-                    }
-                    if (!(hash[i] == '0'))
-                    {
-                        current = 0;
-                        break;
-                    }
-
-                    current++;
-                    if (higher < current)
-                    {
-                        higher = current;
-                    }
-
-                }
-
-                block.Nonce++; //incremento della nonce per cambiare hash
+                Block.Timestamp = DateTime.Now;
+                Block.Nonce++; //incremento della nonce per cambiare hash
+                hash = HashBlock(Block); //calcola l'hash secondo il template di scrypt usato da litecoin
+                found = true;
+                for (int i = 0; i < Block.Difficulty && found; i++)
+                    if (hash[i] != '0')
+                        found = false;
             }
-
+            if (Program.DEBUG)
+                CIO.DebugOut("Found hash for block " + Block.Header.BlockNumber + ": " + hash);
+            Block.Header.Hash = hash;
         }
 
+        
         /// <summary>
         /// Calcola l'hash di un blocco e lo confronta al proof of work fornito per verificarne la validità
         /// </summary>
@@ -91,7 +73,7 @@ namespace BlockChain
             if (block.Header.PreviousBlockHash == CBlockChain.Instance.RetriveBlock(block.Header.BlockNumber - 1).Header.Hash)
             {
                 string toHash = block.Header.PreviousBlockHash + block.Nonce + block.Timestamp + block.MerkleRoot;
-                if (block.Header.Hash == Utilities.ByteArrayToString(SCrypt.ComputeDerivedKey(Encoding.ASCII.GetBytes(toHash), Encoding.ASCII.GetBytes(toHash), 1024, 1, 1, 1, 32)))
+                if (block.Header.Hash == Utilities.ByteArrayToHexString(SCrypt.ComputeDerivedKey(Encoding.ASCII.GetBytes(toHash), Encoding.ASCII.GetBytes(toHash), 1024, 1, 1, 1, 32)))
                 {
                     return true;
                 }
@@ -99,13 +81,68 @@ namespace BlockChain
             return false;
         }
 
-        public static string Hash(CBlock b)
+        public static string HashBlock(CBlock block)
         {
-            string toHash = b.Header.PreviousBlockHash + b.Nonce + b.Timestamp + b.MerkleRoot; //si concatenano vari parametri del blocco TODO: usare i parmetri giusti, quelli usati qua sono solo per dimostrazione e placeholder
-            return Utilities.ByteArrayToString(
+            string toHash = block.Header.PreviousBlockHash + block.Nonce + block.Timestamp + block.MerkleRoot; //si concatenano vari parametri del blocco TODO: usare i parmetri giusti, quelli usati qua sono solo per dimostrazione e placeholder
+            return Utilities.ByteArrayToHexString(
                 SCrypt.ComputeDerivedKey(
                     Encoding.ASCII.GetBytes(toHash), Encoding.ASCII.GetBytes(toHash), 1024, 1, 1, 1, 32)
                     ); //calcola l'hash secondo il template di scrypt usato da litecoin
+        }
+
+        private static CBlock GenerateNextBlock()
+        {
+            int numberOfBlocks = 60;
+
+            CBlock lastBlock = CBlockChain.Instance.LastBlock;
+            CBlock previousBlock;
+            short newBlockDifficulty = 0;
+            ulong highAverangeTimeLimit = 70, lowAverangeTimeLimit = 30;
+            ulong averangeBlockTime = 0;
+
+            if (lastBlock.Header.BlockNumber > (ulong)numberOfBlocks)
+                previousBlock = CBlockChain.Instance.RetriveBlock(lastBlock.Header.BlockNumber - (ulong)numberOfBlocks, true);
+            else
+                previousBlock = CBlockChain.Instance.RetriveBlock(1, true);
+
+            if (previousBlock != null)
+                averangeBlockTime = CBlockChain.Instance.AverageBlockTime(previousBlock, lastBlock); //in secondi
+            else
+                averangeBlockTime = 60;
+
+
+            if (averangeBlockTime > highAverangeTimeLimit)
+            {
+                newBlockDifficulty = (short)(lastBlock.Difficulty -1);
+                if (newBlockDifficulty <= 0)
+                    newBlockDifficulty = 1;
+                if (Program.DEBUG)
+                {
+                    CIO.DebugOut("La nuova difficoltà è: " + newBlockDifficulty);
+                    Thread.Sleep(1000);
+                }
+            }
+            else if (averangeBlockTime < lowAverangeTimeLimit)
+            {
+                newBlockDifficulty = (short)(lastBlock.Difficulty + 1);
+                if (Program.DEBUG)
+                {
+                    CIO.DebugOut("La nuova difficoltà è: " + newBlockDifficulty);
+                    Thread.Sleep(1000);
+                }
+            }
+            else
+            {
+                newBlockDifficulty = (short)lastBlock.Difficulty;
+                if (Program.DEBUG)
+                {
+                    CIO.DebugOut("La nuova difficoltà è: " + newBlockDifficulty);
+                    Thread.Sleep(1000);
+                }
+            }
+
+            CBlock res = new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash, (ushort)newBlockDifficulty);
+            return res;
         }
     }
 }

@@ -17,13 +17,12 @@ namespace BlockChain
         public static RSACryptoServiceProvider rsaKeyPair;
 
 
-        private Thread mUpdateBlockChainThread;
+        private Thread mUpdateBlockChainThread, mThreadListener, mThreadPeers, mMinerThread;
         private CPeers mPeers;
         private static int MAX_PEERS = 30;//deve essere pari
         private static int RESERVED_CONNECTION = MAX_PEERS / 2;//connessioni usate per chi vuole collegarsi con me
         private static int NOT_RESERVED_CONNECTION = MAX_PEERS - RESERVED_CONNECTION;//connessioni che utilizzo io per collegarmi agli altri
         private static string mPublicIp = "";
-        private Thread mThreadListener, mThreadPeers;
         private Socket mListener;
         private static int DEFOULT_PORT = 2000;
 
@@ -32,14 +31,14 @@ namespace BlockChain
         private CServer(List<CPeer> Peers)
         {
             rsaKeyPair = RSA.GenRSAKey();// crea oggetto CSP per generare o caricare il keypair
-            
+
             if (File.Exists(RSA.PATH + "\\keystore.xml"))// Se il file di keystore esiste viene caricato in memoria
-            {   
+            {
                 string xmlString = File.ReadAllText(RSA.PATH + "\\keystore.xml");
                 rsaKeyPair.FromXmlString(xmlString);
             }
             else//se il file non esiste ne viene generato uno
-            {                
+            {
                 string xmlString = rsaKeyPair.ToXmlString(true);
                 File.WriteAllText(RSA.PATH + "\\keystore.xml", xmlString);
             }
@@ -59,17 +58,18 @@ namespace BlockChain
                 }
                 tx = new Transaction(outputs, RSA.ExportPubKey(rsaKeyPair), rsaKeyPair);
             }*/
-            
-            if (Program.DEBUG)
-                CIO.DebugOut("Last block number: " + CBlockChain.Instance.LastValidBlock.Header.BlockNumber +".");
 
-            if (Program.DEBUG)
-                CIO.DebugOut("Initialize mPeers...");
-            mPeers = new CPeers(MAX_PEERS, RESERVED_CONNECTION);
+                if (Program.DEBUG)
+                    CIO.DebugOut("Last block number: " + CBlockChain.Instance.LastValidBlock.Header.BlockNumber + ".");
 
-            if (Program.DEBUG)
-                CIO.DebugOut("Finish initializing!");
-            Start(Peers);
+                if (Program.DEBUG)
+                    CIO.DebugOut("Initialize mPeers...");
+                mPeers = new CPeers(MAX_PEERS, RESERVED_CONNECTION);
+
+                if (Program.DEBUG)
+                    CIO.DebugOut("Finish initializing!");
+                Start(Peers);
+            }
         }
 
         public static CServer StartNewServer(List<CPeer> Peers)
@@ -103,12 +103,17 @@ namespace BlockChain
                 CIO.DebugOut("Start listening...");
             mThreadListener = new Thread(new ThreadStart(StartAcceptUsersConnection));
             mThreadListener.Start();
-            
+
             if (Program.DEBUG)
                 CIO.DebugOut("Start update blockchain...");
             mUpdateBlockChainThread = new Thread(new ThreadStart(UpdateBlockchain));
             mUpdateBlockChainThread.Start();
-            
+
+            if (Program.DEBUG)
+                CIO.DebugOut("Start Miner...");
+            mMinerThread = new Thread(new ThreadStart(StartMiner));
+            mMinerThread.Start();
+
         }
 
         private void UpdatePeersList()
@@ -119,7 +124,7 @@ namespace BlockChain
                 if (numPeers < NOT_RESERVED_CONNECTION && numPeers>0)
                     mPeers.DoRequest(ERequest.UpdatePeers);
                 //inserire qui il controllo per verificare che i peer presenti siano ancora online?
-                Thread.Sleep(300);
+                Thread.Sleep(60000);
             }
         }
 
@@ -174,16 +179,22 @@ namespace BlockChain
         {
             bool isSynced = false;
             ulong addedBlocks = 0;
+            CTemporaryBlock[] DownloadedBlock;
             CTemporaryBlock[] newBlocks;
-            CParallelChain[] forkChains;
-            CParallelChain bestChain;
-            CBlock lastCommonBlock= mPeers.DoRequest(ERequest.LastCommonValidBlock) as CBlock;
-            CTemporaryBlock otherLastValidBlock = mPeers.DoRequest(ERequest.LastValidBlock) as CTemporaryBlock;
+            CHeaderChain[] forkChains;
+            CHeaderChain bestChain;
+            CBlock lastCommonBlock;
+            CTemporaryBlock otherLastValidBlock;
+
+            lastCommonBlock= mPeers.DoRequest(ERequest.LastCommonValidBlock) as CBlock;
+            otherLastValidBlock = mPeers.DoRequest(ERequest.LastValidBlock) as CTemporaryBlock;
+
             if (Program.DEBUG)
                 if (otherLastValidBlock != null)
                     CIO.DebugOut("Il numero di blocco di otherLastValidBlock è " + otherLastValidBlock.Header.BlockNumber + ".");
                 else
                     CIO.DebugOut("Nessun otherLastValidBlock ricevuto.");
+
             if (CBlockChain.Instance.LastValidBlock.Header.BlockNumber < otherLastValidBlock?.Header.BlockNumber)
                 isSynced = false;
             else
@@ -192,24 +203,21 @@ namespace BlockChain
             //TODO potrebbero dover essere scaricati un numero maggiore di MAXINT blocchi
             while (!isSynced)
             {
-                newBlocks = mPeers.DoRequest(ERequest.DownloadMissingBlock, new object[] { CBlockChain.Instance.LastValidBlock.Header.BlockNumber+1, lastCommonBlock.Header.BlockNumber +1 }) as CTemporaryBlock[];
+                newBlocks = mPeers.DoRequest(ERequest.DownloadMissingBlock, new object[] { CBlockChain.Instance.LastValidBlock.Header.BlockNumber + 1, lastCommonBlock.Header.BlockNumber + 1 }) as CTemporaryBlock[];
                 CBlockChain.Instance.Add(newBlocks);
-                forkChains = mPeers.DoRequest(ERequest.FindParallelChain, lastCommonBlock) as CParallelChain[];
+                forkChains = mPeers.DoRequest(ERequest.FindParallelChain, lastCommonBlock) as CHeaderChain[];
                 if (forkChains.Length > 0)
                 {
-                    foreach (CParallelChain hc in forkChains)
+                    foreach (CHeaderChain hc in forkChains)
                         hc.DownloadHeaders();
                     bestChain = CBlockChain.Instance.BestChain(forkChains);
-                    if (CBlockChain.ValidateHeaders(bestChain))
+                    if (CValidator.ValidateHeaderChain(bestChain))
                     {
-                        bestChain.DownloadBlocks();
+                        DownloadedBlock=CPeers.Instance.DistribuiteDownloadBlocks(bestChain.InitialIndex+1,bestChain.FinalIndex);
                         mPeers.ValidPeers(bestChain.Peers);
-                        addedBlocks = CBlockChain.Instance.Add(bestChain.Blocks);
+                        addedBlocks = CBlockChain.Instance.Add(DownloadedBlock);
                         if (addedBlocks >= bestChain.Length)    //solo se scarica tutti i blocchi
-                        {
                             isSynced = true;
-                            mPeers.CanReceiveBlock = true;
-                        }
                     }
                     else
                     {
@@ -221,12 +229,14 @@ namespace BlockChain
             }
             if (Program.DEBUG)
                 CIO.DebugOut("Sincronizzazione Blockchain terminata!");
-            //(!) da cambiare
-/*
-            while (true)
-                Miner.Scrypt(new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash,2));        //(!) da cambiare a seconda di come verrà fattp il miner
-                */
+            mPeers.CanReceiveBlock = true;
+        }
 
+        private void StartMiner()
+        {
+            mUpdateBlockChainThread.Join();
+            while (true)
+                Miner.Start(0);
         }
 
         private void InsertNewPeer(Socket NewConnection)
@@ -240,6 +250,7 @@ namespace BlockChain
         {
             byte[] data = new byte[4];
             Receiving.Receive(data);
+            Thread.Sleep(100);
             data = new byte[BitConverter.ToInt32(data, 0)];
             Receiving.Receive(data);
             return data;
@@ -247,10 +258,7 @@ namespace BlockChain
 
         static public void SendData(Socket Dispatcher, byte[] data)
         {
-            if (data.Length < 1)
-                throw new Exception();
-            Dispatcher.Send(BitConverter.GetBytes(data.Length));
-            Dispatcher.Send(data);
+            Dispatcher.Send(BitConverter.GetBytes(data.Length).Concat(data).ToArray());
         }
 
         public static string GetLocalIPAddress()

@@ -112,12 +112,12 @@ namespace BlockChain
         /// <summary>
         /// Esegue una richiesta ai peer collegati.
         /// </summary>
-        /// <param name="Rqs">Richiesta da effettuare.</param>
-        /// <param name="Arg">Parametro usato per passare un valore e/o ritornare un risultato quando necessario.</param>
+        /// <param name="rqs">Richiesta da effettuare.</param>
+        /// <param name="arg">Parametro usato per passare un valore e/o ritornare un risultato quando necessario.</param>
         /// <returns></returns>
-        public object DoRequest(ERequest Rqs, object Arg = null)  //(!) rivedere i metodi di input/output del metodo
+        public object DoRequest(ERequest rqs, object arg = null)  //(!) rivedere i metodi di input/output del metodo
         {
-            switch (Rqs)
+            switch (rqs)
             {
                 case ERequest.UpdatePeers:
                     {
@@ -130,17 +130,16 @@ namespace BlockChain
                     }
                 case ERequest.DownloadMissingBlock:
                     {
-                        object[] args = Arg as object[];
+                        object[] args = arg as object[];
                         ulong startingIndex = Convert.ToUInt64(args[0]);
                         ulong finalIndex = Convert.ToUInt64(args[1]);
                         return DistribuiteDownloadBlocks(startingIndex, finalIndex);
                     }
                 case ERequest.BroadcastMinedBlock:
                     {
-                        CBlock b = Arg as CBlock;
-                        foreach (CPeer p in mPeers)
-                            if (p != null)
-                                    p.SendRequest(new CMessage(EMessageType.Request, ERequestType.NewBlockMined, EDataType.Block, b.Serialize()));
+                        CBlock b = arg as CBlock;
+                        foreach (CPeer p in Peers)
+                            p.SendRequest(new CMessage(EMessageType.Request, ERequestType.NewBlockMined, EDataType.Block, b.Serialize()));
                         break;
                     }
                 case ERequest.LastCommonValidBlock:
@@ -149,10 +148,16 @@ namespace BlockChain
                     }
                 case ERequest.FindParallelChain:
                     {
-                        return FindParallelChains(Arg as CBlock);
+                        return FindParallelChains(arg as CBlock);
+                    }
+                case ERequest.BroadcastNewTransaction:
+                    {
+                        foreach(CPeer p in Peers)
+                            p.SendRequest(new CMessage(EMessageType.Request, ERequestType.NewTransaction, EDataType.Transaction, JsonConvert.SerializeObject(arg as Transaction))); //TODO : implementa richiesta di invio transazione
+                        break;
                     }
                 default:
-                    throw new ArgumentException("Invalid request: " + Rqs);
+                    throw new ArgumentException("Invalid request: " + rqs);
             }
             return null;
         }
@@ -362,33 +367,29 @@ namespace BlockChain
 
         }
 
-        private CParallelChain[] FindParallelChains(CBlock startBlock)
+        private CHeaderChain[] FindParallelChains(CBlock startBlock)
         {
             CHeader tmp1, tmp2;
-            Stack<CParallelChain> res = new Stack<CParallelChain>();
-            CPeer[] peersPool = new CPeer[NumConnection()];
-            int c=0, ID=0;
-            foreach (CPeer p in mPeers)
-                if (p != null)
-                    peersPool[c++] = p;
+            Stack<CHeaderChain> res = new Stack<CHeaderChain>();
+            int ID=0;
 
-            for (int i = 0; i < peersPool.Length; i++)
-                if (peersPool[i] != null)
+            for (int i = 0; i < Peers.Length; i++)
+                if (Peers[i] != null)
                 {
-                    ID=peersPool[i].SendRequest(new CMessage(EMessageType.Request, ERequestType.GetLastHeader));
-                    tmp1 = peersPool[i].ReceiveHeader(ID, 5000);
-                    res.Push(new CParallelChain());
-                    res.Peek().AddPeer(peersPool[i]);
+                    ID= Peers[i].SendRequest(new CMessage(EMessageType.Request, ERequestType.GetLastHeader));
+                    tmp1 = Peers[i].ReceiveHeader(ID, 5000);
+                    res.Push(new CHeaderChain());
+                    res.Peek().AddPeer(Peers[i]);
                     res.Peek().FinalIndex = tmp1.BlockNumber;
-                    peersPool[i] = null;
-                    for (int j = i + 1; j < peersPool.Length; j++)
+                    Peers[i] = null;
+                    for (int j = i + 1; j < Peers.Length; j++)
                     {
-                        ID = peersPool[j].SendRequest(new CMessage(EMessageType.Request, ERequestType.GetLastHeader));
-                        tmp2 = peersPool[j].ReceiveHeader(ID, 5000);
+                        ID = Peers[j].SendRequest(new CMessage(EMessageType.Request, ERequestType.GetLastHeader));
+                        tmp2 = Peers[j].ReceiveHeader(ID, 5000);
                         if (tmp1.Hash == tmp2.Hash)
                         {
-                            res.Peek().AddPeer(peersPool[j]);
-                            peersPool[j] = null;
+                            res.Peek().AddPeer(Peers[j]);
+                            Peers[j] = null;
                         }
                     }
                 }
@@ -463,6 +464,8 @@ namespace BlockChain
 
         public CHeader[] DistribuiteDownloadHeaders(ulong initialIndex, ulong finalIndex, CPeer[] Peers = null)
         {
+            if (finalIndex < initialIndex)
+                return new CHeader[0];
             if (Peers == null)
                 Peers = mPeers;
             ulong module = 0, rangeDim = 10, totalHeaders = finalIndex - initialIndex;

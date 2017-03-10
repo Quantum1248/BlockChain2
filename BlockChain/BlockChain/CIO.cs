@@ -30,7 +30,14 @@ namespace BlockChain
             return Console.ReadLine();
         }
 
-
+        public static void ProcessInput(string input)
+        {
+            switch (input)
+            {
+                case "transaction":
+                    break;
+            }
+        }
     }
 }
 
