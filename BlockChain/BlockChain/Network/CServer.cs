@@ -14,7 +14,6 @@ namespace BlockChain
     {
         //RSA
         //TODO: cambiare l'inizializzazione una volta definite le classi
-        public static RSACryptoServiceProvider rsaKeyPair;
 
 
         private Thread mUpdateBlockChainThread, mThreadListener, mThreadPeers, mMinerThread;
@@ -30,18 +29,7 @@ namespace BlockChain
 
         private CServer(List<CPeer> Peers)
         {
-            rsaKeyPair = RSA.GenRSAKey();// crea oggetto CSP per generare o caricare il keypair
-
-            if (File.Exists(RSA.PATH + "\\keystore.xml"))// Se il file di keystore esiste viene caricato in memoria
-            {
-                string xmlString = File.ReadAllText(RSA.PATH + "\\keystore.xml");
-                rsaKeyPair.FromXmlString(xmlString);
-            }
-            else//se il file non esiste ne viene generato uno
-            {
-                string xmlString = rsaKeyPair.ToXmlString(true);
-                File.WriteAllText(RSA.PATH + "\\keystore.xml", xmlString);
-            }
+            
 
             //TODO: testare la verifica e la creazione delle transazioni con le nuove funzioni e modifiche implementate in Transaction.cs e UTXOManager.cs
             //TODO: testare nuovi metodi di encoding in RSA.cs, non vogliamo che si fottano tutte le firme digitali e annesse verifiche, o no?

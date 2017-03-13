@@ -43,6 +43,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.ServiceModel" />
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml.Linq" />
@@ -53,10 +54,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AESFiles.cs" />
     <Compile Include="BlockChain\Block\CBlock.cs" />
     <Compile Include="BlockChain\CBlockChain.cs" />
     <Compile Include="BlockChain\Block\CHeader.cs" />
     <Compile Include="BlockChain\Block\CGenesisBlock.cs" />
+    <Compile Include="IWCF.cs" />
     <Compile Include="Network\CMessage.cs" />
     <Compile Include="BlockChain\CHeaderChain.cs" />
     <Compile Include="CIO.cs" />
