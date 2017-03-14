@@ -14,7 +14,7 @@ namespace BlockChain
         public CoinbaseTransaction(RSACryptoServiceProvider csp)
         {
             this.inputs = null;
-            this.outputs = new Output[]{ new Output(50, Utilities.SHA2Hash(RSA.ExportPubKey(csp)))};
+            this.outputs = new Output[]{ new Output(50, Utilities.Base64SHA2Hash(RSA.ExportPubKey(csp)))};
             this.PubKey = RSA.ExportPubKey(csp);
             this.Hash = Utilities.SHA2Hash(JsonConvert.SerializeObject(this));
             RSA.HashSignTransaction(this, csp);
@@ -23,7 +23,7 @@ namespace BlockChain
         public CoinbaseTransaction(RSACryptoServiceProvider csp, bool testing)//Costruttore da usare SOLO per testing
         {
             this.inputs = null;
-            this.outputs = new Output[] { new Output(50, Utilities.SHA2Hash(RSA.ExportPubKey(csp))) };
+            this.outputs = new Output[] { new Output(50, Utilities.Base64SHA2Hash(RSA.ExportPubKey(csp))) };
             this.PubKey = RSA.ExportPubKey(csp);
             this.Hash = Utilities.SHA2Hash(JsonConvert.SerializeObject(this));
             RSA.HashSignTransaction(this, csp);

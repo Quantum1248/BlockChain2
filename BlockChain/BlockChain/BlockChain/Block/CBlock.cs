@@ -24,11 +24,12 @@ namespace BlockChain
         { }
 
         //public CBlock(ulong NumBlock, string Hash, string PreviusBlockHash, string Transiction, ulong Nonce, DateTime Timestamp, ushort Difficulty)
-        public CBlock(ulong NumBlock,string Hash,string PreviusBlockHash, int TxLimit, ulong Nonce, DateTime Timestamp, ushort Difficulty)
+        public CBlock(ulong NumBlock,string Hash,string PreviusBlockHash, int TxLimit, ulong Nonce, DateTime Timestamp, ushort Difficulty, List<Transaction> transactions)
         {
             Header = new CHeader(NumBlock, Hash, PreviusBlockHash);
             this.TxLimit = TxLimit;
-            this.Transactions = MemPool.Instance.GetUTX(TxLimit);
+            this.Transactions = transactions;
+            this.GenerateMerkleRoot();
             this.Nonce = Nonce;
             this.Timestamp = Timestamp;
             this.Difficulty = Difficulty;

@@ -19,7 +19,7 @@ namespace BlockChain
         private CBlockChain()
         {
             Load();
-            mSideChain = new CSideChainTree(null, 20);
+            mSideChain = new CSideChainTree(null, 5);
         }
 
         public static CBlockChain Instance
