@@ -101,6 +101,8 @@ namespace BlockChain
                     if (t.RelativeDepth >= this.MaxDepth - 1)
                     {
                         CBlockChain.Instance.Add(new CTemporaryBlock[] { t.Root });
+                        MemPool.Instance.RemoveBlock(t.Root);
+                        UTXOManager.Instance.ApplyBlock(t.Root);
                         this.Root = t.Root;
                         this.Children = t.Children;
                     }

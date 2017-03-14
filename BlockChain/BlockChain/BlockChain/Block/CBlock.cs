@@ -43,34 +43,18 @@ namespace BlockChain
             this.Difficulty = Difficulty;
         }
 
-        public CBlock(ulong NumBlock, string PreviusBlockHash, ushort Difficulty)
+        public CBlock(ulong numBlock, string previusBlockHash, ushort difficulty, int txLimit)
         {
-            Header = new CHeader(NumBlock, PreviusBlockHash);
-            this.Difficulty = Difficulty;
-        }
-
-        //Ogni blocco viene inizializzato con le transazioni al momento contenute nella MemPool.
-        //TODO: E' da implementare il caricamento asincrono di transazioni parallelo al mining
-        public CBlock(ulong NumBlock, ushort Difficulty, int txLimit = 5)
-        {
-            //this.Header.BlockNumber = NumBlock;
-            this.Header = new CHeader(NumBlock, CBlockChain.Instance.LastBlock.Header.Hash);
+            this.Transactions = MemPool.Instance.GetUTX(txLimit-1);
+            this.Transactions.Add(new CoinbaseTransaction(CServer.rsaKeyPair));
+            this.GenerateMerkleRoot();
+            Header = new CHeader(numBlock, previusBlockHash);
+            this.Difficulty = difficulty;
             this.Nonce = 0;
-            this.Difficulty = Difficulty;
-            this.Transactions = MemPool.Instance.GetUTX(txLimit);
-            List<string> strList = new List<string>();
-            foreach(Transaction tx in Transactions)
-            {
-                strList.Add(tx.Serialize());
-            }
-            this.Timestamp = DateTime.Now;
-            GenerateMerkleRoot(strList);
-            //TODO: implementare funzione per rpendere last block hash
         }
 
         public string Serialize()
         {
-            //return "{" + Hash + ";" + BlockNumber + ";" + Transiction + ";" + Nonce + ";" + Timestamp + ";" + Difficutly + "}";
             return JsonConvert.SerializeObject(this); 
         }
 
@@ -91,9 +75,12 @@ namespace BlockChain
             return JsonConvert.DeserializeObject<CBlock>(SerializedBlock);
         }
 
-        private void GenerateMerkleRoot(List<string> transactions) 
+        private void GenerateMerkleRoot() 
         {
-            this.MerkleRoot = GenerateMerkleHashes(transactions);
+            List<string> transactionsHashes = new List<string>();
+            foreach(Transaction t in Transactions)
+                transactionsHashes.Add(t.Hash);
+            this.MerkleRoot = GenerateMerkleHashes(transactionsHashes);
         }
 
         private string GenerateMerkleHashes(List<string> transactions)//funzione ricorsiva per calcolare hash da coppie di hash: da un numero n di foglie di un albero si ricava un nodo root con un hash calcolato sugli hash delle foglie
