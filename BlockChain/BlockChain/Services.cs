@@ -8,8 +8,16 @@ using System.Threading.Tasks;
 
 namespace BlockChain
 {
+    /// <summary>
+    /// Implementazione dei servizi da offrire all'esterno
+    /// </summary>
     class Services : IWCF
     {
+        /// <summary>
+        /// Carica in memoria i parametri RSA del dato keystore
+        /// </summary>
+        /// <param name="name">Il nome del keystore</param>
+        /// <param name="password">La password per sbloccarlo</param>
         public void LoadKeyStore(string name, string password)
         {
             if (File.Exists(RSA.PATH + "\\" + name))
@@ -20,6 +28,11 @@ namespace BlockChain
             }
         }
 
+        /// <summary>
+        /// Crea un nuovo keystore con il nome e la password specificata
+        /// </summary>
+        /// <param name="name">Il nome del keystore</param>
+        /// <param name="password">La password per sbloccarlo</param>
         public void GenerateKeyStore(string name, string password)
         {
             if (!File.Exists(RSA.PATH + "\\" + name))
