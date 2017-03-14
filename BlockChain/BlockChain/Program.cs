@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.Security.Cryptography;
 using System.IO;
+using System.Configuration;
+using System.ServiceModel;
 
 namespace BlockChain
 {
@@ -15,40 +17,21 @@ namespace BlockChain
     {
         public static bool DEBUG = true;
         public static RSACryptoServiceProvider rsaKeyPair;
-
+        public static ServiceHost serviceHost;
+        public static NetNamedPipeBinding binding;
         static void Main(string[] args)
         {
-            rsaKeyPair = RSA.GenRSAKey();
-            while (true)
-            {
-                //comandi per creazione o loading dei keystore cifrati con AES, chiave a 128 bit creata dall'utente e paddata se non lunga abbastanza
-                Console.WriteLine("Insert 'open [name] [password]' or 'generate [name] [password]' command");
-                string input = Console.ReadLine();
-                string[] exInput = input.Split(' ');
-                if(exInput[0] == "generate" && exInput.Length == 3)
-                {
-                    //ottiene il contenuto del csp, lo cifra e lo salva
-                    string keystore = rsaKeyPair.ToXmlString(true);
-                    keystore = AESFiles.Encrypt(keystore, exInput[2]);
-                    File.WriteAllText(RSA.PATH + "\\" + exInput[1], keystore);
-                }
-                else if (exInput[0] == "open" && exInput.Length == 3)
-                {
-                    if(File.Exists(RSA.PATH + "\\" + exInput[1]))
-                    {
-                        //ottiene il contenuto del file cifrato e lo decifra con la chiave fornita, per poi caricarlo nel csp
-                        string keystore = AESFiles.Decrypt(File.ReadAllText(RSA.PATH + "\\" + exInput[1]), exInput[2]);
-                        rsaKeyPair.FromXmlString(keystore);
-                    }
-                }
-            }
+            CServer.rsaKeyPair = rsaKeyPair;
+            //Apre il canale di comunicazione per GUI https://github.com/Kojee/BlockChainGUI
+            OpenWCFServices();
+            
             //List<CPeer> lp = GenPeersList();
             List<CPeer> lp = new List<CPeer>();
 
             lp.Add(CPeer.CreatePeer("192.168.1.103",2000));
-
+            
             CServer s = CServer.StartNewServer(lp);
-
+            
             while (true)
             {
                 string command = Console.ReadLine();
@@ -59,6 +42,24 @@ namespace BlockChain
                     Transaction tx = new Transaction(amount, hashReceiver, rsaKeyPair);
                 }
             }
+        }
+
+        /// <summary>
+        /// Apre il canale di comunicazione WCF per la GUI (https://github.com/Kojee/BlockChainGUI), indicando l'interfaccia e l'implementazione da esporre
+        /// </summary>
+        public static void OpenWCFServices()
+        {
+            //Specifica l'indirizzo in cui sono hostati i servizi esposti
+            string address = "net.pipe://localhost/WCFServices";
+
+            //Indica l'implementazione dell'interfaccia
+            serviceHost = new ServiceHost(typeof(Services));
+            binding = new NetNamedPipeBinding(NetNamedPipeSecurityMode.None);
+            //Indica l'interfaccia
+            serviceHost.AddServiceEndpoint(typeof(IWCF), binding, address);
+            serviceHost.Open();
+
+            Console.WriteLine("ServiceHost running. Press Return to Exit");
         }
     }
 

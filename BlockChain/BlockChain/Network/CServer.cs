@@ -15,7 +15,7 @@ namespace BlockChain
         //RSA
         //TODO: cambiare l'inizializzazione una volta definite le classi
 
-
+        public static RSACryptoServiceProvider rsaKeyPair;
         private Thread mUpdateBlockChainThread, mThreadListener, mThreadPeers, mMinerThread;
         private CPeers mPeers;
         private static int MAX_PEERS = 30;//deve essere pari

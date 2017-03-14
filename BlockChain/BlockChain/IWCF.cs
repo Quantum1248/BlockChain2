@@ -10,6 +10,9 @@ namespace BlockChain
     interface IWCF
     {
         [OperationContract]
-        Transaction LoadKeyStore();
+        void LoadKeyStore(string name, string password);
+
+        [OperationContract]
+        void GenerateKeyStore(string name, string password);
     }
 }
