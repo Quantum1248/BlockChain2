@@ -10,20 +10,37 @@ namespace BlockChain
     static class CValidator
     {
 
-        public static bool ValidateBlock(CBlock b, bool CheckPreviusHash = false)
+        public static bool ValidateBlock(CBlock block, bool CheckPreviusHash = false)
         {
-            //devo tenere conto della difficoltà?
-            if (b.Header.Hash == Miner.HashBlock(b))
+            //TODO IMPORTANTE: aggiungere verifica timestamp
+            if (block.Header.Hash != Miner.HashBlock(block))
             {
-                if (!CheckPreviusHash)
-                    return true;
-                else if (CheckPreviusHash)
-                    if (CBlockChain.Instance.RetriveBlock(b.Header.BlockNumber - 1)?.Header.Hash == b.Header.PreviousBlockHash)
-                        return true;
-                    else
-                        return false;
+                return false;
             }
-            return false;
+            if (CheckPreviusHash)
+            {
+                if (CBlockChain.Instance.RetriveBlock(block.Header.BlockNumber - 1)?.Header.Hash != block.Header.PreviousBlockHash)
+                {
+                    return false;
+                }
+            }
+            if (block.Difficulty < Miner.CalculateDifficulty() - 1 || block.Difficulty > Miner.CalculateDifficulty() + 1)
+            {
+                return false;
+                
+            }
+            if (block.MerkleRoot != block.GenerateMerkleRoot())
+            {
+                return false;
+            }
+            foreach (Transaction tx in block.Transactions)
+            {
+                if (!tx.Verify())
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         public static bool ValidateHeaderChain(CHeaderChain HeaderChain)

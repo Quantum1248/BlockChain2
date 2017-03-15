@@ -92,6 +92,14 @@ namespace BlockChain
 
         private static CBlock GenerateNextBlock()
         {
+            short newBlockDifficulty = Miner.CalculateDifficulty();
+
+            CBlock res = new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash, (ushort)newBlockDifficulty, 10);
+            return res;
+        }
+
+        public static short CalculateDifficulty()
+        {
             int numberOfBlocks = 60;
 
             CBlock lastBlock = CBlockChain.Instance.LastBlock;
@@ -113,7 +121,7 @@ namespace BlockChain
 
             if (averangeBlockTime > highAverangeTimeLimit)
             {
-                newBlockDifficulty = (short)(lastBlock.Difficulty -1);
+                newBlockDifficulty = (short)(lastBlock.Difficulty - 1);
                 if (newBlockDifficulty <= 0)
                     newBlockDifficulty = 1;
                 if (Program.DEBUG)
@@ -140,9 +148,7 @@ namespace BlockChain
                     Thread.Sleep(1000);
                 }
             }
-
-            CBlock res = new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash, (ushort)newBlockDifficulty, 10);
-            return res;
+            return newBlockDifficulty;
         }
     }
 }
