@@ -61,7 +61,10 @@ namespace BlockChain
                 {
                     foreach (Input input in tx.inputs)
                     {
-                        this.RemoveUTXO(tx.PubKey, input.TxHash, input.OutputIndex);
+                        if (input.OutputIndex != -1)
+                        {
+                            this.RemoveUTXO(tx.PubKey, input.TxHash, input.OutputIndex);
+                        }
 
                     }
                 }

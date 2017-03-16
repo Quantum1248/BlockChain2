@@ -10,7 +10,10 @@ namespace BlockChain
     {
         public string TxHash;
         public int OutputIndex;
-        
+        public Input()
+        {
+
+        }
         public Input(string hash, int index)
         {
             this.TxHash = hash;
