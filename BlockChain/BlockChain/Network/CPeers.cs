@@ -14,8 +14,8 @@ namespace BlockChain
     {
         public bool CanReceiveBlock = false;
 
-        private CPeer[] mPeers;
-        private int mNumReserved;
+        private CPeer[] mPeers; //contiene i peer collegati 
+        private int mNumReserved;   //numero di slot riservati per le connessioni in ingresso
 
 
         #region Singleton

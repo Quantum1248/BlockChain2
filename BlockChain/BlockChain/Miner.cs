@@ -29,7 +29,7 @@ namespace BlockChain
             CBlock block;
             while (true)
             {
-                block = GenerateNextBlock(); 
+                block = GenerateNextBlock(txLimit); 
                 AddProof(block);
                 CBlockChain.Instance.AddNewMinedBlock(new CTemporaryBlock(block, null));
                 CPeers.Instance.DoRequest(ERequest.BroadcastMinedBlock, block);
@@ -90,7 +90,7 @@ namespace BlockChain
                     ); //calcola l'hash secondo il template di scrypt usato da litecoin
         }
 
-        private static CBlock GenerateNextBlock()
+        private static CBlock GenerateNextBlock(int txLimit)
         {
             int numberOfBlocks = 60;
 
@@ -141,7 +141,7 @@ namespace BlockChain
                 }
             }
 
-            CBlock res = new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash, (ushort)newBlockDifficulty, 10);
+            CBlock res = new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash, (ushort)newBlockDifficulty, txLimit);
             return res;
         }
     }
