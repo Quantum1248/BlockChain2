@@ -134,5 +134,29 @@ namespace BlockChain
                 }
             }
         }
+        /// <summary>
+        /// Fa un controllo all'interno della mempool per verificare se la transazione data spende input già spesi ma non ancora applicati all'utxodb
+        /// </summary>
+        /// <param name="transaction">La transazione da confrontare con la mempool</param>
+        /// <returns>False se non ci sono double spending</returns>
+        public bool CheckDoubleSpending(Transaction transaction)
+        {
+            List<Input> spentInputs = new List<Input>();
+            foreach(Transaction tx in this.TxQueue)
+            {
+                foreach(Input input in tx.inputs)
+                {
+                    spentInputs.Add(input);
+                }
+            }
+            foreach(Input input in transaction.inputs)
+            {
+                if (spentInputs.Contains(input))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 }

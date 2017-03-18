@@ -163,7 +163,13 @@ namespace BlockChain
                             {
                                 Transaction t= JsonConvert.DeserializeObject<Transaction>(Msg.Data);
                                 if (MemPool.Instance.CheckDouble(t))
+                                {
                                     return false;
+                                }
+                                if (MemPool.Instance.CheckDoubleSpending(t))
+                                {
+                                    return false;
+                                }
                                 MemPool.Instance.AddUTX(t);
                                 return true;
                             }
