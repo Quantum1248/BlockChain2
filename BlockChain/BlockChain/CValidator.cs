@@ -24,11 +24,14 @@ namespace BlockChain
                     return false;
                 }
             }
+            /*
             if (block.Difficulty < Miner.CalculateDifficulty() - 1 || block.Difficulty > Miner.CalculateDifficulty() + 1)
             {
                 return false;
                 
             }
+            */
+
             if (block.MerkleRoot != block.GenerateMerkleRoot())
             {
                 return false;

@@ -33,6 +33,7 @@ namespace BlockChain
             get { return mChildren; }
             set { mChildren = value; }
         }
+
         public List<T> GetNodeByLevel(int Level)
         {
             List<T> res = new List<T>();
@@ -42,6 +43,20 @@ namespace BlockChain
             else if (Level == 0)
                 res.Add(mRoot);
             return res;
+        }
+
+        public List<T> AllNode(bool firstBlock=false)
+        {
+            List<T> blocks = new List<T>();
+            if (firstBlock)
+            {
+                blocks.Add(mRoot);
+            }
+            foreach (CTree<T> t in mChildren)
+            {
+                blocks.AddRange(t.AllNode(true));
+            }
+            return blocks;
         }
     }
 
@@ -157,6 +172,23 @@ namespace BlockChain
             return -1;
         }
 
+        public List<Transaction> AllDistinctTransaction()
+        {
+            List<Transaction> transactions = new List<Transaction>();
+            List<CTemporaryBlock> tmpBlocks = AllNode();
+            foreach (CTemporaryBlock b in tmpBlocks)
+            {
+                foreach (Transaction tx in b.Transactions)
+                {
+                    if (!transactions.Contains(tx))
+                    {
+                        transactions.Add(tx);
+                    }
+                } 
+            } 
+            return transactions;
+        }
+
         private List<CTemporaryBlock> GetChainFor(CTemporaryBlock lastBlock)
         {
             List<CTemporaryBlock> res = new List<CTemporaryBlock>(), tmp;
@@ -175,5 +207,7 @@ namespace BlockChain
                 }
             return null;
         }
+
+
     }
 }
