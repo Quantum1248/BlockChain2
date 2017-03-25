@@ -100,7 +100,7 @@ namespace BlockChain
 
         public static short CalculateDifficulty()
         {
-            int numberOfBlocks = 60;
+            int numberOfBlocks = 300;
 
             CBlock lastBlock = CBlockChain.Instance.LastBlock;
             CBlock previousBlock;
@@ -109,25 +109,35 @@ namespace BlockChain
             ulong averangeBlockTime = 0;
 
             if (lastBlock.Header.BlockNumber > (ulong)numberOfBlocks)
+            {
                 previousBlock = CBlockChain.Instance.RetriveBlock(lastBlock.Header.BlockNumber - (ulong)numberOfBlocks, true);
+            }
             else
+            {
                 previousBlock = CBlockChain.Instance.RetriveBlock(1, true);
+            }
 
             if (previousBlock != null)
+            {
                 averangeBlockTime = CBlockChain.Instance.AverageBlockTime(previousBlock, lastBlock); //in secondi
+            }
             else
+            {
                 averangeBlockTime = 60;
+            }
 
 
             if (averangeBlockTime > highAverangeTimeLimit)
             {
                 newBlockDifficulty = (short)(lastBlock.Difficulty - 1);
                 if (newBlockDifficulty <= 0)
+                {
                     newBlockDifficulty = 1;
+                }
                 if (Program.DEBUG)
                 {
                     CIO.DebugOut("La nuova difficoltà è: " + newBlockDifficulty);
-                    Thread.Sleep(1000);
+                    //Thread.Sleep(1000);
                 }
             }
             else if (averangeBlockTime < lowAverangeTimeLimit)
@@ -136,7 +146,7 @@ namespace BlockChain
                 if (Program.DEBUG)
                 {
                     CIO.DebugOut("La nuova difficoltà è: " + newBlockDifficulty);
-                    Thread.Sleep(1000);
+                    //Thread.Sleep(1000);
                 }
             }
             else
@@ -145,10 +155,10 @@ namespace BlockChain
                 if (Program.DEBUG)
                 {
                     CIO.DebugOut("La nuova difficoltà è: " + newBlockDifficulty);
-                    Thread.Sleep(1000);
+                    //Thread.Sleep(1000);
                 }
             }
-            return newBlockDifficulty;
+            return 2;
         }
     }
 }
