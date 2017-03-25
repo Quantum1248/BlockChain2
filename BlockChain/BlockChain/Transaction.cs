@@ -9,7 +9,7 @@ using System.IO;
 
 namespace BlockChain
 {
-    class Transaction
+    class Transaction:IEquatable<Transaction>
     {
         public string Hash;
         public List<Input> inputs;
@@ -196,6 +196,11 @@ namespace BlockChain
         private Transaction Deserialize(string jsonString)
         {
             return JsonConvert.DeserializeObject<Transaction>(jsonString);
+        }
+
+        public bool Equals(Transaction other)
+        {
+            return this.Hash == other.Hash;
         }
     }
 }

@@ -190,6 +190,10 @@ namespace BlockChain
                                 {
                                     return false;
                                 }
+                                if (CBlockChain.Instance.SideChain.CheckDouble(t))
+                                {
+                                    return false;
+                                }
                                 MemPool.Instance.AddUTX(t);
                                 return true;
                             }

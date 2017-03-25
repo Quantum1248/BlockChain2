@@ -139,6 +139,44 @@ namespace BlockChain
             return null;
         }
 
+        public List<Transaction> AllDistinctTransaction()
+        {
+            List<Transaction> transactions = new List<Transaction>();
+            List<CTemporaryBlock> tmpBlocks = AllNode();
+            foreach (CTemporaryBlock b in tmpBlocks)
+            {
+                foreach (Transaction tx in b.Transactions)
+                {
+                    if (!transactions.Contains(tx))
+                    {
+                        transactions.Add(tx);
+                    }
+                }
+            }
+            return transactions;
+        }
+
+        public bool CheckDouble(Transaction tx)
+        {
+            List<Transaction> allTx = AllDistinctTransaction();
+            if (allTx.Contains(tx))
+            {
+                return true;
+            }
+            else
+            {
+                foreach (Input input in tx.inputs)
+                {
+                    foreach (Transaction t in allTx)
+                    {
+                        if (t.inputs.Contains(input))
+                            return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         private int mAdd(CTemporaryBlock newBlock, int depth)
         {
             /*
@@ -172,23 +210,6 @@ namespace BlockChain
             return -1;
         }
 
-        public List<Transaction> AllDistinctTransaction()
-        {
-            List<Transaction> transactions = new List<Transaction>();
-            List<CTemporaryBlock> tmpBlocks = AllNode();
-            foreach (CTemporaryBlock b in tmpBlocks)
-            {
-                foreach (Transaction tx in b.Transactions)
-                {
-                    if (!transactions.Contains(tx))
-                    {
-                        transactions.Add(tx);
-                    }
-                } 
-            } 
-            return transactions;
-        }
-
         private List<CTemporaryBlock> GetChainFor(CTemporaryBlock lastBlock)
         {
             List<CTemporaryBlock> res = new List<CTemporaryBlock>(), tmp;
@@ -207,7 +228,5 @@ namespace BlockChain
                 }
             return null;
         }
-
-
     }
 }
