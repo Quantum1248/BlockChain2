@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BlockChain
 {
-    class Input
+    class Input:IEquatable<Input>
     {
         public string TxHash;
         public int OutputIndex;
@@ -18,6 +18,11 @@ namespace BlockChain
         {
             this.TxHash = hash;
             this.OutputIndex = index;
+        }
+
+        public bool Equals(Input other)
+        {
+            return (this.TxHash == other.TxHash && this.OutputIndex == other.OutputIndex);
         }
     }
 }
