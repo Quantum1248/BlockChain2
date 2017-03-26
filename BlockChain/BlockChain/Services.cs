@@ -43,5 +43,10 @@ namespace BlockChain
                 File.WriteAllText(RSA.PATH + "\\" + name, keystore);
             }
         }
+
+        public string GetKeystore()
+        {
+            return Utilities.Base64SHA2Hash(RSA.ExportPubKey(CServer.rsaKeyPair));
+        }
     }
 }

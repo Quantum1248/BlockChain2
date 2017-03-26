@@ -27,5 +27,14 @@ namespace BlockChain
         /// <param name="password">La password per sbloccarlo</param>
         [OperationContract]
         void GenerateKeyStore(string name, string password);
+
+        /// <summary>
+        /// Ritorna il keystore correntemente caricato in memoria
+        /// </summary>
+        /// <returns>Address del keystore caricato</returns>
+        /// Attualmente ritorna solo l'address, più avanti sarebbe opportuno definire un oggetto Keystore 
+        /// per ritornare più proprietà in formato JSON
+        [OperationContract]
+        string GetKeystore();
     }
 }
