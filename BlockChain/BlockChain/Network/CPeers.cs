@@ -200,7 +200,7 @@ namespace BlockChain
                     foreach (string rp in peers)
                     {
                         receivedPeer = CPeer.Deserialize(rp);
-                        if (receivedPeer.IP != publicIp && receivedPeer.IP != localIp)
+                        if (!((receivedPeer.IP == publicIp && receivedPeer.Port == CServer.DEFAULT_PORT) || receivedPeer.IP == localIp))
                             Insert(receivedPeer);
                     }
                 }
