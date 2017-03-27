@@ -24,7 +24,7 @@ namespace BlockChain
         private static int NOT_RESERVED_CONNECTION = MAX_PEERS - RESERVED_CONNECTION;//connessioni che utilizzo io per collegarmi agli altri
         private static string mPublicIp = "";
         private Socket mListener;
-        private static int DEFOULT_PORT = 2000;
+        public static int DEFAULT_PORT = 2000;
 
         private bool IsStopped = false; //set true per fermare il server
 
@@ -118,10 +118,10 @@ namespace BlockChain
             if (Program.DEBUG)
                 CIO.DebugOut("Initialize the Listener...");
             //crea un socket che attende connessioni in ingresso di peer che vogliono collegarsi, in ascolto sulla porta DEFOULT_PORT
-            IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, DEFOULT_PORT);
+            IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, DEFAULT_PORT);
             mListener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             mListener.Bind(localEndPoint);
-            mListener.Listen(DEFOULT_PORT);
+            mListener.Listen(DEFAULT_PORT);
 
             //crea un eventargs per una richiesta di connessione asincrona, se la lista dei peers non è ancora piena inizia ad attendere fino a quando non riceve
             //una richiesta di connessione o il segnale d'arresto. Se viene ricevuta una richiesta di connessione viene chiamata la funzione InsertNewPeer che
@@ -261,7 +261,7 @@ namespace BlockChain
         {
             if(mPublicIp=="")
                 mPublicIp= new WebClient().DownloadString("http://icanhazip.com");
-            return mPublicIp;
+            return mPublicIp.Trim('\n');
         }
     }
 }
