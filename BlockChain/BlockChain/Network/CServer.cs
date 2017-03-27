@@ -96,7 +96,7 @@ namespace BlockChain
             if (Program.DEBUG)
                 CIO.DebugOut("Start Miner...");
             mMinerThread = new Thread(new ThreadStart(StartMiner));
-            //mMinerThread.Start();
+            mMinerThread.Start();
 
         }
 

@@ -200,7 +200,7 @@ namespace BlockChain
                     foreach (string rp in peers)
                     {
                         receivedPeer = CPeer.Deserialize(rp);
-                        if (!((receivedPeer.IP == publicIp && receivedPeer.Port == CServer.DEFAULT_PORT) || receivedPeer.IP == localIp))
+                        if (!(receivedPeer.IP == publicIp || receivedPeer.IP == localIp))
                             Insert(receivedPeer);
                     }
                 }
@@ -293,7 +293,6 @@ namespace BlockChain
                     foreach (CPeer p in mPeers)
                         if (p?.IP == Peer.IP)//e se ci sono più peer nella stessa rete che si collegano su porte diverse?
                         {
-                            Peer.Disconnect();
                             return false;
                         }
 
