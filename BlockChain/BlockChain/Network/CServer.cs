@@ -96,7 +96,7 @@ namespace BlockChain
             if (Program.DEBUG)
                 CIO.DebugOut("Start Miner...");
             mMinerThread = new Thread(new ThreadStart(StartMiner));
-            mMinerThread.Start();
+            //mMinerThread.Start();
 
         }
 
@@ -261,7 +261,7 @@ namespace BlockChain
         {
             if(mPublicIp=="")
                 mPublicIp= new WebClient().DownloadString("http://icanhazip.com");
-            return mPublicIp;
+            return mPublicIp.Trim('\n');
         }
     }
 }
