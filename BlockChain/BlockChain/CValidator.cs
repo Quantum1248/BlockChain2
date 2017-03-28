@@ -12,6 +12,7 @@ namespace BlockChain
 
         public static bool ValidateBlock(CBlock block, bool CheckPreviusHash = false)
         {
+            int coinbaseTx = 0;
             //TODO IMPORTANTE: aggiungere verifica timestamp
             if (block.Header.Hash != Miner.HashBlock(block))
             {
@@ -40,7 +41,14 @@ namespace BlockChain
             {
                 if (!tx.Verify())
                 {
-                    return false;
+                    if (coinbaseTx == 0 && tx.inputs.Count == 1 && tx.inputs.First().TxHash == "0" && tx.inputs.First().OutputIndex == -1)
+                    {
+                        coinbaseTx++;
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
             }
             return true;
