@@ -124,6 +124,8 @@ namespace BlockChain
         {
             List<string> pathList = (List<string>)HashTable[hash];
             UTXO utxo;
+            if (pathList == null)
+                return null;
             foreach(string path in pathList)
             {
                 utxo = JsonConvert.DeserializeObject<UTXO>(File.ReadAllText(path));
