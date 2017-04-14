@@ -198,6 +198,10 @@ namespace BlockChain
                     if (CValidator.ValidateHeaderChain(bestChain))
                     {
                         DownloadedBlock=CPeers.Instance.DistribuiteDownloadBlocks(bestChain.InitialIndex+1,bestChain.FinalIndex);
+                        foreach(CTemporaryBlock block in DownloadedBlock)
+                        {
+                            UTXOManager.Instance.ApplyBlock(block);
+                        }
                         mPeers.ValidPeers(bestChain.Peers);
                         addedBlocks = CBlockChain.Instance.Add(DownloadedBlock);
                         if (addedBlocks >= bestChain.Length)    //solo se scarica tutti i blocchi
