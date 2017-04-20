@@ -101,7 +101,7 @@ namespace BlockChain
         public List<Transaction> GetUTX(int utxLimit)
         {
             List<Transaction> utxList = new List<Transaction>();
-            for(int i = 0; i < utxLimit; i++)
+            for (int i = 0; i < utxLimit && this.TxQueue.Count > 0; i++)
             {
                 utxList.Add(this.TxQueue.Dequeue());
             }

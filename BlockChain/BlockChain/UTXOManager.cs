@@ -57,10 +57,13 @@ namespace BlockChain
         {
             foreach (Transaction tx in block.Transactions)
             {
-                foreach(Input input in tx.inputs)
+                if (tx.inputs !=null)
                 {
-                    this.RemoveUTXO(tx.PubKey, input.TxHash, input.OutputIndex);
+                    foreach (Input input in tx.inputs)
+                    {
+                        this.RemoveUTXO(tx.PubKey, input.TxHash, input.OutputIndex);
 
+                    }
                 }
                 this.AddUTXO(new UTXO(tx.Hash, tx.outputs));
 

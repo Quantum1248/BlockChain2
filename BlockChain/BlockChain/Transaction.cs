@@ -112,7 +112,7 @@ namespace BlockChain
         private bool CheckUTXO()
         {
             Output tmp;
-            string pubKeyHash = Utilities.SHA2Hash(this.PubKey);
+            string pubKeyHash = Utilities.Base64SHA2Hash(this.PubKey);
             //si controlla che esistano output non spesi corrispondenti a quelli referenziati dagli input
             foreach(Input input in this.inputs) 
             {
@@ -133,7 +133,7 @@ namespace BlockChain
             Output output;
             foreach (Input input in this.inputs)
             {
-                output = UTXOManager.Instance.GetUTXO(Utilities.SHA2Hash(this.PubKey), input.TxHash, input.OutputIndex);
+                output = UTXOManager.Instance.GetUTXO(Utilities.Base64SHA2Hash(this.PubKey), input.TxHash, input.OutputIndex);
                 inputRequested += output.Amount;
             }
             return inputRequested;
@@ -156,7 +156,7 @@ namespace BlockChain
         {
             List<Input> inputs = new List<Input>();
             double outputRequested = this.GetOutputsAmount();
-            string pubKeyHash = Utilities.SHA2Hash(this.PubKey);
+            string pubKeyHash = Utilities.Base64SHA2Hash(this.PubKey);
             List<UTXO> utxos = UTXOManager.Instance.GetUTXObyHash(pubKeyHash);
             foreach(UTXO utxo in utxos)
             {
