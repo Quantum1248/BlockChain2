@@ -46,8 +46,9 @@ namespace BlockChain
 
         public CBlock(ulong numBlock, string previusBlockHash, ushort difficulty, int txLimit)
         {
-            this.Transactions = MemPool.Instance.GetUTX(txLimit-1);
+            this.Transactions = new List<Transaction>();
             this.Transactions.Add(new CoinbaseTransaction(CServer.rsaKeyPair));
+            this.Transactions.AddRange(MemPool.Instance.GetUTX(txLimit-1));
             this.GenerateMerkleRoot();
             Header = new CHeader(numBlock, previusBlockHash);
             this.Difficulty = difficulty;
