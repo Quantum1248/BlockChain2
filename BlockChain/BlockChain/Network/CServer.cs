@@ -14,10 +14,12 @@ namespace BlockChain
     {
         //RSA
         //TODO: cambiare l'inizializzazione una volta definite le classi
-        public static RSACryptoServiceProvider rsaKeyPair;
 
 
         private Thread mUpdateBlockChainThread, mThreadListener, mThreadUpdatePeers, mMinerThread;
+
+        public static RSACryptoServiceProvider rsaKeyPair;
+
         private CPeers mPeers;
         private static int MAX_PEERS = 30;//deve essere pari
         private static int RESERVED_CONNECTION = MAX_PEERS / 2;//connessioni usate per chi vuole collegarsi con me

@@ -42,7 +42,9 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.ServiceModel" />
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml.Linq" />
@@ -53,11 +55,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AESFiles.cs" />
     <Compile Include="BlockChain\Block\CBlock.cs" />
     <Compile Include="BlockChain\CBlockChain.cs" />
     <Compile Include="BlockChain\Block\CHeader.cs" />
     <Compile Include="BlockChain\Block\CGenesisBlock.cs" />
     <Compile Include="Coinbase.cs" />
+    <Compile Include="IWCF.cs" />
     <Compile Include="Network\CMessage.cs" />
     <Compile Include="BlockChain\CHeaderChain.cs" />
     <Compile Include="CIO.cs" />
@@ -77,6 +81,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RSA.cs" />
+    <Compile Include="Services.cs" />
     <Compile Include="Transaction.cs" />
     <Compile Include="BlockChain\CSideChainTree.cs" />
     <Compile Include="Utilities.cs" />
