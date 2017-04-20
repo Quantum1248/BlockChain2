@@ -15,55 +15,53 @@ namespace BlockChain
         //RSA
         //TODO: cambiare l'inizializzazione una volta definite le classi
 
+
+        private Thread mUpdateBlockChainThread, mThreadListener, mThreadUpdatePeers, mMinerThread;
+
         public static RSACryptoServiceProvider rsaKeyPair;
-        private Thread mUpdateBlockChainThread, mThreadListener, mThreadPeers, mMinerThread;
+
         private CPeers mPeers;
         private static int MAX_PEERS = 30;//deve essere pari
         private static int RESERVED_CONNECTION = MAX_PEERS / 2;//connessioni usate per chi vuole collegarsi con me
         private static int NOT_RESERVED_CONNECTION = MAX_PEERS - RESERVED_CONNECTION;//connessioni che utilizzo io per collegarmi agli altri
         private static string mPublicIp = "";
         private Socket mListener;
-        private static int DEFOULT_PORT = 2000;
+        public static int DEFAULT_PORT = 2000;
 
-        private bool IsStopped = false; //set true per spegnere il server
+        private bool IsStopped = false; //set true per fermare il server
 
-        private CServer(List<CPeer> Peers)
+        private CServer(List<CPeer> peers)
         {
-            
+            rsaKeyPair = RSA.GenRSAKey();// crea oggetto CSP per generare o caricare il keypair
 
-            //TODO: testare la verifica e la creazione delle transazioni con le nuove funzioni e modifiche implementate in Transaction.cs e UTXOManager.cs
-            //TODO: testare nuovi metodi di encoding in RSA.cs, non vogliamo che si fottano tutte le firme digitali e annesse verifiche, o no?
+            if (File.Exists(RSA.PATH + "\\keystore.xml"))// Se il file di keystore esiste viene caricato in memoria dal disco, altrimenti viene creato e salvato su disco
             {
-                /*
-                Output[] outputs;
-
-                Transaction tx; ;
-                UTXOManager.Instance.SpendUTXO("314f04b30f62e0056bd059354a5536fb2e302107eed143b5fa2aa0bbba07f608", @"8yeeMidRStH4QvdNAr6fzwaaJ92hlSpcplki/KRSjy8=", 0);
-
-                for (int i = 0; i < 1000000; i += 3)
-                {
-                    outputs[k] = new Output(1.4242, Utilities.ByteArrayToHexString(SHA256Managed.Create().ComputeHash(Encoding.ASCII.GetBytes(((i + k).ToString())))));
-                }
-                tx = new Transaction(outputs, RSA.ExportPubKey(rsaKeyPair), rsaKeyPair);
-            }*/
-
-                if (Program.DEBUG)
-                    CIO.DebugOut("Last block number: " + CBlockChain.Instance.LastValidBlock.Header.BlockNumber + ".");
-
-                if (Program.DEBUG)
-                    CIO.DebugOut("Initialize mPeers...");
-                mPeers = new CPeers(MAX_PEERS, RESERVED_CONNECTION);
-
-                if (Program.DEBUG)
-                    CIO.DebugOut("Finish initializing!");
-                Start(Peers);
+                string xmlString = File.ReadAllText(RSA.PATH + "\\keystore.xml");
+                rsaKeyPair.FromXmlString(xmlString);
             }
+            else//se il file non esiste ne viene generato uno
+            {
+                string xmlString = rsaKeyPair.ToXmlString(true);
+                File.WriteAllText(RSA.PATH + "\\keystore.xml", xmlString);
+            }
+
+            if (Program.DEBUG)
+                CIO.DebugOut("Last block number: " + CBlockChain.Instance.LastValidBlock.Header.BlockNumber + ".");
+
+            if (Program.DEBUG)
+                CIO.DebugOut("Initialize mPeers...");
+            mPeers = new CPeers(MAX_PEERS, RESERVED_CONNECTION);
+
+            if (Program.DEBUG)
+                CIO.DebugOut("Finish initializing!");
+            Start(peers);
+
         }
 
-        public static CServer StartNewServer(List<CPeer> Peers)
+        public static CServer StartNewServer(List<CPeer> peers)
         {
-            if (Peers?.Count > 0)
-                return new CServer(Peers);
+            if (peers?.Count > 0)
+                return new CServer(peers);
             return null;
         }
 
@@ -72,20 +70,20 @@ namespace BlockChain
             get { return mPeers.NumConnection(); }
         }
 
-        private void Start(List<CPeer> Peers)
+        public void Start(List<CPeer> peers)
         {
             if (Program.DEBUG)
                 CIO.DebugOut("Begin to enstablish connections to initial peers...");
             //si collega ai peer inseriti nella lista iniziale.
-            foreach (CPeer p in Peers)
+            foreach (CPeer p in peers)
                 if (p.Connect(500))
                     if (!mPeers.Insert(p))
                         break;
             
             if (Program.DEBUG)
                 CIO.DebugOut("Begin to enstablish connections to other peers...");
-            mThreadPeers = new Thread(new ThreadStart(UpdatePeersList));
-            mThreadPeers.Start();
+            mThreadUpdatePeers = new Thread(new ThreadStart(UpdatePeersList));
+            mThreadUpdatePeers.Start();
             
             if (Program.DEBUG)
                 CIO.DebugOut("Start listening...");
@@ -122,10 +120,10 @@ namespace BlockChain
             if (Program.DEBUG)
                 CIO.DebugOut("Initialize the Listener...");
             //crea un socket che attende connessioni in ingresso di peer che vogliono collegarsi, in ascolto sulla porta DEFOULT_PORT
-            IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, DEFOULT_PORT);
+            IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, DEFAULT_PORT);
             mListener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             mListener.Bind(localEndPoint);
-            mListener.Listen(DEFOULT_PORT);
+            mListener.Listen(DEFAULT_PORT);
 
             //crea un eventargs per una richiesta di connessione asincrona, se la lista dei peers non è ancora piena inizia ad attendere fino a quando non riceve
             //una richiesta di connessione o il segnale d'arresto. Se viene ricevuta una richiesta di connessione viene chiamata la funzione InsertNewPeer che
@@ -202,6 +200,10 @@ namespace BlockChain
                     if (CValidator.ValidateHeaderChain(bestChain))
                     {
                         DownloadedBlock=CPeers.Instance.DistribuiteDownloadBlocks(bestChain.InitialIndex+1,bestChain.FinalIndex);
+                        foreach(CTemporaryBlock block in DownloadedBlock)
+                        {
+                            UTXOManager.Instance.ApplyBlock(block);
+                        }
                         mPeers.ValidPeers(bestChain.Peers);
                         addedBlocks = CBlockChain.Instance.Add(DownloadedBlock);
                         if (addedBlocks >= bestChain.Length)    //solo se scarica tutti i blocchi
@@ -223,14 +225,13 @@ namespace BlockChain
         private void StartMiner()
         {
             mUpdateBlockChainThread.Join();
-            while (true)
-                Miner.Start(0);
+            Miner.Start(10);
         }
 
-        private void InsertNewPeer(Socket NewConnection)
+        private void InsertNewPeer(Socket newConnection)
         {
             //crea un nuovo peer con un socket già collegato e una nuova connessione con questo peer, e la inserisce nel contenitore mConnections
-            CPeer newPeer = CPeer.CreatePeer(Convert.ToString((NewConnection.RemoteEndPoint as IPEndPoint).Address), (NewConnection.RemoteEndPoint as IPEndPoint).Port, NewConnection);
+            CPeer newPeer = CPeer.CreatePeer(Convert.ToString((newConnection.RemoteEndPoint as IPEndPoint).Address), (newConnection.RemoteEndPoint as IPEndPoint).Port, newConnection);
             mPeers.Insert(newPeer, true);
         }
 
@@ -266,7 +267,7 @@ namespace BlockChain
         {
             if(mPublicIp=="")
                 mPublicIp= new WebClient().DownloadString("http://icanhazip.com");
-            return mPublicIp;
+            return mPublicIp.Trim('\n');
         }
     }
 }

@@ -29,7 +29,7 @@ namespace BlockChain
             CBlock block;
             while (true)
             {
-                block = GenerateNextBlock(); 
+                block = GenerateNextBlock(txLimit); 
                 AddProof(block);
                 CBlockChain.Instance.AddNewMinedBlock(new CTemporaryBlock(block, null));
                 CPeers.Instance.DoRequest(ERequest.BroadcastMinedBlock, block);
@@ -90,9 +90,17 @@ namespace BlockChain
                     ); //calcola l'hash secondo il template di scrypt usato da litecoin
         }
 
-        private static CBlock GenerateNextBlock()
+        private static CBlock GenerateNextBlock(int txLimit)
         {
-            int numberOfBlocks = 60;
+            short newBlockDifficulty = Miner.CalculateDifficulty();
+
+            CBlock res = new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash, (ushort)newBlockDifficulty, 10);
+            return res;
+        }
+
+        public static short CalculateDifficulty()
+        {
+            int numberOfBlocks = 300;
 
             CBlock lastBlock = CBlockChain.Instance.LastBlock;
             CBlock previousBlock;
@@ -101,25 +109,35 @@ namespace BlockChain
             ulong averangeBlockTime = 0;
 
             if (lastBlock.Header.BlockNumber > (ulong)numberOfBlocks)
+            {
                 previousBlock = CBlockChain.Instance.RetriveBlock(lastBlock.Header.BlockNumber - (ulong)numberOfBlocks, true);
+            }
             else
+            {
                 previousBlock = CBlockChain.Instance.RetriveBlock(1, true);
+            }
 
             if (previousBlock != null)
+            {
                 averangeBlockTime = CBlockChain.Instance.AverageBlockTime(previousBlock, lastBlock); //in secondi
+            }
             else
+            {
                 averangeBlockTime = 60;
+            }
 
 
             if (averangeBlockTime > highAverangeTimeLimit)
             {
-                newBlockDifficulty = (short)(lastBlock.Difficulty -1);
+                newBlockDifficulty = (short)(lastBlock.Difficulty - 1);
                 if (newBlockDifficulty <= 0)
+                {
                     newBlockDifficulty = 1;
+                }
                 if (Program.DEBUG)
                 {
                     CIO.DebugOut("La nuova difficoltà è: " + newBlockDifficulty);
-                    Thread.Sleep(1000);
+                    //Thread.Sleep(1000);
                 }
             }
             else if (averangeBlockTime < lowAverangeTimeLimit)
@@ -128,7 +146,7 @@ namespace BlockChain
                 if (Program.DEBUG)
                 {
                     CIO.DebugOut("La nuova difficoltà è: " + newBlockDifficulty);
-                    Thread.Sleep(1000);
+                    //Thread.Sleep(1000);
                 }
             }
             else
@@ -137,12 +155,10 @@ namespace BlockChain
                 if (Program.DEBUG)
                 {
                     CIO.DebugOut("La nuova difficoltà è: " + newBlockDifficulty);
-                    Thread.Sleep(1000);
+                    //Thread.Sleep(1000);
                 }
             }
-
-            CBlock res = new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash, (ushort)newBlockDifficulty, 10);
-            return res;
+            return 2;
         }
     }
 }

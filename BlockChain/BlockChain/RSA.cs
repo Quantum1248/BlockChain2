@@ -167,7 +167,6 @@ namespace BlockChain
         internal static RSACryptoServiceProvider GenRSAKey()
         {
             return new RSACryptoServiceProvider();
-
         }
     }
 }

@@ -52,6 +52,14 @@ namespace BlockChain
             get { return mLastValidBlock; }
         }
 
+        public CSideChainTree SideChain
+        {
+            get
+            {
+                return mSideChain;
+            }
+        }
+
         public string PATH
         {
             get

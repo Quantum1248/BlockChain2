@@ -46,8 +46,9 @@ namespace BlockChain
 
         public CBlock(ulong numBlock, string previusBlockHash, ushort difficulty, int txLimit)
         {
-            this.Transactions = MemPool.Instance.GetUTX(txLimit-1);
+            this.Transactions = new List<Transaction>();
             this.Transactions.Add(new CoinbaseTransaction(CServer.rsaKeyPair));
+            this.Transactions.AddRange(MemPool.Instance.GetUTX(txLimit-1));
             this.GenerateMerkleRoot();
             Header = new CHeader(numBlock, previusBlockHash);
             this.Difficulty = difficulty;
@@ -76,12 +77,14 @@ namespace BlockChain
             return JsonConvert.DeserializeObject<CBlock>(SerializedBlock);
         }
 
-        private void GenerateMerkleRoot() 
+        public string GenerateMerkleRoot() 
         {
             List<string> transactionsHashes = new List<string>();
             foreach(Transaction t in Transactions)
                 transactionsHashes.Add(t.Hash);
-            this.MerkleRoot = GenerateMerkleHashes(transactionsHashes);
+            string merkleRoot = GenerateMerkleHashes(transactionsHashes);
+            this.MerkleRoot = merkleRoot;
+            return merkleRoot;
         }
 
         private string GenerateMerkleHashes(List<string> transactions)//funzione ricorsiva per calcolare hash da coppie di hash: da un numero n di foglie di un albero si ricava un nodo root con un hash calcolato sugli hash delle foglie

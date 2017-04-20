@@ -61,7 +61,10 @@ namespace BlockChain
                 {
                     foreach (Input input in tx.inputs)
                     {
-                        this.RemoveUTXO(tx.PubKey, input.TxHash, input.OutputIndex);
+                        if (input.OutputIndex != -1)
+                        {
+                            this.RemoveUTXO(tx.PubKey, input.TxHash, input.OutputIndex);
+                        }
 
                     }
                 }
@@ -121,6 +124,8 @@ namespace BlockChain
         {
             List<string> pathList = (List<string>)HashTable[hash];
             UTXO utxo;
+            if (pathList == null)
+                return null;
             foreach(string path in pathList)
             {
                 utxo = JsonConvert.DeserializeObject<UTXO>(File.ReadAllText(path));

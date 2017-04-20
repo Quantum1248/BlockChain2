@@ -60,6 +60,7 @@
     <Compile Include="BlockChain\CBlockChain.cs" />
     <Compile Include="BlockChain\Block\CHeader.cs" />
     <Compile Include="BlockChain\Block\CGenesisBlock.cs" />
+    <Compile Include="Coinbase.cs" />
     <Compile Include="IWCF.cs" />
     <Compile Include="Network\CMessage.cs" />
     <Compile Include="BlockChain\CHeaderChain.cs" />
