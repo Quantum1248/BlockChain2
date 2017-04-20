@@ -61,6 +61,5 @@ namespace BlockChain
         {
             return ASCIIEncoding.ASCII.GetBytes(str);
         }
-
     }
 }
