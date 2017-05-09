@@ -18,5 +18,10 @@ namespace BlockChain
             mSender = Sender;
             { }
         }
+
+        public CPeer Sender
+        {
+            get { return mSender; }
+        }
     }
 }

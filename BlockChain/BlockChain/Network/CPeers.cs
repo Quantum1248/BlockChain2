@@ -290,7 +290,10 @@ namespace BlockChain
                 }
                 foreach(CTemporaryBlock tb in commonBlocks)
                 {
-                    if()
+                    if(tb.Header.Hash!=res.Header.Hash)
+                    {
+                        tb.Sender.Disconnect();
+                    }
                 }
                 
                 return res;
