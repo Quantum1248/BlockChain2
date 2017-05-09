@@ -125,10 +125,10 @@ namespace BlockChain
 
         public void Disconnect()
         {
+            CPeers.Instance.InvalidPeers(new CPeer[] { this });
             mSocket.Close();
             mSocket.Dispose();//(!) in teoria è inutile perchè fa già tutto Close()
             mIsConnected = false;
-            CPeers.Instance.InvalidPeers(new CPeer[] { this });        
         }
 
         public void StartListening()
@@ -227,22 +227,27 @@ namespace BlockChain
                                     if (!CBlockChain.Instance.AddNewMinedBlock(newBlock))
                                     {
                                         Stack<CTemporaryBlock> blocks = new Stack<CTemporaryBlock>();
+                                        CBlock downloadedBlock = null;
                                         int ID = 0;
                                         blocks.Push(newBlock);
                                         for (ulong i = newBlock.Header.BlockNumber - 1; i > CBlockChain.Instance.LastValidBlock.Header.BlockNumber; i--)
                                         {
                                             ID = SendRequest(new CMessage(EMessageType.Request, ERequestType.DownloadBlock, EDataType.ULong, Convert.ToString(i)));
-                                            blocks.Push(new CTemporaryBlock(JsonConvert.DeserializeObject<CBlock>(ReceiveData(ID, 5000).Data), this));
-                                            if (!CValidator.ValidateBlock(blocks.Peek()) && blocks.Peek().Header.BlockNumber < CBlockChain.Instance.LastValidBlock.Header.BlockNumber)
+                                            downloadedBlock = ReceiveBlock(ID, 5000);
+                                            if (downloadedBlock != null)
                                             {
-                                                Disconnect();
-                                                break;
-                                            }
-                                            if (CBlockChain.Instance.AddNewMinedBlock(blocks.Peek()))
-                                            {
-                                                blocks.Pop();
-                                                for (int j = blocks.Count; j > 0; j--)
-                                                    CBlockChain.Instance.AddNewMinedBlock(blocks.Pop());
+                                                blocks.Push(new CTemporaryBlock(downloadedBlock, this));
+                                                if (!CValidator.ValidateBlock(blocks.Peek()) && blocks.Peek().Header.BlockNumber < CBlockChain.Instance.LastValidBlock.Header.BlockNumber)
+                                                {
+                                                    Disconnect();
+                                                    break;
+                                                }
+                                                if (CBlockChain.Instance.AddNewMinedBlock(blocks.Peek()))
+                                                {
+                                                    blocks.Pop();
+                                                    for (int j = blocks.Count; j > 0; j--)
+                                                        CBlockChain.Instance.AddNewMinedBlock(blocks.Pop());
+                                                }
                                             }
                                         }
                                     }
@@ -326,21 +331,51 @@ namespace BlockChain
             }
         }
 
+        public static CPeer Deserialize(string Peer)
+        {
+            string[] peerField = Peer.Split(',');
+            return CPeer.CreatePeer(peerField[0], Convert.ToInt32(peerField[1]));
+        }
+
         #region TypedReceive
 
         public CBlock ReceiveBlock(int ID, int Timeout)
         {
-            return JsonConvert.DeserializeObject<CBlock>(ReceiveData(ID, Timeout).Data);
+            try
+            {
+                return JsonConvert.DeserializeObject<CBlock>(ReceiveData(ID, Timeout).Data);
+            }
+            catch
+            {
+                this.Disconnect();
+                return null;
+            }
         }
 
         public CHeader ReceiveHeader(int ID, int Timeout)
         {
-            return JsonConvert.DeserializeObject<CHeader>(ReceiveData(ID, Timeout).Data);
+            try
+            {
+                return JsonConvert.DeserializeObject<CHeader>(ReceiveData(ID, Timeout).Data);
+            }
+            catch
+            {
+                this.Disconnect();
+                return null;
+            }
         }
 
         public ulong ReceiveULong(int ID, int Timeout)
         {
-            return Convert.ToUInt64(ReceiveData(ID, Timeout).Data);
+            try
+            {
+                return Convert.ToUInt64(ReceiveData(ID, Timeout).Data);
+            }
+            catch
+            {
+                this.Disconnect();
+                return ulong.MaxValue;
+            }
         }
 
         #endregion TypedReceive
@@ -382,12 +417,6 @@ namespace BlockChain
             }
             SendMessage(Msg);
             return Msg.ID;
-        }
-
-        public static CPeer Deserialize(string Peer)
-        {
-            string[] peerField = Peer.Split(',');
-            return CPeer.CreatePeer(peerField[0], Convert.ToInt32(peerField[1]));
         }
 
         private void SendMessage(CMessage Msg)
