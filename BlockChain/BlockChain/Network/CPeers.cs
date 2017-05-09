@@ -217,20 +217,18 @@ namespace BlockChain
             List<CTemporaryBlock> commonBlocks = new List<CTemporaryBlock>();
             int[] shareRation = new int[0];
             CTemporaryBlock res = null;
-            foreach (CPeer p in mPeers)
-                if (p != null)
+            foreach (CPeer p in Peers)
+            {
+                try
                 {
-                    try
-                    {
-                        rqsID = p.SendRequest(new CMessage(EMessageType.Request, ERequestType.ChainLength));
-                        tmp = p.ReceiveULong(rqsID, 5000);
-                        if (tmp < minLength)
-                            minLength = tmp;
-                    }
-                    catch (SocketException)
-                    { }
-                    p.Socket.ReceiveTimeout = 0;
+                    rqsID = p.SendRequest(new CMessage(EMessageType.Request, ERequestType.ChainLength));
+                    tmp = p.ReceiveULong(rqsID, 5000);
+                    if (tmp < minLength)
+                        minLength = tmp;
                 }
+                catch (SocketException)
+                { }
+            }
             CRange r = new CRange(CBlockChain.Instance.LastValidBlock.Header.BlockNumber, minLength);
             if (r.End != ulong.MaxValue && r.Start < r.End)
             {
@@ -268,8 +266,15 @@ namespace BlockChain
                     foreach (CPeer p in Peers)
                     {
                         ID = p.SendRequest(new CMessage(EMessageType.Request, ERequestType.DownloadBlock, EDataType.ULong, Convert.ToString(r.Start)));
-                        res = new CTemporaryBlock(p.ReceiveBlock(ID, 5000), p);
-                        for (int i = 0; i < commonBlocks.Count; i++)
+                        try
+                        {
+                            res = new CTemporaryBlock(p.ReceiveBlock(ID, 5000), p);
+                        }
+                        catch
+                        {
+                            res = null;
+                        }
+                        for (int i = 0; i < commonBlocks.Count && res!= null; i++)
                         {
                             if (res.Header.Hash == commonBlocks[i].Header.Hash)
                             {
@@ -277,7 +282,10 @@ namespace BlockChain
                                 res = null;
                             }
                         }
-                        p.Socket.ReceiveTimeout = 0;
+                        if (res != null)
+                        {
+                            commonBlocks.Add(res);
+                        }
                     }
                 }
                 int resShareRation = -1;
