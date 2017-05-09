@@ -214,21 +214,23 @@ namespace BlockChain
             int rqsID = 0;
             bool found = false;
             Stack<CHeader> headers = new Stack<CHeader>();
-            CBlock res = null;
+            List<CTemporaryBlock> commonBlocks = new List<CTemporaryBlock>();
+            int[] shareRation = new int[0];
+            CTemporaryBlock res = null;
             foreach (CPeer p in mPeers)
                 if (p != null)
                 {
-                        try
-                        {
-                            rqsID = p.SendRequest(new CMessage(EMessageType.Request, ERequestType.ChainLength));
-                            tmp = p.ReceiveULong(rqsID, 5000);
-                            if (tmp < minLength)
-                                minLength = tmp;
-                        }
-                        catch (SocketException)
-                        { }
+                    try
+                    {
+                        rqsID = p.SendRequest(new CMessage(EMessageType.Request, ERequestType.ChainLength));
+                        tmp = p.ReceiveULong(rqsID, 5000);
+                        if (tmp < minLength)
+                            minLength = tmp;
+                    }
+                    catch (SocketException)
+                    { }
                     p.Socket.ReceiveTimeout = 0;
-                } 
+                }
             CRange r = new CRange(CBlockChain.Instance.LastValidBlock.Header.BlockNumber, minLength);
             if (r.End != ulong.MaxValue && r.Start < r.End)
             {
@@ -260,20 +262,37 @@ namespace BlockChain
                         r.End--;
                 }
 
-                //controlla se l'ultimo blocco è valido?
-                foreach (CPeer p in mPeers)
-                    if (p != null)
+                lock (mPeers)
+                {
+                    shareRation = new int[Peers.Count()];
+                    foreach (CPeer p in Peers)
                     {
                         ID = p.SendRequest(new CMessage(EMessageType.Request, ERequestType.DownloadBlock, EDataType.ULong, Convert.ToString(r.Start)));
-                        res = p.ReceiveBlock(ID, 5000);
-
-                        if (res != null && CValidator.ValidateBlock(res))
-                            break;
-                        else
-                            p.Disconnect();
+                        res = new CTemporaryBlock(p.ReceiveBlock(ID, 5000), p);
+                        for (int i = 0; i < commonBlocks.Count; i++)
+                        {
+                            if (res.Header.Hash == commonBlocks[i].Header.Hash)
+                            {
+                                shareRation[i]++;
+                                res = null;
+                            }
+                        }
                         p.Socket.ReceiveTimeout = 0;
                     }
-                      
+                }
+                int resShareRation = -1;
+                for (int i = 0; i < commonBlocks.Count-1; i++)
+                {
+                    if(resShareRation <= shareRation[i])
+                    {
+                        res = commonBlocks[i];
+                    }
+                }
+                foreach(CTemporaryBlock tb in commonBlocks)
+                {
+                    if()
+                }
+                
                 return res;
             }
             else
@@ -281,6 +300,7 @@ namespace BlockChain
                 return CBlockChain.Instance.LastValidBlock;
             }
         }
+        
 
         public bool Insert(CPeer Peer, bool IsReserved = false)
         {

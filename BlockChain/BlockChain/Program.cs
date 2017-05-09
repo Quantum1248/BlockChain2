@@ -21,6 +21,8 @@ namespace BlockChain
         public static NetNamedPipeBinding binding;
         static void Main(string[] args)
         {
+            List<int> l = new List<int>();
+            l[90] = 10;
             CServer.rsaKeyPair = RSA.GenRSAKey();
             //Apre il canale di comunicazione per GUI https://github.com/Kojee/BlockChainGUI
             OpenWCFServices();
