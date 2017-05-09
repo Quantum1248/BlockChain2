@@ -108,13 +108,11 @@ namespace BlockChain
                 Directory.CreateDirectory(specificFolder);
                 File.WriteAllText(filename, utxo.Serialize());
             }
-            List<string> pathList = (List<string>)HashTable[utxo.TxHash];
-            if (pathList == null)
+            foreach(Output output in utxo.Output)
             {
-                pathList = new List<string>();
+                SetTransactionPath(output.PubKeyHash, filename);
             }
-            pathList.Add(filename);
-            HashTable[utxo.TxHash] = pathList;
+
         }
 
         ///<summary>

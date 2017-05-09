@@ -70,7 +70,6 @@
     <Compile Include="Network\CPeers.cs" />
     <Compile Include="Network\CServer.cs" />
     <Compile Include="BlockChain\Block\CTemporaryBlock.cs" />
-    <Compile Include="ECommand.cs" />
     <Compile Include="ERequest.cs" />
     <Compile Include="Input.cs" />
     <Compile Include="MemPool.cs" />

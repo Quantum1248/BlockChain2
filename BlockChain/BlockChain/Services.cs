@@ -43,10 +43,30 @@ namespace BlockChain
                 File.WriteAllText(RSA.PATH + "\\" + name, keystore);
             }
         }
-
+        /// <summary>
+        /// Ritorna l'address del keystore attualmente caricato
+        /// </summary>
+        /// <returns></returns>
         public string GetKeystore()
         {
             return Utilities.Base64SHA2Hash(RSA.ExportPubKey(CServer.rsaKeyPair));
+        }
+
+        public double GetBalance()
+        {
+            double balance = 0;
+            List<UTXO> utxos = UTXOManager.Instance.GetUTXObyHash(Utilities.Base64SHA2Hash(RSA.ExportPubKey(CServer.rsaKeyPair)));
+            foreach(UTXO utxo in utxos)
+            {
+                foreach(Output output in utxo.Output)
+                {
+                    if (output.PubKeyHash.Equals(Utilities.Base64SHA2Hash(RSA.ExportPubKey(CServer.rsaKeyPair))))
+                    {
+                        balance += output.Amount;
+                    }
+                }
+            }
+            return balance;
         }
     }
 }
