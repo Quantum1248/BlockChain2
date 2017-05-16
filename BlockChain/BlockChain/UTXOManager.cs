@@ -81,13 +81,17 @@ namespace BlockChain
 
         public void SetTransactionPath(string hash, string filename)
         {
-            List<string> pathList = (List<string>)HashTable[hash];
-            if(pathList == null)
+            lock(HashTable)
             {
-                pathList = new List<string>();
+                List<string> pathList = (List<string>)HashTable[hash];
+                if (pathList == null)
+                {
+                    pathList = new List<string>();
+                }
+                pathList.Add(filename);
+                HashTable[hash] = pathList;
             }
-            pathList.Add(filename);
-            HashTable[hash] = pathList;
+            
         }
 
         ///<summary>
@@ -120,18 +124,22 @@ namespace BlockChain
         ///</summary>
         public Output GetUTXO(string hash, string txHash, int outputIndex)
         {
-            List<string> pathList = (List<string>)HashTable[hash];
-            UTXO utxo;
-            if (pathList == null)
-                return null;
-            foreach(string path in pathList)
+            lock (HashTable)
             {
-                utxo = JsonConvert.DeserializeObject<UTXO>(File.ReadAllText(path));
-                if(utxo.TxHash == txHash)
+                List<string> pathList = (List<string>)HashTable[hash];
+                UTXO utxo;
+                if (pathList == null)
+                    return null;
+                foreach (string path in pathList)
                 {
-                    return utxo.Output[outputIndex];
+                    utxo = JsonConvert.DeserializeObject<UTXO>(File.ReadAllText(path));
+                    if (utxo.TxHash == txHash)
+                    {
+                        return utxo.Output[outputIndex];
+                    }
                 }
             }
+            
             return null;
         }
         ///<summary>
@@ -140,30 +148,34 @@ namespace BlockChain
         public Output RetrieveRemoveUTXO(string hash, string txHash, int outputIndex)
         {
             Output output;
-            List<string> pathList = (List<string>)HashTable[hash];
-            if(pathList.Count == 0)
+            lock (HashTable)
             {
-                return null;
-            }
-            UTXO utxo;
-            foreach (string path in pathList)
-            {
-                utxo = JsonConvert.DeserializeObject<UTXO>(File.ReadAllText(path));
-                if (utxo.TxHash == txHash)
+                List<string> pathList = (List<string>)HashTable[hash];
+                if (pathList.Count == 0)
                 {
-                    output = utxo.Output[outputIndex];
-                    utxo.Output[outputIndex] = null;
-                    if(utxo.Output.Length == 0)
+                    return null;
+                }
+                UTXO utxo;
+                foreach (string path in pathList)
+                {
+                    utxo = JsonConvert.DeserializeObject<UTXO>(File.ReadAllText(path));
+                    if (utxo.TxHash == txHash)
                     {
-                        File.Delete(path);
+                        output = utxo.Output[outputIndex];
+                        utxo.Output[outputIndex] = null;
+                        if (utxo.Output.Length == 0)
+                        {
+                            File.Delete(path);
+                        }
+                        else
+                        {
+                            File.WriteAllText(path, utxo.Serialize());
+                        }
+                        return output;
                     }
-                    else
-                    {
-                        File.WriteAllText(path, utxo.Serialize());
-                    }
-                    return output;
                 }
             }
+            
             return null;
         }
 
@@ -173,30 +185,34 @@ namespace BlockChain
         public void RemoveUTXO(string hash, string txHash, int outputIndex)
         {
             Output output;
-            List<string> pathList = (List<string>)HashTable[hash];
-            if (pathList.Count == 0)
+            lock (HashTable)
             {
-                return;
-            }
-            UTXO utxo;
-            foreach (string path in pathList)
-            {
-                utxo = JsonConvert.DeserializeObject<UTXO>(File.ReadAllText(path));
-                if (utxo.TxHash == txHash)
+                List<string> pathList = (List<string>)HashTable[hash];
+                if (pathList.Count == 0)
                 {
-                    output = utxo.Output[outputIndex];
-                    utxo.Output[outputIndex] = null;
-                    if(Array.TrueForAll<Output>(utxo.Output, IsNull))
-                    {
-                        File.Delete(path);
-                    }
-                    else
-                    {
-                        File.WriteAllText(path, utxo.Serialize());
-                    }
                     return;
                 }
+                UTXO utxo;
+                foreach (string path in pathList)
+                {
+                    utxo = JsonConvert.DeserializeObject<UTXO>(File.ReadAllText(path));
+                    if (utxo.TxHash == txHash)
+                    {
+                        output = utxo.Output[outputIndex];
+                        utxo.Output[outputIndex] = null;
+                        if (Array.TrueForAll<Output>(utxo.Output, IsNull))
+                        {
+                            File.Delete(path);
+                        }
+                        else
+                        {
+                            File.WriteAllText(path, utxo.Serialize());
+                        }
+                        return;
+                    }
+                }
             }
+            
         }
 
         ///<summary>
@@ -204,13 +220,21 @@ namespace BlockChain
         ///</summary>
         public List<UTXO> GetUTXObyHash(string hash)
         {
-            List<string> paths = (List<string>)this.HashTable[hash];
-            List<UTXO> utxos = new List<UTXO>();
-            foreach(string path in paths)
+            lock (HashTable)
             {
-                utxos.Add(UTXO.Deserialize(File.ReadAllText(path)));
+                List<string> paths = (List<string>)this.HashTable[hash];
+                if(paths == null)
+                {
+                    paths = new List<string>();
+                }
+                List<UTXO> utxos = new List<UTXO>();
+                foreach (string path in paths)
+                {
+                    utxos.Add(UTXO.Deserialize(File.ReadAllText(path)));
+                }
+                return utxos;
             }
-            return utxos;
+            
         }
 
         private static bool IsNull(Output output)

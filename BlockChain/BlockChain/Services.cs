@@ -68,5 +68,12 @@ namespace BlockChain
             }
             return balance;
         }
+
+
+        public void SendTransaction(string address, double amount)
+        {
+            new Transaction(amount, address, CServer.rsaKeyPair);
+        }
+
     }
 }
