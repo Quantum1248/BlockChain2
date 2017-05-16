@@ -95,6 +95,7 @@ namespace BlockChain
             short newBlockDifficulty = Miner.CalculateDifficulty();
 
             CBlock res = new CBlock(CBlockChain.Instance.LastBlock.Header.BlockNumber + 1, CBlockChain.Instance.LastBlock.Header.Hash, (ushort)newBlockDifficulty, 10);
+            Console.WriteLine("Address: {0}", Utilities.Base64SHA2Hash(RSA.ExportPubKey(CServer.rsaKeyPair)));
             return res;
         }
 

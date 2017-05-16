@@ -36,5 +36,11 @@ namespace BlockChain
         /// per ritornare più proprietà in formato JSON
         [OperationContract]
         string GetKeystore();
+        /// <summary>
+        /// Ritorna il conto del keystore caricato
+        /// </summary>
+        /// <returns></returns>
+        [OperationContract]
+        double GetBalance();
     }
 }
