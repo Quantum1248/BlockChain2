@@ -27,19 +27,37 @@ namespace BlockChain
             //List<CPeer> lp = GenPeersList();
             List<CPeer> lp = new List<CPeer>();
 
-            lp.Add(CPeer.CreatePeer("79.50.181.199", 3000));
+            lp.Add(CPeer.CreatePeer("172.18.2.20", 4000));
 
 
             CServer.Instance.InitializePeersList(lp);
-            
-            while (true)
+
+            bool b = true;
+            while (b)
             {
                 string command = Console.ReadLine();
-                if(command == "transaction")
+                switch (command)
                 {
-                    string hashReceiver = Console.ReadLine();
-                    double amount = Convert.ToDouble(Console.ReadLine());
-                    Transaction tx = new Transaction(amount, hashReceiver, rsaKeyPair);
+                    case "transaction":
+                        {
+                            string hashReceiver = Console.ReadLine();
+                            double amount = Convert.ToDouble(Console.ReadLine());
+                            Transaction tx = new Transaction(amount, hashReceiver, rsaKeyPair);
+                            break;
+                        }
+                    case "miner":
+                        {
+                            CServer.Instance.StartMining();
+                            break;
+                        }
+                    case "sync":
+                        {
+                            CServer.Instance.SyncBlockchain();
+                            break;
+                        }
+                    default:
+                        b = false;
+                        break;
                 }
             }
         }

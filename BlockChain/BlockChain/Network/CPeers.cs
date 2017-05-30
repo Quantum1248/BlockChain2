@@ -180,7 +180,7 @@ namespace BlockChain
                         msg = mPeers[i].ReceiveData(id, 5000).Data;
                         ris += msg + "/";
                     }
-                    catch (SocketException)
+                    catch
                     {
                         if (Program.DEBUG)
                             CIO.DebugOut("Nessuna risposta da " + mPeers[i].IP + " durante la richiesta dei peer.");

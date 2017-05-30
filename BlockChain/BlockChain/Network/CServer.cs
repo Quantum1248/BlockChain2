@@ -28,7 +28,7 @@ namespace BlockChain
         private static int NOT_RESERVED_CONNECTION = MAX_PEERS - RESERVED_CONNECTION;//connessioni che utilizzo io per collegarmi agli altri
         private static string mPublicIp = "";
         private Socket mListener;
-        public static int DEFAULT_PORT = 2000;
+        public static int DEFAULT_PORT = 4000;
 
         private bool IsStopped = false; //set true per fermare il server
 
@@ -102,6 +102,8 @@ namespace BlockChain
             mThreadListener.Start();
         }
 
+
+        //sincronizza la blockchain
         public void SyncBlockchain()
         {
             if (Program.DEBUG)
@@ -110,6 +112,7 @@ namespace BlockChain
             mUpdateBlockChainThread.Start();
         }
 
+        //avvia il thread del miner
         public void StartMining()
         {
             if (mMinerThread == null)
@@ -121,6 +124,7 @@ namespace BlockChain
             }
         }
 
+        //avvia il miner
         private void StartMiner()
         {
             if(mUpdateBlockChainThread!=null)
@@ -294,9 +298,22 @@ namespace BlockChain
 
         public static string GetPublicIPAddress()
         {
-            if(mPublicIp=="")
-                mPublicIp= new WebClient().DownloadString("http://icanhazip.com");
-            return mPublicIp.Trim('\n');
+            try
+            {
+                if (mPublicIp == "")
+                {
+                    mPublicIp = new WebClient().DownloadString("http://icanhazip.com");
+                }
+                return mPublicIp.Trim('\n');
+            }
+            catch
+            {
+                if (Program.DEBUG)
+                {
+                    CIO.DebugOut("Stupido proxy schifoso autistico");
+                }
+                return "";
+            }
         }
     }
 }
