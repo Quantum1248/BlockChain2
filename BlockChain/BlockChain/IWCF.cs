@@ -50,5 +50,8 @@ namespace BlockChain
         /// <param name="amount"></param>
         [OperationContract]
         void SendTransaction(string address, double amount);
+
+        [OperationContract]
+        void StartMining();
     }
 }

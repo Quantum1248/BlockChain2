@@ -20,6 +20,8 @@ namespace BlockChain
 
         public static RSACryptoServiceProvider rsaKeyPair;
 
+        private static CServer mInstance;
+
         private CPeers mPeers;
         private static int MAX_PEERS = 30;//deve essere pari
         private static int RESERVED_CONNECTION = MAX_PEERS / 2;//connessioni usate per chi vuole collegarsi con me
@@ -30,7 +32,7 @@ namespace BlockChain
 
         private bool IsStopped = false; //set true per fermare il server
 
-        private CServer(List<CPeer> peers)
+        private CServer()
         {
             rsaKeyPair = RSA.GenRSAKey();// crea oggetto CSP per generare o caricare il keypair
 
@@ -48,21 +50,82 @@ namespace BlockChain
             if (Program.DEBUG)
                 CIO.DebugOut("Last block number: " + CBlockChain.Instance.LastValidBlock.Header.BlockNumber + ".");
 
-            if (Program.DEBUG)
-                CIO.DebugOut("Initialize mPeers...");
-            mPeers = new CPeers(MAX_PEERS, RESERVED_CONNECTION);
-
-            if (Program.DEBUG)
-                CIO.DebugOut("Finish initializing!");
-            Start(peers);
-
         }
 
-        public static CServer StartNewServer(List<CPeer> peers)
+        public static CServer Instance
         {
-            if (peers?.Count > 0)
-                return new CServer(peers);
-            return null;
+            get
+            {
+                if (mInstance == null)
+                {
+                    mInstance = new CServer();
+                }
+                return mInstance;
+            }
+        }
+
+        public void InitializePeersList(List<CPeer> peers)
+        {
+            if (Program.DEBUG)
+            {
+                CIO.DebugOut("Initialize mPeers...");
+            }
+            mPeers = new CPeers(MAX_PEERS, RESERVED_CONNECTION);
+            if (Program.DEBUG)
+            {
+                CIO.DebugOut("Begin to enstablish connections to initial peers...");
+            }
+            //si collega ai peer inseriti nella lista iniziale.
+            foreach (CPeer p in peers)
+            {
+                if (p.Connect(500))
+                {
+                    if (!mPeers.Insert(p))
+                    {
+                        break;
+                    }
+                }
+            }
+
+            if (Program.DEBUG)
+            {
+                CIO.DebugOut("Begin to enstablish connections to other peers...");
+            }
+            mThreadUpdatePeers = new Thread(new ThreadStart(UpdatePeersList));
+            mThreadUpdatePeers.Start();
+
+            if (Program.DEBUG)
+            {
+                CIO.DebugOut("Start listening...");
+            }
+            mThreadListener = new Thread(new ThreadStart(StartAcceptUsersConnection));
+            mThreadListener.Start();
+        }
+
+        public void SyncBlockchain()
+        {
+            if (Program.DEBUG)
+                CIO.DebugOut("Start update blockchain...");
+            mUpdateBlockChainThread = new Thread(new ThreadStart(UpdateBlockchain));
+            mUpdateBlockChainThread.Start();
+        }
+
+        public void StartMining()
+        {
+            if (mMinerThread == null)
+            {
+                if (Program.DEBUG)
+                    CIO.DebugOut("Start Miner...");
+                mMinerThread = new Thread(new ThreadStart(StartMiner));
+                mMinerThread.Start();
+            }
+        }
+
+        private void StartMiner()
+        {
+            if(mUpdateBlockChainThread!=null)
+                mUpdateBlockChainThread.Join();
+            Miner.Start(10);
         }
 
         private int ConnectedPeers
@@ -70,37 +133,7 @@ namespace BlockChain
             get { return mPeers.NumConnection(); }
         }
 
-        public void Start(List<CPeer> peers)
-        {
-            if (Program.DEBUG)
-                CIO.DebugOut("Begin to enstablish connections to initial peers...");
-            //si collega ai peer inseriti nella lista iniziale.
-            foreach (CPeer p in peers)
-                if (p.Connect(500))
-                    if (!mPeers.Insert(p))
-                        break;
-            
-            if (Program.DEBUG)
-                CIO.DebugOut("Begin to enstablish connections to other peers...");
-            mThreadUpdatePeers = new Thread(new ThreadStart(UpdatePeersList));
-            mThreadUpdatePeers.Start();
-            
-            if (Program.DEBUG)
-                CIO.DebugOut("Start listening...");
-            mThreadListener = new Thread(new ThreadStart(StartAcceptUsersConnection));
-            mThreadListener.Start();
 
-            if (Program.DEBUG)
-                CIO.DebugOut("Start update blockchain...");
-            mUpdateBlockChainThread = new Thread(new ThreadStart(UpdateBlockchain));
-            mUpdateBlockChainThread.Start();
-
-            if (Program.DEBUG)
-                CIO.DebugOut("Start Miner...");
-            mMinerThread = new Thread(new ThreadStart(StartMiner));
-            mMinerThread.Start();
-
-        }
 
         private void UpdatePeersList()
         {
@@ -222,11 +255,7 @@ namespace BlockChain
             mPeers.CanReceiveBlock = true;
         }
 
-        private void StartMiner()
-        {
-            mUpdateBlockChainThread.Join();
-            Miner.Start(10);
-        }
+
 
         private void InsertNewPeer(Socket newConnection)
         {

@@ -21,7 +21,6 @@ namespace BlockChain
         public static NetNamedPipeBinding binding;
         static void Main(string[] args)
         {
-            CServer.rsaKeyPair = RSA.GenRSAKey();
             //Apre il canale di comunicazione per GUI https://github.com/Kojee/BlockChainGUI
             OpenWCFServices();
             
@@ -31,7 +30,7 @@ namespace BlockChain
             lp.Add(CPeer.CreatePeer("79.50.181.199", 3000));
 
 
-            CServer s = CServer.StartNewServer(lp);
+            CServer.Instance.InitializePeersList(lp);
             
             while (true)
             {

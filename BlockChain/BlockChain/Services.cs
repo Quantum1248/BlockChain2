@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.ServiceModel;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace BlockChain
@@ -75,5 +76,9 @@ namespace BlockChain
             new Transaction(amount, address, CServer.rsaKeyPair);
         }
 
+        public void StartMining()
+        {
+            CServer.Instance.StartMining();
+        }
     }
 }
