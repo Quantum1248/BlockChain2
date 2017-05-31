@@ -217,15 +217,35 @@ namespace BlockChain
             otherLastValidBlock = mPeers.DoRequest(ERequest.LastValidBlock) as CTemporaryBlock;
 
             if (Program.DEBUG)
+            {
                 if (otherLastValidBlock != null)
+                {
                     CIO.DebugOut("Il numero di blocco di otherLastValidBlock è " + otherLastValidBlock.Header.BlockNumber + ".");
+                }
                 else
+                {
                     CIO.DebugOut("Nessun otherLastValidBlock ricevuto.");
+                }
+            }
 
             if (CBlockChain.Instance.LastValidBlock.Header.BlockNumber < otherLastValidBlock?.Header.BlockNumber)
+            {
                 isSynced = false;
-            else
+            }
+            else if (otherLastValidBlock!= null && CBlockChain.Instance.RetriveBlock(otherLastValidBlock.Header.BlockNumber).Header.Hash== otherLastValidBlock.Header.Hash)
+            {
                 isSynced = true;
+            }
+            else if(otherLastValidBlock!=null)
+            {
+                isSynced = true;
+                otherLastValidBlock.Sender.Disconnect();
+            }
+            else
+            {
+                isSynced = true;
+            }
+
 
             //TODO potrebbero dover essere scaricati un numero maggiore di MAXINT blocchi
             while (!isSynced)
@@ -284,7 +304,11 @@ namespace BlockChain
 
         static public void SendData(Socket Dispatcher, byte[] data)
         {
-            Dispatcher.Send(BitConverter.GetBytes(data.Length).Concat(data).ToArray());
+            try
+            {
+                Dispatcher.Send(BitConverter.GetBytes(data.Length).Concat(data).ToArray());
+            }
+            catch { }
         }
 
         public static string GetLocalIPAddress()

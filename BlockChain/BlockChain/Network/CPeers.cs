@@ -170,20 +170,22 @@ namespace BlockChain
             string msg = "";
             string ris = "";
             CPeer receivedPeer;
-            for (int i = 0; i < mPeers.Length; i++)
-                if (mPeers[i] != null)
+            foreach(CPeer p in Peers)
                 {
-                    //blocca il peer e manda una richiesta di lock per bloccarlo anche dal nel suo client, così che non avvengano interferenze nella comunicazione
                     try
                     {
-                        id = mPeers[i].SendRequest(new CMessage(EMessageType.Request, ERequestType.UpdPeers));
-                        msg = mPeers[i].ReceiveData(id, 5000).Data;
+                        id = p.SendRequest(new CMessage(EMessageType.Request, ERequestType.UpdPeers));
+                        msg = p.ReceiveData(id, 5000).Data;
                         ris += msg + "/";
                     }
                     catch
                     {
                         if (Program.DEBUG)
-                            CIO.DebugOut("Nessuna risposta da " + mPeers[i].IP + " durante la richiesta dei peer.");
+                        {
+                            CIO.DebugOut("Nessuna risposta da " + p.IP + " durante la richiesta dei peer." +
+                                "Disconnessione da " + p.IP);
+                        }
+                        p.Disconnect();
                     }
                 }
 

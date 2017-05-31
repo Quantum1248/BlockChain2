@@ -25,6 +25,11 @@ namespace BlockChain
             WillReceiveResponse = true;
         }
 
+        public CMessage(EMessageType Type):this()
+        {
+            this.Type = Type;
+        }
+
         public CMessage(EMessageType Type, ERequestType RqsType) : this()
         {
             this.Type = Type;
@@ -75,7 +80,8 @@ namespace BlockChain
     enum EMessageType
     {
         Request,
-        Data
+        Data,
+        Disconnect
     }
 
     public enum ERequestType

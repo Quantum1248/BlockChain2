@@ -125,9 +125,20 @@ namespace BlockChain
 
         public void Disconnect()
         {
-            mSocket.Close();
-            mSocket.Dispose();//(!) in teoria è inutile perchè fa già tutto Close()
-            mIsConnected = false;
+            try
+            {
+                SendMessage(new CMessage(EMessageType.Disconnect));
+            }
+            catch { }
+            lock (mSocket)
+            {
+                if (mSocket != null)
+                {
+                    mSocket.Close();
+                    mSocket = null;
+                    mIsConnected = false;
+                }
+            }
             CPeers.Instance.InvalidPeers(new CPeer[] { this });        
         }
 
@@ -153,40 +164,63 @@ namespace BlockChain
             CMessage msg;
             while (mIsConnected)    //bisogna bloccarlo in qualche modo all'uscita del programma credo
             {
-                //il timer viene settato cosicchè in caso non si ricevino comunicazioni venga ritornata un'eccezione, in modo che il programma vada avanti e tolga il lock al socket.
-                mSocket.ReceiveTimeout = 1000;
-                try
+                lock (mSocket)
                 {
-                    tmp = ReceiveString();
-                    msg = JsonConvert.DeserializeObject<CMessage>(tmp);
-                    if (CValidator.ValidateMessage(msg))
+                    if(mSocket==null)
                     {
-                        msg.TimeOfReceipt = DateTime.Now;
-                        if (msg.Type == EMessageType.Request)
-                            lock (RequestQueue)
-                                RequestQueue.Enqueue(msg);
-                        else if (msg.Type == EMessageType.Data && ValidID.Contains(msg.ID))
-                            lock (DataQueue)
-                            {
-                                DataQueue.Enqueue(msg);
-                                ValidID.Remove(msg.ID);
-                            }
-                        else if (Program.DEBUG)
-                            throw new ArgumentException("MessageType " + msg.Type + " non supportato.");
+                        break;
                     }
-                    else
+                    //il timer viene settato cosicchè in caso non si ricevino comunicazioni venga ritornata un'eccezione, in modo che il programma vada avanti e tolga il lock al socket.
+                    mSocket.ReceiveTimeout = 1000;
+                    try
+                    {
+                        tmp = ReceiveString();
+                        msg = JsonConvert.DeserializeObject<CMessage>(tmp);
+                        if (CValidator.ValidateMessage(msg))
+                        {
+                            msg.TimeOfReceipt = DateTime.Now;
+                            if (msg.Type == EMessageType.Request)
+                            {
+                                lock (RequestQueue)
+                                {
+                                    RequestQueue.Enqueue(msg);
+                                }
+                            }
+                            else if (msg.Type == EMessageType.Data && ValidID.Contains(msg.ID))
+                            {
+                                lock (DataQueue)
+                                {
+                                    DataQueue.Enqueue(msg);
+                                    ValidID.Remove(msg.ID);
+                                }
+                            }
+                            else if (msg.Type == EMessageType.Disconnect)
+                            {
+                                this.Disconnect();
+                                break;
+                            }
+                            else if (Program.DEBUG)
+                            {
+                                throw new ArgumentException("MessageType " + msg.Type + " non supportato.");
+                            }
+                        }
+                        else
+                        {
+                            Disconnect();
+                            break;
+                        }
+                    }
+                    catch (SocketException)
+                    {
+                    }
+                    catch (JsonSerializationException)
+                    {
+                        throw new Exception();
                         Disconnect();
+                    }
+                    //il timer viene reinpostato a defoult per non causare problemi con altre comunicazioni che potrebbero avvenire in altre parti del codice.
+                    mSocket.ReceiveTimeout = 0;
                 }
-                catch (SocketException)
-                {
-                }
-                catch (JsonSerializationException)
-                {
-                    throw new Exception();
-                    Disconnect();
-                }
-                //il timer viene reinpostato a defoult per non causare problemi con altre comunicazioni che potrebbero avvenire in altre parti del codice.
-                mSocket.ReceiveTimeout = 0;
             }
         }
 
