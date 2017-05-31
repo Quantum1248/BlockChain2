@@ -134,10 +134,12 @@ namespace BlockChain
         public void StartListening()
         {
             mThreadRequest = new Thread(new ThreadStart(ExecuteRequest));
+            mThreadRequest.Name = "Request " + this.IP;
             mThreadRequest.Start();
-            mThreadListener = new Thread(new ThreadStart(Listen));
-            mThreadListener.Start();
 
+            mThreadListener = new Thread(new ThreadStart(Listen));
+            mThreadListener.Name= "Listener " +this.IP;
+            mThreadListener.Start();
         }
 
         #endregion Constructors&Properties&Inizialization

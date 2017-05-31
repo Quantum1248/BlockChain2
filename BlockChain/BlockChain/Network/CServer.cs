@@ -16,7 +16,7 @@ namespace BlockChain
         //TODO: cambiare l'inizializzazione una volta definite le classi
 
 
-        private Thread mUpdateBlockChainThread, mThreadListener, mThreadUpdatePeers, mMinerThread;
+        private Thread mThreadSyncBlockChain, mThreadListener, mThreadUpdatePeers, mThreadMiner;
 
         public static RSACryptoServiceProvider rsaKeyPair;
 
@@ -92,6 +92,7 @@ namespace BlockChain
                 CIO.DebugOut("Begin to enstablish connections to other peers...");
             }
             mThreadUpdatePeers = new Thread(new ThreadStart(UpdatePeersList));
+            mThreadUpdatePeers.Name = "mUpdatePeers";
             mThreadUpdatePeers.Start();
 
             if (Program.DEBUG)
@@ -99,6 +100,7 @@ namespace BlockChain
                 CIO.DebugOut("Start listening...");
             }
             mThreadListener = new Thread(new ThreadStart(StartAcceptUsersConnection));
+            mThreadListener.Name = "Listener";
             mThreadListener.Start();
         }
 
@@ -108,27 +110,29 @@ namespace BlockChain
         {
             if (Program.DEBUG)
                 CIO.DebugOut("Start update blockchain...");
-            mUpdateBlockChainThread = new Thread(new ThreadStart(UpdateBlockchain));
-            mUpdateBlockChainThread.Start();
+            mThreadSyncBlockChain = new Thread(new ThreadStart(UpdateBlockchain));
+            mThreadSyncBlockChain.Name = "SyncBlockchain";
+            mThreadSyncBlockChain.Start();
         }
 
         //avvia il thread del miner
         public void StartMining()
         {
-            if (mMinerThread == null)
+            if (mThreadMiner == null)
             {
                 if (Program.DEBUG)
                     CIO.DebugOut("Start Miner...");
-                mMinerThread = new Thread(new ThreadStart(StartMiner));
-                mMinerThread.Start();
+                mThreadMiner = new Thread(new ThreadStart(StartMiner));
+                mThreadMiner.Name = "Miner";
+                mThreadMiner.Start();
             }
         }
 
         //avvia il miner
         private void StartMiner()
         {
-            if(mUpdateBlockChainThread!=null)
-                mUpdateBlockChainThread.Join();
+            if(mThreadSyncBlockChain!=null)
+                mThreadSyncBlockChain.Join();
             Miner.Start(10);
         }
 
@@ -310,7 +314,7 @@ namespace BlockChain
             {
                 if (Program.DEBUG)
                 {
-                    CIO.DebugOut("Stupido proxy schifoso autistico");
+                    CIO.DebugOut("Error: can't get public ip.");
                 }
                 return "";
             }

@@ -422,6 +422,7 @@ namespace BlockChain
             {
                 if (p != null)
                 {
+                    threadQueue.Peek().Name = "DownloadBlocks " + p.IP;
                     threadQueue.Peek().Start(new object[] { p, queueRange, ris, initialIndex });
                     threadQueue.Enqueue(threadQueue.Dequeue());
                 }
@@ -492,6 +493,7 @@ namespace BlockChain
                 if (p != null)
                 {
                     threadQueue.Peek().Start(new object[] { p, queueRange, ris, initialIndex });
+                    threadQueue.Peek().Name = "DownloadHeaders " + p.IP;
                     threadQueue.Enqueue(threadQueue.Dequeue());
                 }
             }
