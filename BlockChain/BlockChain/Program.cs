@@ -27,7 +27,7 @@ namespace BlockChain
             //List<CPeer> lp = GenPeersList();
             List<CPeer> lp = new List<CPeer>();
 
-            lp.Add(CPeer.CreatePeer("172.18.2.20", 4000));
+            lp.Add(CPeer.CreatePeer("172.18.2.26", 4000));
 
 
             CServer.Instance.InitializePeersList(lp);

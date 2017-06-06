@@ -24,7 +24,7 @@ namespace BlockChain
         { }
 
         //public CBlock(ulong NumBlock, string Hash, string PreviusBlockHash, string Transiction, ulong Nonce, DateTime Timestamp, ushort Difficulty)
-        public CBlock(ulong NumBlock,string Hash,string PreviusBlockHash, int TxLimit, ulong Nonce, DateTime Timestamp, ushort Difficulty, List<Transaction> transactions)
+        public CBlock(ulong NumBlock, string Hash, string PreviusBlockHash, int TxLimit, ulong Nonce, DateTime Timestamp, ushort Difficulty, List<Transaction> transactions)
         {
             Header = new CHeader(NumBlock, Hash, PreviusBlockHash);
             this.TxLimit = TxLimit;
@@ -33,6 +33,11 @@ namespace BlockChain
             this.Nonce = Nonce;
             this.Timestamp = Timestamp;
             this.Difficulty = Difficulty;
+        }
+
+        public CBlock(CTemporaryBlock block):this(block.Header.BlockNumber, block.Header.Hash, block.Header.PreviousBlockHash, block.TxLimit, block.Nonce, block.Timestamp, block.Difficulty, block.Transactions)
+        {
+
         }
 
         public CBlock(CHeader Header, Transaction Transaction, ulong Nonce, DateTime Timestamp, ushort Difficulty)

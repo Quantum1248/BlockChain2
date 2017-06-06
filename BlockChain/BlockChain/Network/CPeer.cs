@@ -434,15 +434,15 @@ namespace BlockChain
         private void SendString(string Msg)
         {
             SendData(ASCIIEncoding.ASCII.GetBytes(Msg));
-            /*if (Program.DEBUG)
-                CIO.DebugOut("Sent string " + Msg + ".");*/
+            if (Program.DEBUG)
+                CIO.DebugOut("Sent string " + Msg + ".");
         }
 
         private string ReceiveString()
         {
             string msg = ASCIIEncoding.ASCII.GetString(Receive());
-           /* if (Program.DEBUG)
-                CIO.DebugOut("Received string " + msg + ".");*/
+            if (Program.DEBUG)
+                CIO.DebugOut("Received string " + msg + ".");
             return msg;
         }
 
