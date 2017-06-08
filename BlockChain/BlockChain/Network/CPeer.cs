@@ -127,7 +127,8 @@ namespace BlockChain
         {
             try
             {
-                SendMessage(new CMessage(EMessageType.Disconnect));
+                while(true)
+                    SendMessage(new CMessage(EMessageType.Disconnect));
             }
             catch { }
             lock (mSocket)
@@ -381,8 +382,9 @@ namespace BlockChain
 
         #endregion TypedReceive
 
-        public CMessage ReceiveData(int ID, int Timeout, int checkFrequency=100)
+        public CMessage ReceiveData(int ID, int Timeout, int checkFrequency=1000000)
         {
+            Timeout = 10000000;
             int timeoutSlice = (Timeout / checkFrequency);
             CMessage res;
             for (int i = 0; i < checkFrequency; i++)

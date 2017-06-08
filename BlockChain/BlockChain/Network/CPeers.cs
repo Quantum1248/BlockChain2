@@ -295,7 +295,7 @@ namespace BlockChain
             }
         }
 
-        public bool Insert(CPeer Peer, bool IsReserved = false)
+        public bool Insert(CPeer newPeer, bool IsReserved = false)
         {
             //ritorna true se riesce ad inserire il peer, mentre false se il vettore è pieno o il peer è già presente nella lista
             lock (mPeers) //rimane loccato se ritorno prima della parentesi chiusa??
@@ -303,16 +303,17 @@ namespace BlockChain
                 if (NumConnection() < mPeers.Length)
                 {
                     //controlla che la connessione(e quindi il peer) non sia già presente
-                    foreach (CPeer p in mPeers)
-                        if (p?.IP == Peer.IP)//e se ci sono più peer nella stessa rete che si collegano su porte diverse?
+                    foreach (CPeer p in Peers)
+                        if (p?.IP == newPeer.IP)//e se ci sono più peer nella stessa rete che si collegano su porte diverse?
                         {
+                            newPeer.Disconnect();
                             return false;
                         }
 
-                    if (!Peer.IsConnected)
-                        if (!Peer.Connect(2000))
+                    if (!newPeer.IsConnected)
+                        if (!newPeer.Connect(2000))
                         {
-                            Peer.Disconnect();
+                            newPeer.Disconnect();
                             return false;
                         }
                     //controlla se è il peer che si è collegato a me o sono io che mi sono collegato al peer
@@ -321,7 +322,7 @@ namespace BlockChain
                         {
                             if (mPeers[i] == null)
                             {
-                                mPeers[i] = Peer;
+                                mPeers[i] = newPeer;
                                 mPeers[i].StartListening();
                                 return true;
                             }
@@ -331,12 +332,12 @@ namespace BlockChain
                         for (int i = 0; i < mNumReserved; i++)
                             if (mPeers[i] == null)
                             {
-                                mPeers[i] = Peer;
+                                mPeers[i] = newPeer;
                                 return true;
                             }
                     }
                 }
-                Peer.Disconnect();
+                newPeer.Disconnect();
                 return false;
             }
         }
