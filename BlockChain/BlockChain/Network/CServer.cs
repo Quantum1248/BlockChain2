@@ -148,9 +148,10 @@ namespace BlockChain
             while (!IsStopped)
             {
                 int numPeers = mPeers.NumConnection();
-                if (numPeers < NOT_RESERVED_CONNECTION && numPeers>0)
+                if (numPeers < NOT_RESERVED_CONNECTION && numPeers > 0)
+                {
                     mPeers.DoRequest(ERequest.UpdatePeers);
-                //inserire qui il controllo per verificare che i peer presenti siano ancora online?
+                }
                 Thread.Sleep(60000);
             }
         }
@@ -213,8 +214,8 @@ namespace BlockChain
             CBlock lastCommonBlock;
             CTemporaryBlock otherLastValidBlock;
 
-            lastCommonBlock= mPeers.DoRequest(ERequest.LastCommonValidBlock) as CBlock;
-            otherLastValidBlock = mPeers.DoRequest(ERequest.LastValidBlock) as CTemporaryBlock;
+            lastCommonBlock= mPeers.DoRequest(ERequest.LastCommonValidBlock) as CBlock; //trova l'utlimo blocco comune tra i peers
+            otherLastValidBlock = mPeers.DoRequest(ERequest.LastValidBlock) as CTemporaryBlock; //trova l'ultimo blocco valido tra i peer
 
             if (Program.DEBUG)
             {

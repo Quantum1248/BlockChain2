@@ -185,7 +185,7 @@ namespace BlockChain
                         CIO.DebugOut("Nessuna risposta da " + p.IP + " durante la richiesta dei peer." +
                             "Disconnessione da " + p.IP);
                     }
-                    //p.Disconnect();
+                    p.Disconnect();
                 }
             }
 
@@ -412,6 +412,8 @@ namespace BlockChain
 
         public CTemporaryBlock[] DistribuiteDownloadBlocks(ulong initialIndex, ulong finalIndex, CPeer[] Peers = null)
         {
+            if (finalIndex < initialIndex)
+                return new CTemporaryBlock[0];
             if (Peers == null)
                 Peers = mPeers;
             Queue<Thread> threadQueue = new Queue<Thread>();
