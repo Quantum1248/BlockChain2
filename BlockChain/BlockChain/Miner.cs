@@ -159,7 +159,7 @@ namespace BlockChain
                     //Thread.Sleep(1000);
                 }
             }
-            return 1;
+            return newBlockDifficulty;
         }
     }
 }

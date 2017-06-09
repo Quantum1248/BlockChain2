@@ -176,7 +176,7 @@ namespace BlockChain
                     counter++;
                     lock (Instance)
                     {
-                        File.AppendAllText(filepath, new CBlock(b).Serialize() + '\n');
+                        File.AppendAllText(filepath, (b as CBlock).Serialize() + '\n');
                     }
                     //int togliilcommentoeilfalsesopra;
                 }

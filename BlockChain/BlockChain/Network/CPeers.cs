@@ -306,6 +306,7 @@ namespace BlockChain
                     foreach (CPeer p in Peers)
                         if (p?.IP == newPeer.IP)//e se ci sono più peer nella stessa rete che si collegano su porte diverse?
                         {
+                            p.Disconnect();
                             newPeer.Disconnect();
                             return false;
                         }

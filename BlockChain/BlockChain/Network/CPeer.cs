@@ -127,8 +127,7 @@ namespace BlockChain
         {
             try
             {
-                while(true)
-                    SendMessage(new CMessage(EMessageType.Disconnect));
+                   SendMessage(new CMessage(EMessageType.Disconnect));
             }
             catch { }
             lock (mSocket)

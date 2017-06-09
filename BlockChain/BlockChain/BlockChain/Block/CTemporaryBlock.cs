@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using Newtonsoft.Json;
 namespace BlockChain
 {
     class CTemporaryBlock : CBlock
@@ -19,6 +19,8 @@ namespace BlockChain
             { }
         }
 
+        [JsonIgnore]
+        [JsonProperty(Required = Required.Default)]
         public CPeer Sender
         {
             get { return mSender; }
