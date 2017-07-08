@@ -132,11 +132,11 @@ namespace BlockChain
                     return null;
                 foreach (string path in pathList)
                 {
-                    utxo = JsonConvert.DeserializeObject<UTXO>(File.ReadAllText(path));
-                    if (utxo.TxHash == txHash)
-                    {
-                        return utxo.Output[outputIndex];
-                    }
+                        utxo = JsonConvert.DeserializeObject<UTXO>(File.ReadAllText(path));
+                        if (utxo.TxHash == txHash)
+                        {
+                            return utxo.Output[outputIndex];
+                        }
                 }
             }
             

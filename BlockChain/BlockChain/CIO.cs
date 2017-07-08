@@ -22,7 +22,9 @@ namespace BlockChain
 
         public static void DebugOut(string s)
         {
+            Console.ForegroundColor = ConsoleColor.Yellow;
             WriteLine(s+'\n');
+            Console.ForegroundColor = ConsoleColor.White;
         }
 
         public static string ReadLine()

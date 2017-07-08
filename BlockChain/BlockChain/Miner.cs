@@ -144,6 +144,14 @@ namespace BlockChain
             else if (averangeBlockTime < lowAverangeTimeLimit)
             {
                 newBlockDifficulty = (short)(lastBlock.Difficulty + 1);
+
+
+                if (newBlockDifficulty >= 3)
+                {
+                    newBlockDifficulty = 3;
+                }
+
+
                 if (Program.DEBUG)
                 {
                     CIO.DebugOut("La nuova difficoltà è: " + newBlockDifficulty);

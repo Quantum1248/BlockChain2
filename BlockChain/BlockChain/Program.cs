@@ -16,7 +16,6 @@ namespace BlockChain
     class Program
     {
         public static bool DEBUG = true;
-        public static RSACryptoServiceProvider rsaKeyPair;
         public static ServiceHost serviceHost;
         public static NetNamedPipeBinding binding;
         static void Main(string[] args)
@@ -26,32 +25,35 @@ namespace BlockChain
             
             //List<CPeer> lp = GenPeersList();
             List<CPeer> lp = new List<CPeer>();
-            string s = Console.ReadLine();
+            CIO.WriteLine("Enter the peer address:");
+            string firstPeerIP = Console.ReadLine();
             try
             {
-                if (Convert.ToInt32(s) >= 255 || Convert.ToInt32(s) <= 0)
-                    s = "1";
+                if (!IPAddress.TryParse(firstPeerIP, out var IP))
+                    firstPeerIP = "192.168.1.1";
             }
             catch
             {
-                s = "1";
+                firstPeerIP = "192.168.1.1";
             }
-            lp.Add(CPeer.CreatePeer("192.168.1." + s, 4000));
+            lp.Add(CPeer.CreatePeer(firstPeerIP, 4000));
 
 
             CServer.Instance.InitializePeersList(lp);
-
+            Services cmd = new Services();
             bool b = true;
             while (b)
             {
-                string command = Console.ReadLine();
+                string command = Console.ReadLine().ToLower();
                 switch (command)
                 {
                     case "transaction":
                         {
+                            CIO.WriteLine("Enter destination address:");
                             string hashReceiver = Console.ReadLine();
+                            CIO.WriteLine("Enter the amout of coins to send:");
                             double amount = Convert.ToDouble(Console.ReadLine());
-                            Transaction tx = new Transaction(amount, hashReceiver, rsaKeyPair);
+                            Transaction tx = new Transaction(amount, hashReceiver, CServer.rsaKeyPair);
                             break;
                         }
                     case "miner":
@@ -64,9 +66,27 @@ namespace BlockChain
                             CServer.Instance.SyncBlockchain();
                             break;
                         }
+                    case "address":
+                        {
+                            CIO.WriteLine(cmd.GetKeystore());
+                            break;
+                        }
+                    case "balance":
+                        {
+                            CIO.WriteLine(cmd.GetBalance().ToString());
+                            break;
+                        }
+                    case "stop":
+                        {
+                            b = false;
+                            Environment.Exit(1);
+                            break;
+                        }
                     default:
-                        b = false;
-                        break;
+                        {
+                            CIO.WriteLine("Invalid command.");
+                            break;
+                        }
                 }
             }
         }
