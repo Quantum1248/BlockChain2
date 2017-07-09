@@ -176,9 +176,10 @@ namespace BlockChain
                     counter++;
                     lock (Instance)
                     {
+                        MemPool.Instance.RemoveBlock(b);
+                        UTXOManager.Instance.ApplyBlock(b);
                         File.AppendAllText(filepath, (b as CBlock).Serialize() + '\n');
                     }
-                    //int togliilcommentoeilfalsesopra;
                 }
                 else
                     break;

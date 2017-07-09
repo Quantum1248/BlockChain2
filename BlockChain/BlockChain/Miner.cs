@@ -146,9 +146,9 @@ namespace BlockChain
                 newBlockDifficulty = (short)(lastBlock.Difficulty + 1);
 
 
-                if (newBlockDifficulty >= 3)
+                if (newBlockDifficulty >= 4)
                 {
-                    newBlockDifficulty = 3;
+                    newBlockDifficulty = 4;
                 }
 
 
@@ -167,7 +167,7 @@ namespace BlockChain
                     //Thread.Sleep(1000);
                 }
             }
-            return newBlockDifficulty;
+            return 3;
         }
     }
 }

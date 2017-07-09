@@ -252,6 +252,10 @@ namespace BlockChain
             while (!isSynced)
             {
                 newBlocks = mPeers.DoRequest(ERequest.DownloadMissingBlock, new object[] { CBlockChain.Instance.LastValidBlock.Header.BlockNumber + 1, lastCommonBlock.Header.BlockNumber + 1 }) as CTemporaryBlock[];
+                /*foreach (CTemporaryBlock block in newBlocks)
+                {
+                    UTXOManager.Instance.ApplyBlock(block);
+                }*/
                 CBlockChain.Instance.Add(newBlocks);
                 forkChains = mPeers.DoRequest(ERequest.FindParallelChain, lastCommonBlock) as CHeaderChain[];
                 if (forkChains.Length > 0)
@@ -262,10 +266,10 @@ namespace BlockChain
                     if (CValidator.ValidateHeaderChain(bestChain))
                     {
                         DownloadedBlock=CPeers.Instance.DistribuiteDownloadBlocks(bestChain.InitialIndex+1,bestChain.FinalIndex);
-                        foreach(CTemporaryBlock block in DownloadedBlock)
+                        /*foreach(CTemporaryBlock block in DownloadedBlock)
                         {
                             UTXOManager.Instance.ApplyBlock(block);
-                        }
+                        }*/
                         mPeers.ValidPeers(bestChain.Peers);
                         addedBlocks = CBlockChain.Instance.Add(DownloadedBlock);
                         if (addedBlocks >= bestChain.Length)    //solo se scarica tutti i blocchi

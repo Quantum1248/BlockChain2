@@ -63,7 +63,7 @@ namespace BlockChain
                     {
                         if (input.OutputIndex != -1)
                         {
-                            this.RemoveUTXO(tx.PubKey, input.TxHash, input.OutputIndex);
+                            this.RemoveUTXO(Utilities.Base64SHA2Hash(tx.PubKey), input.TxHash, input.OutputIndex);
                         }
 
                     }
@@ -185,6 +185,7 @@ namespace BlockChain
         public void RemoveUTXO(string hash, string txHash, int outputIndex)
         {
             Output output;
+            List<string> newPathList=new List<string>();
             lock (HashTable)
             {
                 List<string> pathList = (List<string>)HashTable[hash];
@@ -202,6 +203,9 @@ namespace BlockChain
                         utxo.Output[outputIndex] = null;
                         if (Array.TrueForAll<Output>(utxo.Output, IsNull))
                         {
+                            newPathList = pathList;
+                            newPathList.Remove(path);
+                            HashTable[hash] = newPathList;
                             File.Delete(path);
                         }
                         else
